@@ -123,6 +123,14 @@ module FPublisher =
               retrievedVersionInfo.FromNugetServer ]
             |> List.choose id
             |> List.max         
+
+        let nugetOrPaketGitHubServerVersion retrievedVersionInfo =
+            [ retrievedVersionInfo.FromPaketGitHubServer
+              retrievedVersionInfo.FromNugetServer ]
+            |> List.choose id
+            |> function 
+                | versions when versions.Length > 0 -> Some (List.max versions)
+                | _ -> None 
              
         let currentVersionText retrievedVersionInfo =
             currentVersion retrievedVersionInfo
@@ -169,17 +177,20 @@ module FPublisher =
                 | PublishTarget.Build -> 
                     SemVerInfo.nextBetaVersion currentVersion
                 | PublishTarget.Release -> 
-                    match (versionController.VersionFromReleaseNotes, versionController.VersionFromPaketGitHubServer) with 
-                    | releaseVersion, None ->
+                    let releaseNotes = versionController.ReleaseNotes
+                    
+                    if releaseNotes.Notes.IsEmpty || releaseNotes.Date <> None 
+                    then failwith "Please write release notes of new version first"
+
+                    let releaseVersion = versionController.VersionFromReleaseNotes
+
+                    match RetrievedVersionInfo.nugetOrPaketGitHubServerVersion versionController.RetrievedVersionInfo with 
+                    | None ->
                         match releaseVersion.PreRelease with
                         | Some _ -> SemVerInfo.nextBetaVersion releaseVersion
                         | None -> releaseVersion
-                    | releaseVersion, Some nugetVersion ->
-                        let releaseNotes = versionController.ReleaseNotes
                         
-                        if releaseNotes.Notes.IsEmpty || releaseNotes.Date <> None 
-                        then failwith "Please write release notes of new version first"
-                        
+                    | Some nugetVersion ->
                         if releaseVersion < nugetVersion 
                         then SemVerInfo.nextBetaVersion nugetVersion                         
                         else 
