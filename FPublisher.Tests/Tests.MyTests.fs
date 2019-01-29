@@ -24,6 +24,10 @@ Logger.info "End create publisher" Logger.Normal
 
 let MyTests =
   testList "Interation tests" [
-    testCase "Publish and draft all" <| fun _ -> 
+    testCase "next build" <| fun _ -> 
       Publisher.publishAndDraftAll publisher
+
+    ftestCase "next release" <| fun _ -> 
+      Publisher.setPublishTarget PublishTarget.Release publisher
+      |> Publisher.publishAndDraftAll
   ]

@@ -423,6 +423,8 @@ module FPublisher =
                 VersionController = VersionController.writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher.VersionController }
 
         let pack (publisher: Publisher) =
+            ensureGitChangesAllPushedWhenRelease publisher
+            
             match publisher.Status with 
             | PublisherStatus.Init -> 
                 let publisher = writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher 
