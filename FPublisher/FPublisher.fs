@@ -311,6 +311,10 @@ module FPublisher =
     with 
         member x.VersionFromNugetServer = x.VersionController.VersionFromNugetServer
 
+        member x.ReleaseNotesFile = x.VersionController.ReleaseNotesFile  
+
+        member x.ReleaseNotes = x.VersionController.ReleaseNotes
+
         member x.GitHubData = x.VersionController.GitHubData
         
         member x.Workspace = x.VersionController.Workspace
@@ -320,10 +324,6 @@ module FPublisher =
         member x.RepoName = x.GitHubData.RepoName
 
         member x.WorkingDir = x.Workspace.WorkingDir
-
-        member x.ReleaseNotesFile = x.WorkingDir </> "RELEASE_NOTES.md"    
-
-        member x.ReleaseNotes = ReleaseNotes.loadTbd x.ReleaseNotesFile
 
         member x.PackageNames = Workspace.nugetPackageNames x.Workspace
 
