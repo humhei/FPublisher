@@ -49,23 +49,26 @@ module FPublisher =
         
         let allPackages (paketGitHubServerPublisher: PaketGitHubServerPublisher) = 
             !! (paketGitHubServerPublisher.StoreDir + "/*.nupkg")
-            |> Seq.choose NugetPackage.tryCreateByPath
+            |> List.ofSeq
+            |> List.choose NugetPackage.tryCreateByPath
 
         let currentPackages neighborPackageNames (paketGitHubServerPublisher: PaketGitHubServerPublisher) =
             allPackages paketGitHubServerPublisher
-            |> Seq.filter (fun nugetPackage -> 
-                Seq.contains nugetPackage.Name neighborPackageNames
+            |> List.filter (fun nugetPackage -> 
+                List.contains nugetPackage.Name neighborPackageNames
             )
 
         let lastestPackages neighborPackageNames (paketGitHubServerPublisher: PaketGitHubServerPublisher) =
             currentPackages neighborPackageNames paketGitHubServerPublisher
-            |> Seq.groupBy (fun nugetPackage -> nugetPackage.Name)
-            |> Seq.map (fun (_,nugetPackages) -> 
+            |> List.groupBy (fun nugetPackage -> nugetPackage.Name)
+            |> List.map (fun (_,nugetPackages) -> 
                 nugetPackages |> Seq.maxBy (fun nugetPackage -> nugetPackage.Version)    
             )
             
         let lastestVersion neighborPackageNames (paketGitHubServerPublisher: PaketGitHubServerPublisher) =
-            let lastPackages = lastestPackages neighborPackageNames paketGitHubServerPublisher
+            let lastPackages = 
+                lastestPackages neighborPackageNames paketGitHubServerPublisher
+                |> List.ofSeq
             
             match Seq.length lastPackages with
             | i when i > 0 -> 
@@ -242,6 +245,7 @@ module FPublisher =
           WorkingDir: string            
           EnvironmentConfig: EnvironmentConfig
           PublishTarget: PublishTarget
+          Logger: Logger
           BuildingPaketGitHubServerPublisher: option<PaketGitHubServerPublisher -> PaketGitHubServerPublisher> }
 
     with 
@@ -258,7 +262,8 @@ module FPublisher =
                   PackageIconUrl = None
                   SourceLinkCreate = false }
               PublishTarget = PublishTarget.Build              
-              BuildingPaketGitHubServerPublisher = None }        
+              BuildingPaketGitHubServerPublisher = None
+              Logger = Logger.Minimal }        
 
     [<RequireQualifiedAccess>]
     module PublisherConfig =
@@ -267,9 +272,11 @@ module FPublisher =
             
             let packageNames = Workspace.nugetPackageNames workspace
 
-            
+            Logger.info "Begin fetch nuget version from nugetServer" publisherConfig.Logger
             let! versionFromNugetServer = Workspace.versionFromNugetServer workspace    
+            Logger.info "End fetch nuget version from nugetServer" publisherConfig.Logger
             
+
             return 
                 { GitHubData = githubData 
                   Workspace = workspace
@@ -327,7 +334,7 @@ module FPublisher =
     [<RequireQualifiedAccess>]
     module Publisher =
 
-        let ensureGitChangesAllPushed (publisher: Publisher) =
+        let ensureGitChangesAllPushedWhenRelease (publisher: Publisher) =
             match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
             | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
             | _ -> ()
@@ -351,18 +358,24 @@ module FPublisher =
 
             let workspace = Workspace publisherConfig.WorkingDir 
             
+            Logger.info "Begin fetch github data" publisherConfig.Logger
             let! githubData = GitHubData.fetch workspace publisherConfig.EnvironmentConfig
-            
+            Logger.info "End fetch github data" publisherConfig.Logger
+            Logger.infofn publisherConfig.Logger "Github data is %A"  githubData
+
             let paketGitHubServerPublisher = 
                 match (githubData.IsLogin, publisherConfig.BuildingPaketGitHubServerPublisher) with 
                 | true, Some buidingPublisherConfig ->
                     { BranchName = "NugetStore"
-                      Workspace = workspace }
+                      Workspace = 
+                        Path.getFullName (workspace.WorkingDir </> "../Paket_NugetServer")
+                        |> Workspace }
                     |> buidingPublisherConfig
                     |> Some
                 | _ -> None
 
             let! versionController = PublisherConfig.toVersionController githubData paketGitHubServerPublisher publisherConfig
+            Logger.infofn publisherConfig.Logger "VersionController is %A" versionController 
 
             return 
                 { PaketGitHubServerPublisher = paketGitHubServerPublisher
@@ -375,7 +388,6 @@ module FPublisher =
         let create (buidingPublisherConfig: PublisherConfig -> PublisherConfig) = 
             let task = createAsync buidingPublisherConfig
             task.Result
-                               
 
         let nextVersion publisher = 
             VersionController.nextVersion publisher.VersionController
@@ -447,7 +459,7 @@ module FPublisher =
 
 
         let publishToNugetServer publisher = 
-            ensureGitChangesAllPushed publisher
+            ensureGitChangesAllPushedWhenRelease publisher
             let publisher = pack publisher
             match publisher.Status with 
             | PublisherStatus.Init 
@@ -458,22 +470,24 @@ module FPublisher =
                 | _ -> async {()}
 
         let publishToPaketGitHubServer publisher =
-            ensureGitChangesAllPushed publisher
+            ensureGitChangesAllPushedWhenRelease publisher
             let publisher = pack publisher
             match publisher.Status with 
             | PublisherStatus.Init 
             | PublisherStatus.Published -> failwith "invalid token"
             | PublisherStatus.Packed ->
-                match (nextPackagePaths publisher, publisher.PaketGitHubServerPublisher) with 
-                | Some newPackages , Some paketGithubServer -> 
+                match publisher.PaketGitHubServerPublisher with 
+                | Some paketGithubServer -> 
                     let nextVersion = nextVersion publisher
-                    PaketGitHubServerPublisher.publish newPackages publisher.RepoName nextVersion paketGithubServer
+                    let packageNames = Workspace.nugetPackageNames publisher.Workspace
+
+                    PaketGitHubServerPublisher.publish packageNames publisher.RepoName nextVersion paketGithubServer
                 | _ -> async {()}
 
         let private summary (elapsed: int64) publisher = 
             [ sprintf "current publisher status is %A" publisher.Status
               sprintf "current version controller status is %A" publisher.VersionController.Status
-              sprintf "elapsed %d" elapsed ]
+              sprintf "elapsed %dms" elapsed ]
             |> String.concat "\n"          
     
 
@@ -500,6 +514,7 @@ module FPublisher =
             Trace.trace (summary stopwatch.ElapsedMilliseconds result)
         }
 
+        /// publish and draft all
         let publishAndDraftAll publisher = 
             publishAndDraftAllAsync publisher
             |> Async.RunSynchronously

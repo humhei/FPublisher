@@ -2,10 +2,45 @@ namespace FPublisher
 open FParsec
 open Fake.IO
 open Fake.DotNet
-
+open Fake.Core
 module Utils = 
     let inline dtntSmpl arg = DotNet.Options.lift id arg
+    
+    [<RequireQualifiedAccess>]
+    type Logger =
+        | Minimal
+        | Normal
+        | Quiet
 
+    [<RequireQualifiedAccess>]
+    module Logger = 
+        open System
+        let private timeStamp (time:DateTime) = time.ToString("yyyy-MM-dd HH:mm:ss.fff")
+        let diagnostics text =
+            System.Diagnostics.Debugger.Log(1,"",sprintf "%s %s\n" (timeStamp DateTime.UtcNow) text)
+
+        let info message (logger: Logger) =
+            match logger with 
+            | Logger.Minimal -> ()
+            | Logger.Normal -> Trace.log message
+            | Logger.Quiet -> ()
+
+        let writelog (s:string) = printfn "LOG: %s" s
+        let writelogf fmt = Printf.kprintf writelog fmt
+
+        let inline infofn (logger: Logger) format =
+            Printf.ksprintf (fun text -> info text logger) format
+
+        let important message (logger: Logger) =
+            match logger with 
+            | Logger.Quiet -> ()
+            | _ -> Trace.log message     
+
+        let warn message (logger: Logger) =
+            Trace.traceImportant message  
+              
+        let error message (logger: Logger) =
+            Trace.traceError message        
 
     [<AutoOpen>]
     module FParsec =

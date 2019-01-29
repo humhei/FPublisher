@@ -54,6 +54,7 @@ module Workspace =
     let nugetPackageNames (workspace: Workspace) = 
         fsprojses workspace
         |> Seq.map (Path.GetFileNameWithoutExtension)
+        |> List.ofSeq
 
     let cleanBinAndObj (workspace: Workspace) =
         allfsprojses workspace

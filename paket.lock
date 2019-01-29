@@ -7,7 +7,7 @@ NUGET
     BlackFox.VsWhere (1.0) - restriction: || (>= net462) (>= netstandard2.0)
       FSharp.Core (>= 4.0.0.1) - restriction: >= net45
       FSharp.Core (>= 4.2.3) - restriction: && (< net45) (>= netstandard2.0)
-    Expecto (8.7)
+    Expecto (8.8)
       Argu (>= 5.2) - restriction: || (>= net461) (>= netstandard2.0)
       Mono.Cecil (>= 0.10.1) - restriction: || (>= net461) (>= netstandard2.0)
       System.Diagnostics.FileVersionInfo (>= 4.3) - restriction: && (< net461) (>= netstandard2.0)
