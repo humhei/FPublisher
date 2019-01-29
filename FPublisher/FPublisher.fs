@@ -477,7 +477,7 @@ module FPublisher =
                 match (nextPackagePaths publisher, publisher.PublishTarget) with 
                 | Some newPackages, PublishTarget.Release -> NugetPublisher.publish newPackages publisher.NugetPublisher
                 | _ -> async {()}
-
+ 
         let publishToPaketGitHubServer publisher =
             ensureGitChangesAllPushedWhenRelease publisher
             let publisher = pack publisher
