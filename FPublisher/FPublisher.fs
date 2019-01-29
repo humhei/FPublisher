@@ -334,6 +334,12 @@ module FPublisher =
     [<RequireQualifiedAccess>]
     module Publisher =
 
+        let setPublishTarget publishTarget (publisher: Publisher) =
+            { publisher with 
+                VersionController = 
+                    {publisher.VersionController with 
+                        PublishTarget = publishTarget } }
+
         let ensureGitChangesAllPushedWhenRelease (publisher: Publisher) =
             match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
             | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
