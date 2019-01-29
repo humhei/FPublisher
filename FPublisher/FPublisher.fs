@@ -137,13 +137,13 @@ module FPublisher =
     type VersionController =
         { VersionFromPaketGitHubServer: SemVerInfo option
           PublishTarget: PublishTarget
-          ReleaseNotesFile: string
+          ReleaseNotes: ReleaseNotes.ReleaseNotes
           Workspace: Workspace
           VersionFromNugetServer: SemVerInfo option
           GitHubData: GitHubData
           Status: VersionControllerStatus } 
     with 
-        member x.ReleaseNotes = ReleaseNotes.loadTbd x.ReleaseNotesFile
+        member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
 
         member x.VersionFromReleaseNotes = x.ReleaseNotes.SemVer  
 
@@ -276,6 +276,7 @@ module FPublisher =
             let! versionFromNugetServer = Workspace.versionFromNugetServer workspace    
             Logger.info "End fetch nuget version from nugetServer" publisherConfig.Logger
             
+            let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
 
             return 
                 { GitHubData = githubData 
@@ -284,8 +285,8 @@ module FPublisher =
                     paketGitHubServerPublisherOp
                     |> Option.map (PaketGitHubServerPublisher.lastestVersion packageNames)
                     |> Option.flatten  
+                  ReleaseNotes = ReleaseNotes.loadTbd releaseNotesFile                
 
-                  ReleaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
                   PublishTarget = publisherConfig.PublishTarget
                   VersionFromNugetServer = versionFromNugetServer
                   Status = VersionControllerStatus.Init }
