@@ -227,8 +227,12 @@ module FPublisher =
                 match versionController.PublishTarget with 
                 | PublishTarget.Build -> ()
                 | PublishTarget.Release ->
-                    let releaseNotes = versionController.ReleaseNotes
-                    do! GitHubData.draftAndPublishWithNewRelease (ReleaseNotes.updateDateToToday releaseNotes) versionController.GitHubData
+                    let releaseNotes =  
+                        versionController.ReleaseNotes
+                        |> ReleaseNotes.updateWithSemVerInfo (nextVersion versionController)
+                        |> ReleaseNotes.updateDateToToday
+
+                    do! GitHubData.draftAndPublishWithNewRelease releaseNotes versionController.GitHubData
                 return setStatus VersionControllerStatus.DraftAndPublish versionController
 
             | VersionControllerStatus.DraftAndPublish -> return versionController               
