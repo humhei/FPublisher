@@ -1,2 +1,11 @@
 source https://api.nuget.org/v3/index.json
 nuget Expecto
+nuget Fake.Core.ReleaseNotes
+nuget Fake.Api.GitHub
+nuget TaskBuilder.fs    
+nuget Fake.DotNet.Cli
+nuget Fake.Tools.Git
+nuget FParsec
+nuget FSharp.Data
+nuget Fake.DotNet.NuGet
+nuget FSharp.Core < 4.6

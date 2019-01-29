@@ -1,1 +1,8 @@
-FSharp.Core
+Fake.Core.ReleaseNotes
+Fake.Api.GitHub
+TaskBuilder.fs    
+Fake.DotNet.Cli
+Fake.Tools.Git
+FParsec
+FSharp.Data
+Fake.DotNet.NuGet

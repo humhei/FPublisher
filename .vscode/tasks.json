@@ -6,27 +6,13 @@
             "command": "dotnet",
             "group": "build",
             "args": [
-                "msbuild",
+                "build",
                 "FPublisher.Tests/FPublisher.Tests.fsproj"
             ],
             "presentation": {
                 "reveal": "silent"
             },
             "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Build Console",
-            "command": "dotnet",
-            "group": "build",
-            "args": [
-                "msbuild",
-                "FPublisher/FPublisher.fsproj"
-            ],
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
         }
-    
     ]
 }

@@ -1,11 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="FakeHelper.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Workspace.fs" />
+    <Compile Include="Git.fs" />
+    <Compile Include="GitHub.fs" />
+    <Compile Include="Nuget.fs" />
+    <Compile Include="FPublisher.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
