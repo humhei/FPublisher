@@ -146,7 +146,7 @@ module FakeHelper =
         module ReleaseNotes =
             let private tbdHeaderLine (releaseNotes: ReleaseNotes.ReleaseNotes) =
                 match releaseNotes.SemVer.PreRelease with 
-                | Some _ -> sprintf "## %s - tbd" releaseNotes.SemVer.AsString
+                | Some prelease -> sprintf "## %s-%s - tbd" (SemVerInfo.mainVersionText releaseNotes.SemVer) prelease.Name
                 | None -> 
                     let newPatchVersion = SemVerInfo.nextPatchVersion releaseNotes.SemVer
                     sprintf "## %s-alpha - tbd" newPatchVersion.AsString

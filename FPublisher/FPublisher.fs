@@ -199,11 +199,12 @@ module FPublisher =
                 match versionController.PublishTarget with 
                 | PublishTarget.Build -> ()
                 | PublishTarget.Release ->
-                    let releaseNotes = versionController.ReleaseNotes
+
+                    let nextVersion = nextVersion versionController
 
                     let releaseNotesFile = versionController.ReleaseNotesFile
 
-                    let nextVersion = nextVersion versionController
+                    let releaseNotes = ReleaseNotes.updateWithSemVerInfo nextVersion versionController.ReleaseNotes
 
                     ReleaseNotes.writeToNext versionController.ReleaseNotesFile releaseNotes
 
