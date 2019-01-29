@@ -1,4 +1,4 @@
 ﻿# Release Notes
 
-## 0.1.2 - 2019-01-29
+## 0.1.2 - tbd
 * Migrate from Atrous.Core
