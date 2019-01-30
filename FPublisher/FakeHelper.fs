@@ -185,7 +185,7 @@ module FakeHelper =
                 |> function
                     | fstReleaseNotes :: _ -> 
                         match fstReleaseNotes.Date with 
-                        | None -> failwith "cannot find a tbd release note"
-                        | Some _ -> fstReleaseNotes
+                        | Some _ -> failwith "cannot find a tbd release note"
+                        | None -> fstReleaseNotes
                     | [] -> failwith "cannot find a tbd release note"
 
