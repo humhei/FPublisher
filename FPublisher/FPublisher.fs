@@ -21,22 +21,26 @@ open FPublisher
 module FPublisher =
 
 
+    type PaketGitHubServerPublisherConfig =
+        { Workspace: Workspace
+          BranchName: string }
+
     /// paket github feed          
     /// e.g. https://github.com/humhei/Paket_NugetServer/tree/NugetStore/
     /// 
     type PaketGitHubServerPublisher = 
-        { Workspace: Workspace
-          BranchName: string }
+        { Config: PaketGitHubServerPublisherConfig
+          PackageVersionMap: Map<string, string * string> }
     with 
-        member x.RepoDir = x.Workspace.WorkingDir
 
+        member x.Workspace = x.Config.Workspace
+
+        member x.BranchName = x.Config.BranchName
+
+        member x.RepoDir = x.Workspace.WorkingDir
+            
         member x.PackageVersionCacheFile = x.RepoDir </> "hash.json"
 
-        member x.PackageVersionMap = 
-            if not <| File.exists x.PackageVersionCacheFile then Map.empty
-            else
-                JsonConvert.DeserializeObject<Map<string,string * string>>(File.readAsString x.PackageVersionCacheFile)     
-        
         member x.StoreDir =
             x.RepoDir </> ".nuget"
             |> Path.getFullName
@@ -47,6 +51,14 @@ module FPublisher =
 
         let private commitMsg neighborRepoName (version: SemVerInfo) =
             sprintf "Bump %s version to %s" neighborRepoName (SemVerInfo.normalize version)
+
+        let create config =
+            let packageVersionCacheFile = config.Workspace.WorkingDir </> "hash.json"
+            { Config = config 
+              PackageVersionMap = 
+                if not <| File.exists packageVersionCacheFile then Map.empty
+                else
+                    JsonConvert.DeserializeObject<Map<string,string * string>>(File.readAsString packageVersionCacheFile)}            
         
         let allPackages (paketGitHubServerPublisher: PaketGitHubServerPublisher) = 
             !! (paketGitHubServerPublisher.StoreDir + "/*.nupkg")
@@ -279,7 +291,7 @@ module FPublisher =
           EnvironmentConfig: EnvironmentConfig
           PublishTarget: PublishTarget
           Logger: Logger
-          BuildingPaketGitHubServerPublisher: option<PaketGitHubServerPublisher -> PaketGitHubServerPublisher> }
+          BuildingPaketGitHubServerPublisher: option<PaketGitHubServerPublisherConfig -> PaketGitHubServerPublisherConfig> }
 
     with 
         static member DefaultValue = 
@@ -453,6 +465,7 @@ module FPublisher =
                         Path.getFullName (workspace.WorkingDir </> "../Paket_NugetServer")
                         |> Workspace }
                     |> buidingPublisherConfig
+                    |> PaketGitHubServerPublisher.create
                     |> Some
                 | _ -> None
 
