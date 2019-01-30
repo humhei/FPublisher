@@ -211,8 +211,6 @@ module FPublisher =
 
         member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
 
-        member x.VersionFromReleaseNotes = x.ReleaseNotes.SemVer  
-
         member x.WorkingDir: string = x.Workspace.WorkingDir
         
 
