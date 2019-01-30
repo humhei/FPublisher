@@ -142,4 +142,4 @@ module Nuget =
             dotnet targetDirName
                 "nuget" 
                 ["push"; "*.nupkg"; "-k"; nugetPublisher.ApiKey; "-s"; "https://api.nuget.org/v3/index.json"]    
-        }  
+        }

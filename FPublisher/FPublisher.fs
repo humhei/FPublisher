@@ -284,6 +284,7 @@ module FPublisher =
     type NugetPackageState =
         | Changed
         | None
+  
 
     type PublisherConfig =
         { NugetPacker: NugetPacker
@@ -381,10 +382,12 @@ module FPublisher =
 
     type Publisher =
         { PaketGitHubServerPublisher: PaketGitHubServerPublisher option
+          PackTargetDir: string option
           NugetPacker: NugetPacker
           NugetPublisher: NugetPublisher
           Status: PublishStatus
-          VersionController: VersionController }
+          VersionController: VersionController
+          NugetPackageState: NugetPackageState }
     with 
         member x.VersionFromNugetServer = x.VersionController.VersionFromNugetServer
 
@@ -422,23 +425,32 @@ module FPublisher =
     [<RequireQualifiedAccess>]
     module Publisher =
 
+        [<RequireQualifiedAccess>]
+        module private GitHubData = 
+            let nugetPackageState paketGitHubServerPublisherOp (githubData: GitHubData) =
+                match paketGitHubServerPublisherOp with 
+                | None -> NugetPackageState.Changed
+                | Some paketGitHubServerPublisher ->
+                    match Map.tryFind githubData.RepoName paketGitHubServerPublisher.PackageVersionMap with 
+                    | Some (commitHashLocal, version) ->
+                        if commitHashLocal = githubData.CommitHashRemote 
+                        then NugetPackageState.None
+                        else NugetPackageState.Changed
+                    | None -> NugetPackageState.Changed   
+
+            let packTargetDir paketGitHubServerPublisherOp (githubData: GitHubData) =
+                match (nugetPackageState paketGitHubServerPublisherOp githubData, paketGitHubServerPublisherOp) with 
+                | NugetPackageState.Changed,Some paketGitHubServerPublisher -> 
+                    Some paketGitHubServerPublisher.StoreDir
+                | NugetPackageState.Changed, None -> Path.GetTempPath() |> Some
+                | _ -> None        
+
         let setPublishTarget publishTarget (publisher: Publisher) =
             { publisher with 
                 VersionController = 
                     {publisher.VersionController with 
                         PublishTarget = publishTarget } }
-
-        let nugetPackageState (publisher: Publisher) = 
-            match publisher.PaketGitHubServerPublisher with 
-            | None -> NugetPackageState.Changed
-            | Some paketGitHubServerPublisher ->
-                match Map.tryFind publisher.GitHubData.RepoName paketGitHubServerPublisher.PackageVersionMap with 
-                | Some (commitHashLocal, version) ->
-                    if commitHashLocal = publisher.GitHubData.CommitHashRemote 
-                    then NugetPackageState.None
-                    else NugetPackageState.Changed
-                | None -> NugetPackageState.Changed            
-
+     
 
         let createAsync (buidingPublisherConfig: PublisherConfig -> PublisherConfig) = task {
             
@@ -477,7 +489,9 @@ module FPublisher =
                   NugetPacker = publisherConfig.NugetPacker
                   NugetPublisher = { ApiEnvironmentName = publisherConfig.EnvironmentConfig.NugetApiKey }                
                   Status = PublishStatus.Init
-                  VersionController = versionController }
+                  VersionController = versionController
+                  NugetPackageState = GitHubData.nugetPackageState paketGitHubServerPublisher githubData
+                  PackTargetDir = GitHubData.packTargetDir paketGitHubServerPublisher githubData }
         }
 
 
@@ -498,13 +512,6 @@ module FPublisher =
             |> String.concat "\n"
             |> Trace.trace            
         
-
-        let packTargetDir (publisher: Publisher) =
-            match (nugetPackageState publisher, publisher.PaketGitHubServerPublisher) with 
-            | NugetPackageState.Changed,Some paketGitHubServerPublisher -> 
-                Some paketGitHubServerPublisher.StoreDir
-            | NugetPackageState.Changed, None -> Path.GetTempPath() |> Some
-            | _ -> None
 
         let ensureGitChangesAllPushedWhenRelease (publisher: Publisher) =
             match publisher.Status with 
@@ -553,7 +560,7 @@ module FPublisher =
 
                 let packer = publisher.NugetPacker
                 
-                match (nugetPackageState publisher, publisher.PaketGitHubServerPublisher) with 
+                match (publisher.NugetPackageState, publisher.PaketGitHubServerPublisher) with 
                 | NugetPackageState.Changed, Some paketGitHubServerPublisher -> 
                     let newJsonCacheText = 
                         let newMap = Map.add publisher.RepoName (publisher.GitHubData.CommitHashLocal, publisher.NextVersionText) paketGitHubServerPublisher.PackageVersionMap
@@ -574,8 +581,10 @@ module FPublisher =
             | PublishStatus.PublishToServerStatus _ -> publisher  
 
 
+
+
         let nextPackagePaths publisher = 
-            match packTargetDir publisher with 
+            match publisher.PackTargetDir with 
             | Some targetDir ->
                 let packageNames = Workspace.nugetPackageNames publisher.Workspace
                 packageNames 
@@ -584,7 +593,6 @@ module FPublisher =
                 |> Some
 
             | None -> None            
-
 
 
         let rec internal publishToNugetServerTupledStatus publisher = async {
@@ -597,6 +605,7 @@ module FPublisher =
             | PublishStatus.Packed releaseNotes ->
                 match (nextPackagePaths publisher, publisher.PublishTarget) with 
                 | Some newPackages, PublishTarget.Release -> 
+                    let newPackages = newPackages |> List.filter File.exists
                     do! NugetPublisher.publish newPackages publisher.NugetPublisher 
 
                     let publishToServerStatus = PublishToServerStatus.NugetServer
