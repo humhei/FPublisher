@@ -17,7 +17,7 @@ module Utils =
         open System
 
         let mutable private logger = Logger.Minimal
-        let setDefaultLogger newLogger = logger <- newLogger
+        let internal setDefaultLogger newLogger = logger <- newLogger
 
         let private timeStamp (time:DateTime) = time.ToString("yyyy-MM-dd HH:mm:ss.fff")
         let diagnostics text =
@@ -41,7 +41,6 @@ module Utils =
 
         /// with timeStamp
         let infots format =
-            let now = timeStamp DateTime.Now
             Printf.ksprintf (withTimeStamp _info) format
             
 

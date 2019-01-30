@@ -427,10 +427,13 @@ module FPublisher =
 
 
         let createAsync (buidingPublisherConfig: PublisherConfig -> PublisherConfig) = task {
+            
             let publisherConfig = buidingPublisherConfig PublisherConfig.DefaultValue
             
             let publisherConfig = { publisherConfig with WorkingDir = Path.getFullName publisherConfig.WorkingDir }
 
+            Logger.setDefaultLogger publisherConfig.Logger
+            
             let workspace = Workspace publisherConfig.WorkingDir 
             
             Logger.infots "Begin fetch github data"
