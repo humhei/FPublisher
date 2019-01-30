@@ -467,7 +467,7 @@ module FPublisher =
             task.Result
 
 
-        let traceGitHubData (publisher: Publisher) =
+        let traceBaseInfo (publisher: Publisher) =
 
             let githubData = publisher.GitHubData
             
@@ -642,14 +642,15 @@ module FPublisher =
         /// publish and draft all
         let publishAndDraftAllAsync publisher = async {
             let stopwatch = Stopwatch.StartNew()
-            traceGitHubData publisher
+            traceBaseInfo publisher
             let rec loop publisher = 
                 async {
                     Logger.infots "running target %A" publisher.Status
                     match publisher.Status with 
                     | PublishStatus.Init
                     | PublishStatus.CheckGitChangesAllPushedWhenRelease
-                    | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> return! loop publisher
+                    | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> 
+                        return! loop (writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher)
                     | PublishStatus.Packed releaseNotes ->
 
                         let publisher = pack publisher 
