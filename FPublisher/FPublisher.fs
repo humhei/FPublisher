@@ -579,7 +579,7 @@ module FPublisher =
             | Some targetDir ->
                 let packageNames = Workspace.nugetPackageNames publisher.Workspace
                 packageNames 
-                |> Seq.map (fun packageName -> targetDir </> packageName + publisher.NextVersionText + ".nupkg") 
+                |> Seq.map (fun packageName -> targetDir </> packageName + "." + publisher.NextVersionText + ".nupkg") 
                 |> List.ofSeq
                 |> Some
 
