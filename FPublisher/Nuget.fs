@@ -103,7 +103,7 @@ module Nuget =
             | Some icon -> Environment.setEnvironVar "PackageIconUrl" icon
             | None -> ()
             Environment.setEnvironVar "PackageProjectUrl" githubRepository.HtmlUrl
-            Environment.setEnvironVar "PackageLicenseUrl" githubData.License.Url
+            Environment.setEnvironVar "PackageLicenseUrl" githubData.License.HtmlUrl
             
             let buildingPackOptions (options: DotNet.PackOptions) =  
                 let basicBuildingOptions (options: DotNet.PackOptions) =

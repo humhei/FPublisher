@@ -57,6 +57,10 @@ module GitHub =
           CommitHashRemote: string
           CommitHashLocal: string }
     with 
+        member x.DefaultBranch = x.Repository.DefaultBranch
+
+        member x.IsInDefaultBranch = x.DefaultBranch = x.BranchName
+
         member x.Owner = x.Repository.Owner
 
         member x.LoginName = x.Owner.Login

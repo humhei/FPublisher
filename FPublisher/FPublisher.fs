@@ -17,6 +17,7 @@ open FSharp.Control.Tasks.V2.ContextInsensitive
 open Types
 open System.Diagnostics
 open FPublisher
+open System
 
 module FPublisher =
 
@@ -185,7 +186,7 @@ module FPublisher =
     [<RequireQualifiedAccess>]
     type VersionControllerStatus =
         | Init
-        | WriteReleaseNotesToNextVersionAndPushToRemoteRepository of ReleaseNotes.ReleaseNotes
+        | WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease of ReleaseNotes.ReleaseNotes
         | GitHubDraftAndPublishWhenRelease of ReleaseNotes.ReleaseNotes
 
     type VersionController =
@@ -227,7 +228,7 @@ module FPublisher =
                     (
                         { versionController with 
                             Status = 
-                                VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository 
+                                VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease 
                                     releaseNotes },
                         releaseNotes
                     )
@@ -249,16 +250,16 @@ module FPublisher =
                     (
                         { versionController with 
                             Status = 
-                                VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository 
+                                VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease 
                                     releaseNotesWithNextVersion },
                         releaseNotesWithNextVersion
                     )              
 
-            | VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes
+            | VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease releaseNotes
             | VersionControllerStatus.GitHubDraftAndPublishWhenRelease releaseNotes -> (versionController, releaseNotes)
 
 
-        let writeReleaseNotesToNextVersionAndPushToRemoteRepository (versionController: VersionController) =
+        let writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease (versionController: VersionController) =
             writeReleaseNotesToNextVersionAndPushToRemoteRepositoryTupledStatus versionController
             |> fst
 
@@ -266,8 +267,8 @@ module FPublisher =
         let rec internal gitHubDraftAndPublishWhenReleaseTupledStatus (versionController: VersionController) = async {
             match versionController.Status with
             | VersionControllerStatus.Init -> 
-                return! gitHubDraftAndPublishWhenReleaseTupledStatus (writeReleaseNotesToNextVersionAndPushToRemoteRepository versionController)
-            | VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes ->
+                return! gitHubDraftAndPublishWhenReleaseTupledStatus (writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease versionController)
+            | VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease releaseNotes ->
 
                 match versionController.PublishTarget with 
                 | PublishTarget.Build -> ()
@@ -296,7 +297,7 @@ module FPublisher =
 
     type PublisherConfig =
         { NugetPacker: NugetPacker
-          WorkingDir: string            
+          WorkingDir: string
           EnvironmentConfig: EnvironmentConfig
           PublishTarget: PublishTarget
           Logger: Logger
@@ -317,6 +318,7 @@ module FPublisher =
                   SourceLinkCreate = false }
               PublishTarget = PublishTarget.Build              
               BuildingPaketGitHubServerPublisher = None
+              AutoMergeToDefaultAndSquash = false
               Logger = Logger.Minimal }        
 
     [<RequireQualifiedAccess>]
@@ -372,8 +374,8 @@ module FPublisher =
     [<RequireQualifiedAccess>]
     type PublishStatus =
         | Init
-        | CheckGitChangesAllPushedWhenRelease
-        | WriteReleaseNotesToNextVersionAndPushToRemoteRepository of ReleaseNotes.ReleaseNotes
+        | CheckGitChangesAllPushedAndInDefaultBranchWhenRelease
+        | WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease of ReleaseNotes.ReleaseNotes
         | Packed of ReleaseNotes.ReleaseNotes
         | PublishToServerStatus of PublishToServerStatus
 
@@ -510,24 +512,36 @@ module FPublisher =
             |> Trace.trace            
         
 
-        let ensureGitChangesAllPushedWhenRelease (publisher: Publisher) =
+        let ensureGitChangesAllPushedAndInDefaultBranchWhenRelease (publisher: Publisher) =
+            let githubData = publisher.GitHubData
+
             match publisher.Status with 
             | PublishStatus.Init ->
-                match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
-                | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
-                | _ -> { publisher with Status = PublishStatus.CheckGitChangesAllPushedWhenRelease }
+                let rec tryRun() = 
+                    match githubData.IsInDefaultBranch with 
+                    | true ->
+                        match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
+                        | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
+                        | _ -> { publisher with Status = PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease }
+                    | false ->
+
+                        let v = Console.ReadLine()
+                        failwithf "Current branch %s is not in default branch %s" githubData.BranchName githubData.DefaultBranch
+                
+                tryRun()
             | _ -> publisher
 
-        let rec writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher = 
+
+        let rec writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease publisher = 
             match publisher.Status with 
             | PublishStatus.Init -> 
-                ensureGitChangesAllPushedWhenRelease publisher 
-                |> writeReleaseNotesToNextVersionAndPushToRemoteRepository
-            | PublishStatus.CheckGitChangesAllPushedWhenRelease ->       
+                ensureGitChangesAllPushedAndInDefaultBranchWhenRelease publisher 
+                |> writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease
+            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease ->       
                 let newVersionController, releaseNotes = VersionController.writeReleaseNotesToNextVersionAndPushToRemoteRepositoryTupledStatus publisher.VersionController
                 { publisher with 
                     VersionController = newVersionController
-                    Status = PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes }
+                    Status = PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease releaseNotes }
             | _ -> publisher
 
 
@@ -536,10 +550,10 @@ module FPublisher =
             
             match publisher.Status with 
             | PublishStatus.Init 
-            | PublishStatus.CheckGitChangesAllPushedWhenRelease ->
-                writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher |> pack
+            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease ->
+                writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease publisher |> pack
 
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes ->            
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease releaseNotes ->            
 
                 let packer = publisher.NugetPacker
                 
@@ -581,8 +595,8 @@ module FPublisher =
         let rec internal publishToNugetServerTupledStatus publisher = async {
             match publisher.Status with 
             | PublishStatus.Init
-            | PublishStatus.CheckGitChangesAllPushedWhenRelease 
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> 
+            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease 
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ -> 
                 return! publishToNugetServerTupledStatus (pack publisher)
                 
             | PublishStatus.Packed releaseNotes ->
@@ -610,8 +624,8 @@ module FPublisher =
         let rec internal publishToPaketGitHubServerTupledStatus publisher = async {
             match publisher.Status with 
             | PublishStatus.Init
-            | PublishStatus.CheckGitChangesAllPushedWhenRelease 
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> 
+            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease 
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ -> 
                 return! publishToPaketGitHubServerTupledStatus (pack publisher)
                 
             | PublishStatus.Packed releaseNotes ->
@@ -647,8 +661,8 @@ module FPublisher =
         let rec gitHubDraftAndPublishWhenRelease publisher = async {
             match publisher.Status with 
             | PublishStatus.Init 
-            | PublishStatus.CheckGitChangesAllPushedWhenRelease 
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ ->  
+            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease 
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ ->  
                 return! 
                     pack publisher 
                     |> gitHubDraftAndPublishWhenRelease
@@ -678,8 +692,8 @@ module FPublisher =
                     Logger.importantts "running target %A" publisher.Status
                     match publisher.Status with 
                     | PublishStatus.Init
-                    | PublishStatus.CheckGitChangesAllPushedWhenRelease
-                    | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> 
+                    | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease
+                    | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ -> 
                         return! loop (pack publisher)
                     | PublishStatus.Packed releaseNotes ->
 
