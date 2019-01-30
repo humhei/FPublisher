@@ -655,7 +655,7 @@ module FPublisher =
                     | PublishStatus.Init
                     | PublishStatus.CheckGitChangesAllPushedWhenRelease
                     | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> 
-                        return! loop (writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher)
+                        return! loop (pack publisher)
                     | PublishStatus.Packed releaseNotes ->
 
                         let publisher = pack publisher 
