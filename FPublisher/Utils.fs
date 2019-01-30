@@ -15,31 +15,42 @@ module Utils =
     [<RequireQualifiedAccess>]
     module Logger = 
         open System
+
+        let mutable private logger = Logger.Minimal
+        let setDefaultLogger newLogger = logger <- newLogger
+
         let private timeStamp (time:DateTime) = time.ToString("yyyy-MM-dd HH:mm:ss.fff")
         let diagnostics text =
             System.Diagnostics.Debugger.Log(1,"",sprintf "%s %s\n" (timeStamp DateTime.UtcNow) text)
 
-        let info message (logger: Logger) =
+
+        let info message =
             match logger with 
             | Logger.Minimal -> ()
             | Logger.Normal -> Trace.log message
             | Logger.Quiet -> ()
 
+        /// with timeStamp
+        let infots message =
+            let now = timeStamp DateTime.Now
+            now + "   " + message
+            |> info    
+
         let writelog (s:string) = printfn "LOG: %s" s
         let writelogf fmt = Printf.kprintf writelog fmt
 
-        let inline infofn (logger: Logger) format =
-            Printf.ksprintf (fun text -> info text logger) format
+        let inline infofn format =
+            Printf.ksprintf info format
 
-        let important message (logger: Logger) =
+        let important message =
             match logger with 
             | Logger.Quiet -> ()
             | _ -> Trace.log message     
 
-        let warn message (logger: Logger) =
+        let warn message =
             Trace.traceImportant message  
               
-        let error message (logger: Logger) =
+        let error message =
             Trace.traceError message        
 
     [<AutoOpen>]

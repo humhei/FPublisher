@@ -309,7 +309,10 @@ module FPublisher =
                 let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
                 ReleaseNotes.loadTbd releaseNotesFile
 
+            Logger.infots "Begin fetch version from nuget server"
             let! versionFromNugetServer = Workspace.versionFromNugetServer workspace   
+            Logger.infots "End fetch version from nuget server"
+
 
             let retrievedVersionInfo =
                 { FromNugetServer = versionFromNugetServer
@@ -430,10 +433,10 @@ module FPublisher =
 
             let workspace = Workspace publisherConfig.WorkingDir 
             
-            Logger.info "Begin fetch github data" publisherConfig.Logger
+            Logger.infots "Begin fetch github data"
             let! githubData = GitHubData.fetch workspace publisherConfig.EnvironmentConfig
-            Logger.info "End fetch github data" publisherConfig.Logger
-            Logger.infofn publisherConfig.Logger "Github data is %A"  githubData
+            Logger.infots "End fetch github data" 
+            Logger.infofn "Github data is %A"  githubData
 
             let paketGitHubServerPublisher = 
                 match (githubData.IsLogin, publisherConfig.BuildingPaketGitHubServerPublisher) with 
@@ -447,7 +450,7 @@ module FPublisher =
                 | _ -> None
 
             let! versionController = PublisherConfig.toVersionController githubData paketGitHubServerPublisher publisherConfig
-            Logger.infofn publisherConfig.Logger "VersionController is %A" versionController 
+            Logger.infofn "VersionController is %A" versionController 
 
             return 
                 { PaketGitHubServerPublisher = paketGitHubServerPublisher
@@ -665,6 +668,7 @@ module FPublisher =
                             |> PublishStatus.PublishToServerStatus }
 
                 Trace.trace (summary stopwatch.ElapsedMilliseconds result)
+            | PublishStatus.PublishToServerStatus _ -> ()            
             }
 
         /// publish and draft all
@@ -672,6 +676,7 @@ module FPublisher =
             publishAndDraftAllAsync publisher
             |> Async.RunSynchronously
 
+        /// update paket and fake dependencies
         let updateDependencies publisher = 
             let workspace = publisher.Workspace
             Workspace.createSln workspace
