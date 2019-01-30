@@ -516,18 +516,14 @@ module FPublisher =
 
             match publisher.Status with 
             | PublishStatus.Init ->
-                let rec tryRun() = 
-                    match githubData.IsInDefaultBranch with 
-                    | true ->
-                        match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
-                        | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
-                        | _ -> { publisher with Status = PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease }
-                    | false ->
-
-                        let v = Console.ReadLine()
-                        failwithf "Current branch %s is not in default branch %s" githubData.BranchName githubData.DefaultBranch
+                match githubData.IsInDefaultBranch with 
+                | true ->
+                    match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
+                    | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
+                    | _ -> { publisher with Status = PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease }
+                | false ->
+                    failwithf "Current branch %s is not in default branch %s" githubData.BranchName githubData.DefaultBranch
                 
-                tryRun()
             | _ -> publisher
 
 
