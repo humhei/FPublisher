@@ -122,7 +122,7 @@ module FPublisher =
               Some retrievedVersionInfo.FromReleaseNotes
               retrievedVersionInfo.FromNugetServer ]
             |> List.choose id
-            |> List.max         
+            |> List.max     
 
         let nugetOrPaketGitHubServerVersion retrievedVersionInfo =
             [ retrievedVersionInfo.FromPaketGitHubServer
@@ -131,6 +131,39 @@ module FPublisher =
             |> function 
                 | versions when versions.Length > 0 -> Some (List.max versions)
                 | _ -> None 
+
+        let nextVersion (releaseNotes: ReleaseNotes.ReleaseNotes) publishTarget retrievedVersionInfo =
+            let currentVersion = currentVersion retrievedVersionInfo
+            
+            let nextVersion = 
+                match publishTarget with 
+                | PublishTarget.Build -> 
+                    SemVerInfo.nextBetaVersion currentVersion
+                | PublishTarget.Release -> 
+                    
+                    if releaseNotes.Notes.IsEmpty || releaseNotes.Date <> None 
+                    then failwith "Please write release notes of new version first"
+
+                    let releaseVersion = retrievedVersionInfo.FromReleaseNotes
+
+                    match nugetOrPaketGitHubServerVersion retrievedVersionInfo with 
+                    | None ->
+                        match releaseVersion.PreRelease with
+                        | Some _ -> SemVerInfo.nextBetaVersion releaseVersion
+                        | None -> releaseVersion
+                        
+                    | Some nugetVersion ->
+                        if releaseVersion < nugetVersion 
+                        then SemVerInfo.nextBetaVersion nugetVersion                         
+                        else 
+                            match releaseVersion.PreRelease with 
+                            | Some _ -> SemVerInfo.nextBetaVersion releaseVersion
+                            | None -> releaseVersion   
+
+            if nextVersion >= currentVersion then nextVersion      
+            else failwithf "next version %s is smaller than current version %s" nextVersion.AsString currentVersion.AsString                           
+
+
              
         let currentVersionText retrievedVersionInfo =
             currentVersion retrievedVersionInfo
@@ -145,9 +178,11 @@ module FPublisher =
     type VersionController =
         { VersionFromPaketGitHubServer: SemVerInfo option
           PublishTarget: PublishTarget
-          ReleaseNotes: ReleaseNotes.ReleaseNotes
           Workspace: Workspace
           VersionFromNugetServer: SemVerInfo option
+          CurrentVersion: SemVerInfo
+          ReleaseNotes: ReleaseNotes.ReleaseNotes
+          NextVersion: SemVerInfo
           GitHubData: GitHubData
           Status: VersionControllerStatus } 
     with 
@@ -156,50 +191,10 @@ module FPublisher =
         member x.VersionFromReleaseNotes = x.ReleaseNotes.SemVer  
 
         member x.WorkingDir: string = x.Workspace.WorkingDir
-
-        member x.RetrievedVersionInfo = 
-            { FromPaketGitHubServer = x.VersionFromPaketGitHubServer 
-              FromReleaseNotes = x.VersionFromReleaseNotes
-              FromNugetServer = x.VersionFromNugetServer }
         
 
     [<RequireQualifiedAccess>]
     module VersionController = 
-
-        let currentVersion (versionController: VersionController) =
-            RetrievedVersionInfo.currentVersion versionController.RetrievedVersionInfo
-
-        let nextVersion (versionController: VersionController) =
-            let currentVersion = currentVersion versionController
-            
-            let nextVersion = 
-                match versionController.PublishTarget with 
-                | PublishTarget.Build -> 
-                    SemVerInfo.nextBetaVersion currentVersion
-                | PublishTarget.Release -> 
-                    let releaseNotes = versionController.ReleaseNotes
-                    
-                    if releaseNotes.Notes.IsEmpty || releaseNotes.Date <> None 
-                    then failwith "Please write release notes of new version first"
-
-                    let releaseVersion = versionController.VersionFromReleaseNotes
-
-                    match RetrievedVersionInfo.nugetOrPaketGitHubServerVersion versionController.RetrievedVersionInfo with 
-                    | None ->
-                        match releaseVersion.PreRelease with
-                        | Some _ -> SemVerInfo.nextBetaVersion releaseVersion
-                        | None -> releaseVersion
-                        
-                    | Some nugetVersion ->
-                        if releaseVersion < nugetVersion 
-                        then SemVerInfo.nextBetaVersion nugetVersion                         
-                        else 
-                            match releaseVersion.PreRelease with 
-                            | Some _ -> SemVerInfo.nextBetaVersion releaseVersion
-                            | None -> releaseVersion 
-
-            if nextVersion >= currentVersion then nextVersion      
-            else failwithf "next version %s is smaller than current version %s" nextVersion.AsString currentVersion.AsString                      
 
         let private setStatus versionStatus (versionController: VersionController) =
             { versionController with Status = versionStatus }
@@ -211,7 +206,7 @@ module FPublisher =
                 | PublishTarget.Build -> ()
                 | PublishTarget.Release ->
 
-                    let nextVersion = nextVersion versionController
+                    let nextVersion = versionController.NextVersion
 
                     let releaseNotesFile = versionController.ReleaseNotesFile
 
@@ -241,7 +236,6 @@ module FPublisher =
                 | PublishTarget.Release ->
                     let releaseNotes =  
                         versionController.ReleaseNotes
-                        |> ReleaseNotes.updateWithSemVerInfo (nextVersion versionController)
                         |> ReleaseNotes.updateDateToToday
 
                     do! GitHubData.draftAndPublishWithNewRelease releaseNotes versionController.GitHubData
@@ -287,12 +281,20 @@ module FPublisher =
             let workspace = Workspace publisherConfig.WorkingDir 
             
             let packageNames = Workspace.nugetPackageNames workspace
-
-            Logger.info "Begin fetch nuget version from nugetServer" publisherConfig.Logger
-            let! versionFromNugetServer = Workspace.versionFromNugetServer workspace    
-            Logger.info "End fetch nuget version from nugetServer" publisherConfig.Logger
             
-            let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
+            let releaseNotes = 
+                let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
+                ReleaseNotes.loadTbd releaseNotesFile
+
+            let! versionFromNugetServer = Workspace.versionFromNugetServer workspace   
+
+            let retrievedVersionInfo =
+                { FromNugetServer = versionFromNugetServer
+                  FromPaketGitHubServer = 
+                    paketGitHubServerPublisherOp
+                    |> Option.map (PaketGitHubServerPublisher.lastestVersion packageNames)
+                    |> Option.flatten 
+                  FromReleaseNotes = releaseNotes.SemVer }
 
             return 
                 { GitHubData = githubData 
@@ -301,8 +303,9 @@ module FPublisher =
                     paketGitHubServerPublisherOp
                     |> Option.map (PaketGitHubServerPublisher.lastestVersion packageNames)
                     |> Option.flatten  
-                  ReleaseNotes = ReleaseNotes.loadTbd releaseNotesFile                
-
+                  ReleaseNotes = releaseNotes                
+                  CurrentVersion = RetrievedVersionInfo.currentVersion retrievedVersionInfo
+                  NextVersion = RetrievedVersionInfo.nextVersion releaseNotes publisherConfig.PublishTarget retrievedVersionInfo
                   PublishTarget = publisherConfig.PublishTarget
                   VersionFromNugetServer = versionFromNugetServer
                   Status = VersionControllerStatus.Init }
@@ -326,6 +329,12 @@ module FPublisher =
         member x.ReleaseNotesFile = x.VersionController.ReleaseNotesFile  
 
         member x.ReleaseNotes = x.VersionController.ReleaseNotes
+
+        member x.NextVersion = x.VersionController.NextVersion
+
+        member x.NextVersionText = SemVerInfo.normalize x.VersionController.NextVersion
+
+        member x.CurrentVersion = x.VersionController.CurrentVersion
 
         member x.GitHubData = x.VersionController.GitHubData
         
@@ -412,18 +421,15 @@ module FPublisher =
             let task = createAsync buidingPublisherConfig
             task.Result
 
-        let nextVersion publisher = 
-            VersionController.nextVersion publisher.VersionController
 
         let traceGitHubData (publisher: Publisher) =
-            let nextVersion = nextVersion publisher
 
             let githubData = publisher.GitHubData
             
             [ ("RepoName is " + githubData.RepoName)
               ("Current branch name is " + githubData.BranchName)
               ("Current version is " + RetrievedVersionInfo.currentVersionText publisher.RetrievedVersionInfo)
-              ("Next version is " + SemVerInfo.normalize nextVersion) ] 
+              ("Next version is " + publisher.NextVersionText) ] 
             |> String.concat "\n"
             |> Trace.trace            
         
@@ -450,9 +456,8 @@ module FPublisher =
                 
                 match (nugetPackageState publisher, publisher.PaketGitHubServerPublisher) with 
                 | NugetPackageState.Changed, Some paketGitHubServerPublisher -> 
-                    let nextVersion = nextVersion publisher
                     let newJsonCacheText = 
-                        let newMap = Map.add publisher.RepoName (publisher.GitHubData.CommitHashLocal, SemVerInfo.normalize nextVersion) paketGitHubServerPublisher.PackageVersionMap
+                        let newMap = Map.add publisher.RepoName (publisher.GitHubData.CommitHashLocal, publisher.NextVersionText) paketGitHubServerPublisher.PackageVersionMap
                         JsonConvert.SerializeObject(newMap)
 
                     File.writeString false paketGitHubServerPublisher.PackageVersionCacheFile newJsonCacheText
@@ -473,10 +478,9 @@ module FPublisher =
         let nextPackagePaths publisher = 
             match packTargetDir publisher with 
             | Some targetDir ->
-                let nextVersionText = nextVersion publisher |> SemVerInfo.normalize
                 let packageNames = Workspace.nugetPackageNames publisher.Workspace
                 packageNames 
-                |> Seq.map (fun packageName -> targetDir </> packageName + nextVersionText + ".nupkg") 
+                |> Seq.map (fun packageName -> targetDir </> packageName + publisher.NextVersionText + ".nupkg") 
                 |> List.ofSeq
                 |> Some
 
@@ -503,10 +507,9 @@ module FPublisher =
             | PublisherStatus.Packed ->
                 match publisher.PaketGitHubServerPublisher with 
                 | Some paketGithubServer -> 
-                    let nextVersion = nextVersion publisher
                     let packageNames = Workspace.nugetPackageNames publisher.Workspace
 
-                    PaketGitHubServerPublisher.publish packageNames publisher.RepoName nextVersion paketGithubServer
+                    PaketGitHubServerPublisher.publish packageNames publisher.RepoName publisher.NextVersion paketGithubServer
                 | _ -> async {()}
 
         let private summary (elapsed: int64) publisher = 

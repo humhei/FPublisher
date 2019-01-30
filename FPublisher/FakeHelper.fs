@@ -61,6 +61,7 @@ module FakeHelper =
     module Build =
         [<RequireQualifiedAccess>]
         module PreReleaseSegment =
+        
             let incr (preReleaseSegment: PreReleaseSegment) =
                 match preReleaseSegment with 
                 | PreReleaseSegment.AlphaNumeric text -> 
@@ -146,7 +147,7 @@ module FakeHelper =
         module ReleaseNotes =
             let private tbdHeaderLine (releaseNotes: ReleaseNotes.ReleaseNotes) =
                 match releaseNotes.SemVer.PreRelease with 
-                | Some _ -> sprintf "## %s - tbd" (SemVerInfo.normalize releaseNotes.SemVer)
+                | Some prelease -> sprintf "## %s-%s - tbd" (SemVerInfo.mainVersionText releaseNotes.SemVer) prelease.Name
                 | None -> 
                     let newPatchVersion = SemVerInfo.nextPatchVersion releaseNotes.SemVer
                     sprintf "## %s-alpha - tbd" newPatchVersion.AsString
