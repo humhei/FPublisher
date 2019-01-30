@@ -433,6 +433,8 @@ module FPublisher =
             let publisherConfig = { publisherConfig with WorkingDir = Path.getFullName publisherConfig.WorkingDir }
 
             Logger.setDefaultLogger publisherConfig.Logger
+
+            Logger.info "fpublisher logger working in %A level" publisherConfig.Logger
             
             let workspace = Workspace publisherConfig.WorkingDir 
             
