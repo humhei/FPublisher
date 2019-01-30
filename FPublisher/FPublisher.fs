@@ -318,7 +318,6 @@ module FPublisher =
                   SourceLinkCreate = false }
               PublishTarget = PublishTarget.Build              
               BuildingPaketGitHubServerPublisher = None
-              AutoMergeToDefaultAndSquash = false
               Logger = Logger.Minimal }        
 
     [<RequireQualifiedAccess>]
