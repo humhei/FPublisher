@@ -193,12 +193,22 @@ module FPublisher =
           PublishTarget: PublishTarget
           Workspace: Workspace
           VersionFromNugetServer: SemVerInfo option
-          CurrentVersion: SemVerInfo
           ReleaseNotes: ReleaseNotes.ReleaseNotes
-          NextVersion: SemVerInfo
           GitHubData: GitHubData
           Status: VersionControllerStatus } 
     with 
+
+        member x.VersionFromReleaseNotes = x.ReleaseNotes.SemVer
+
+        member x.RetrievedVersion =
+            { FromReleaseNotes = x.VersionFromReleaseNotes 
+              FromNugetServer = x.VersionFromNugetServer
+              FromPaketGitHubServer = x.VersionFromPaketGitHubServer }
+
+        member x.CurrentVersion = RetrievedVersionInfo.currentVersion x.RetrievedVersion
+
+        member x.NextVersion = RetrievedVersionInfo.nextVersion x.ReleaseNotes x.PublishTarget x.RetrievedVersion
+
         member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
 
         member x.VersionFromReleaseNotes = x.ReleaseNotes.SemVer  
@@ -326,15 +336,6 @@ module FPublisher =
             let! versionFromNugetServer = Workspace.versionFromNugetServer workspace   
             Logger.infots "End fetch version from nuget server"
 
-
-            let retrievedVersionInfo =
-                { FromNugetServer = versionFromNugetServer
-                  FromPaketGitHubServer = 
-                    paketGitHubServerPublisherOp
-                    |> Option.map (PaketGitHubServerPublisher.lastestVersion packageNames)
-                    |> Option.flatten 
-                  FromReleaseNotes = releaseNotes.SemVer }
-
             return 
                 { GitHubData = githubData 
                   Workspace = workspace
@@ -343,8 +344,6 @@ module FPublisher =
                     |> Option.map (PaketGitHubServerPublisher.lastestVersion packageNames)
                     |> Option.flatten  
                   ReleaseNotes = releaseNotes                
-                  CurrentVersion = RetrievedVersionInfo.currentVersion retrievedVersionInfo
-                  NextVersion = RetrievedVersionInfo.nextVersion releaseNotes publisherConfig.PublishTarget retrievedVersionInfo
                   PublishTarget = publisherConfig.PublishTarget
                   VersionFromNugetServer = versionFromNugetServer
                   Status = VersionControllerStatus.Init }
