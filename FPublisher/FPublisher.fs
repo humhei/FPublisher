@@ -343,9 +343,11 @@ module FPublisher =
         | PaketGitServer 
         | None 
         | All 
+        | GitHubPublishAndDraftNewRelease
 
     with 
-        static member (+) (status1: PublishToServerStatus, status2: PublishToServerStatus) =
+        static member  (+) (status1: PublishToServerStatus, status2: PublishToServerStatus) =
+            
             match (status1, status2) with 
             | PublishToServerStatus.All, _ -> PublishToServerStatus.All
             | _, PublishToServerStatus.All -> PublishToServerStatus.All
@@ -355,7 +357,7 @@ module FPublisher =
             | status, PublishToServerStatus.None -> status
             | PublishToServerStatus.PaketGitServer, _ -> PublishToServerStatus.PaketGitServer
             | PublishToServerStatus.NugetServer, _ -> PublishToServerStatus.NugetServer
- 
+            | _ -> failwith "unexcepted token"
 
     [<RequireQualifiedAccess>]
     type PublishStatus =
@@ -519,11 +521,11 @@ module FPublisher =
                     |> gitHubDraftAndPublishWhenRelease
 
             | PublishStatus.CheckGitChangesAllPushedWhenRelease ->       
-                let! newVersionController, releaseNotes = VersionController.gitHubDraftAndPublishWhenReleaseTupledStatus publisher.VersionController
+                let! newVersionController = VersionController.gitHubDraftAndPublishWhenRelease publisher.VersionController
                 return 
                     { publisher with 
                         VersionController = newVersionController
-                        Status = PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes }
+                        Status = PublishStatus.PublishToServerStatus PublishToServerStatus.GitHubPublishAndDraftNewRelease }
             | _ -> return publisher        
         }
 
