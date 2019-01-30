@@ -436,7 +436,7 @@ module FPublisher =
             Logger.infots "Begin fetch github data"
             let! githubData = GitHubData.fetch workspace publisherConfig.EnvironmentConfig
             Logger.infots "End fetch github data" 
-            Logger.infofn "Github data is %A"  githubData
+            Logger.info "Github data is %A"  githubData
 
             let paketGitHubServerPublisher = 
                 match (githubData.IsLogin, publisherConfig.BuildingPaketGitHubServerPublisher) with 
@@ -450,7 +450,7 @@ module FPublisher =
                 | _ -> None
 
             let! versionController = PublisherConfig.toVersionController githubData paketGitHubServerPublisher publisherConfig
-            Logger.infofn "VersionController is %A" versionController 
+            Logger.info "VersionController is %A" versionController 
 
             return 
                 { PaketGitHubServerPublisher = paketGitHubServerPublisher
@@ -640,37 +640,40 @@ module FPublisher =
     
 
         /// publish and draft all
-        let rec publishAndDraftAllAsync publisher = async {
-            match publisher.Status with 
-            | PublishStatus.Init
-            | PublishStatus.CheckGitChangesAllPushedWhenRelease
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> return! publishAndDraftAllAsync publisher
-            | PublishStatus.Packed releaseNotes ->
-                traceGitHubData publisher
+        let publishAndDraftAllAsync publisher = async {
+            let stopwatch = Stopwatch.StartNew()
+            traceGitHubData publisher
+            let rec loop publisher = 
+                async {
+                    Logger.infots "running target %A" publisher.Status
+                    match publisher.Status with 
+                    | PublishStatus.Init
+                    | PublishStatus.CheckGitChangesAllPushedWhenRelease
+                    | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> return! loop publisher
+                    | PublishStatus.Packed releaseNotes ->
 
-                let stopwatch = Stopwatch.StartNew()
+                        let publisher = pack publisher 
 
-                let publisher = pack publisher 
+                        let! publishTask1 = publishToNugetServerTupledStatus publisher |> Async.StartChild
+                        let! publishTask2 = publishToPaketGitHubServerTupledStatus publisher |> Async.StartChild
+                        let! publishTask3 = gitHubDraftAndPublishWhenRelease publisher |> Async.StartChild
+                        
+                        let! publisher1, publisherToServerStatus1 = publishTask1
+                        let! publisher2, publisherToServerStatus2 = publishTask2
+                        let! publisherWithNewVersionController = publishTask3
 
-                let! publishTask1 = publishToNugetServerTupledStatus publisher |> Async.StartChild
-                let! publishTask2 = publishToPaketGitHubServerTupledStatus publisher |> Async.StartChild
-                let! publishTask3 = gitHubDraftAndPublishWhenRelease publisher |> Async.StartChild
-                
-                let! publisher1, publisherToServerStatus1 = publishTask1
-                let! publisher2, publisherToServerStatus2 = publishTask2
-                let! publisherWithNewVersionController = publishTask3
-
-                let result = 
-                    { publisher with 
-                        VersionController = publisherWithNewVersionController.VersionController
-                        Status = 
-                            publisherToServerStatus1 + publisherToServerStatus2
-                            |> PublishStatus.PublishToServerStatus }
-
-                Trace.trace (summary stopwatch.ElapsedMilliseconds result)
-            | PublishStatus.PublishToServerStatus _ -> ()            
-            }
-
+                        let result = 
+                            { publisher with 
+                                VersionController = publisherWithNewVersionController.VersionController
+                                Status = 
+                                    publisherToServerStatus1 + publisherToServerStatus2
+                                    |> PublishStatus.PublishToServerStatus }
+                        return result
+                    | PublishStatus.PublishToServerStatus _ -> return publisher            
+                }
+            let! result = loop publisher   
+            Trace.trace (summary stopwatch.ElapsedMilliseconds result)
+        }
         /// publish and draft all
         let publishAndDraftAll publisher = 
             publishAndDraftAllAsync publisher

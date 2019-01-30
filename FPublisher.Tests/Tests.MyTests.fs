@@ -12,7 +12,7 @@ let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
 let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../"))
-Logger.info "Begin create publisher" Logger.Normal 
+Logger.info "Begin create publisher" 
 let publisher = Publisher.create (fun config ->
   { config with 
       PublishTarget = PublishTarget.Build
@@ -20,7 +20,7 @@ let publisher = Publisher.create (fun config ->
       BuildingPaketGitHubServerPublisher = Some id
       Logger = Logger.Normal }
 )
-Logger.info "End create publisher" Logger.Normal 
+Logger.info "End create publisher" 
 
 let MyTests =
   testList "Interation tests" [

@@ -24,23 +24,31 @@ module Utils =
             System.Diagnostics.Debugger.Log(1,"",sprintf "%s %s\n" (timeStamp DateTime.UtcNow) text)
 
 
-        let info message =
+        let private _info message =
             match logger with 
             | Logger.Minimal -> ()
             | Logger.Normal -> Trace.log message
             | Logger.Quiet -> ()
 
+        let inline info format =
+            Printf.ksprintf _info format
+
+        let private withTimeStamp (f: string -> unit) =
+            fun message ->
+                let now = timeStamp DateTime.Now
+                sprintf "%s %s" now message 
+                |> f
+
         /// with timeStamp
-        let infots message =
+        let infots format =
             let now = timeStamp DateTime.Now
-            now + "   " + message
-            |> info    
+            Printf.ksprintf (withTimeStamp _info) format
+            
 
         let writelog (s:string) = printfn "LOG: %s" s
         let writelogf fmt = Printf.kprintf writelog fmt
 
-        let inline infofn format =
-            Printf.ksprintf info format
+
 
         let important message =
             match logger with 
