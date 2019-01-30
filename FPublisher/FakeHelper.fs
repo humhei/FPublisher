@@ -182,8 +182,10 @@ module FakeHelper =
 
                 lines 
                 |> ReleaseNotes.parseAll
-                |> Seq.tryFind (fun releaseNote -> releaseNote.Date = None)
                 |> function
-                    | Some releaseNote -> releaseNote
-                    | None -> failwith "cannot find a tbd release note"
+                    | fstReleaseNotes :: _ -> 
+                        match fstReleaseNotes.Date with 
+                        | None -> failwith "cannot find a tbd release note"
+                        | Some _ -> fstReleaseNotes
+                    | [] -> failwith "cannot find a tbd release note"
 
