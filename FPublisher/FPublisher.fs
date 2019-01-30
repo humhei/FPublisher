@@ -650,7 +650,7 @@ module FPublisher =
             traceBaseInfo publisher
             let rec loop publisher = 
                 async {
-                    Logger.infots "running target %A" publisher.Status
+                    Logger.importantts "running target %A" publisher.Status
                     match publisher.Status with 
                     | PublishStatus.Init
                     | PublishStatus.CheckGitChangesAllPushedWhenRelease

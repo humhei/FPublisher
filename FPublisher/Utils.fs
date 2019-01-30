@@ -49,10 +49,16 @@ module Utils =
 
 
 
-        let important message =
+        let private _important message =
             match logger with 
             | Logger.Quiet -> ()
-            | _ -> Trace.log message     
+            | _ -> Trace.trace message  
+        
+        let important format =
+            Printf.ksprintf _important format   
+
+        let importantts format =
+            Printf.ksprintf (withTimeStamp _important) format           
 
         let warn message =
             Trace.traceImportant message  
