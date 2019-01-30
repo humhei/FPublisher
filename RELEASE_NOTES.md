@@ -1,6 +1,6 @@
 ﻿# Release Notes
 
-## 0.1.3-alpha - tbd
+## 0.1.3 - tbd
 
 ## 0.1.3-alpha010 - 2019-01-30
 * Test
