@@ -16,6 +16,7 @@ open Git
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open Types
 open System.Diagnostics
+open FPublisher
 
 module FPublisher =
 
@@ -172,8 +173,8 @@ module FPublisher =
     [<RequireQualifiedAccess>]
     type VersionControllerStatus =
         | Init
-        | WriteReleaseNotes
-        | DraftAndPublish
+        | WriteReleaseNotesToNextVersionAndPushToRemoteRepository of ReleaseNotes.ReleaseNotes
+        | GitHubDraftAndPublishWhenRelease of ReleaseNotes.ReleaseNotes
 
     type VersionController =
         { VersionFromPaketGitHubServer: SemVerInfo option
@@ -196,52 +197,74 @@ module FPublisher =
     [<RequireQualifiedAccess>]
     module VersionController = 
 
-        let private setStatus versionStatus (versionController: VersionController) =
-            { versionController with Status = versionStatus }
 
-        let writeReleaseNotesToNextVersionAndPushToRemoteRepository (versionController: VersionController) = 
+        let internal writeReleaseNotesToNextVersionAndPushToRemoteRepositoryTupledStatus (versionController: VersionController) = 
             match versionController.Status with 
             | VersionControllerStatus.Init ->            
                 match versionController.PublishTarget with 
-                | PublishTarget.Build -> ()
+                | PublishTarget.Build -> 
+                    let releaseNotes = versionController.ReleaseNotes
+                    (
+                        { versionController with 
+                            Status = 
+                                VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository 
+                                    releaseNotes },
+                        releaseNotes
+                    )
                 | PublishTarget.Release ->
 
                     let nextVersion = versionController.NextVersion
 
                     let releaseNotesFile = versionController.ReleaseNotesFile
 
-                    let releaseNotes = ReleaseNotes.updateWithSemVerInfo nextVersion versionController.ReleaseNotes
+                    let releaseNotesWithNextVersion = ReleaseNotes.updateWithSemVerInfo nextVersion versionController.ReleaseNotes
 
-                    ReleaseNotes.writeToNext versionController.ReleaseNotesFile releaseNotes
+                    ReleaseNotes.writeToNext versionController.ReleaseNotesFile releaseNotesWithNextVersion
 
                     Workspace.git (sprintf "add %s" releaseNotesFile) versionController.Workspace |> ignore
 
                     Commit.exec versionController.WorkingDir (sprintf "Bump version to %s" nextVersion.AsString)
 
                     Branches.push versionController.WorkingDir
+                    (
+                        { versionController with 
+                            Status = 
+                                VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository 
+                                    releaseNotesWithNextVersion },
+                        releaseNotesWithNextVersion
+                    )              
 
-                { versionController with Status = VersionControllerStatus.WriteReleaseNotes }                
+            | VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes
+            | VersionControllerStatus.GitHubDraftAndPublishWhenRelease releaseNotes -> (versionController, releaseNotes)
 
-            | VersionControllerStatus.WriteReleaseNotes
-            | VersionControllerStatus.DraftAndPublish -> versionController
 
-        let gitHubDraftAndPublish (versionController: VersionController) = async {
+        let writeReleaseNotesToNextVersionAndPushToRemoteRepository (versionController: VersionController) =
+            writeReleaseNotesToNextVersionAndPushToRemoteRepositoryTupledStatus versionController
+            |> fst
+
+
+        let rec internal gitHubDraftAndPublishWhenReleaseTupledStatus (versionController: VersionController) = async {
             match versionController.Status with
-            | VersionControllerStatus.Init -> return failwith "invalid token"
-            | VersionControllerStatus.WriteReleaseNotes ->
-                let versionController = writeReleaseNotesToNextVersionAndPushToRemoteRepository versionController
+            | VersionControllerStatus.Init -> 
+                return! gitHubDraftAndPublishWhenReleaseTupledStatus (writeReleaseNotesToNextVersionAndPushToRemoteRepository versionController)
+            | VersionControllerStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes ->
 
                 match versionController.PublishTarget with 
                 | PublishTarget.Build -> ()
-                | PublishTarget.Release ->
-                    let releaseNotes =  
-                        versionController.ReleaseNotes
-                        |> ReleaseNotes.updateDateToToday
+                | PublishTarget.Release -> do! GitHubData.draftAndPublishWithNewRelease releaseNotes versionController.GitHubData
+                return 
+                    ({ versionController with 
+                            Status = 
+                                VersionControllerStatus.GitHubDraftAndPublishWhenRelease releaseNotes }, 
+                        releaseNotes)
+                            
 
-                    do! GitHubData.draftAndPublishWithNewRelease releaseNotes versionController.GitHubData
-                return setStatus VersionControllerStatus.DraftAndPublish versionController
+            | VersionControllerStatus.GitHubDraftAndPublishWhenRelease releaseNotes -> return (versionController, releaseNotes)               
+        }
 
-            | VersionControllerStatus.DraftAndPublish -> return versionController               
+        let gitHubDraftAndPublishWhenRelease publisher = async {
+            let! (versionController, _) = gitHubDraftAndPublishWhenReleaseTupledStatus publisher
+            return versionController            
         }
 
 
@@ -312,16 +335,38 @@ module FPublisher =
         }
 
     [<RequireQualifiedAccess>]
-    type PublisherStatus =
+    type PublishToServerStatus =
+        | NugetServer
+        | PaketGitServer 
+        | None 
+        | All 
+
+    with 
+        static member (+) (status1: PublishToServerStatus, status2: PublishToServerStatus) =
+            match (status1, status2) with 
+            | PublishToServerStatus.All, _ -> PublishToServerStatus.All
+            | _, PublishToServerStatus.All -> PublishToServerStatus.All
+            | PublishToServerStatus.NugetServer, PublishToServerStatus.PaketGitServer -> PublishToServerStatus.All
+            | PublishToServerStatus.PaketGitServer, PublishToServerStatus.NugetServer -> PublishToServerStatus.All
+            | PublishToServerStatus.None, status -> status
+            | status, PublishToServerStatus.None -> status
+            | PublishToServerStatus.PaketGitServer, _ -> PublishToServerStatus.PaketGitServer
+            | PublishToServerStatus.NugetServer, _ -> PublishToServerStatus.NugetServer
+ 
+
+    [<RequireQualifiedAccess>]
+    type PublishStatus =
         | Init
-        | Packed
-        | Published
+        | CheckGitChangesAllPushedWhenRelease
+        | WriteReleaseNotesToNextVersionAndPushToRemoteRepository of ReleaseNotes.ReleaseNotes
+        | Packed of ReleaseNotes.ReleaseNotes
+        | PublishToServerStatus of PublishToServerStatus
 
     type Publisher =
         { PaketGitHubServerPublisher: PaketGitHubServerPublisher option
           NugetPacker: NugetPacker
           NugetPublisher: NugetPublisher
-          Status: PublisherStatus
+          Status: PublishStatus
           VersionController: VersionController }
     with 
         member x.VersionFromNugetServer = x.VersionController.VersionFromNugetServer
@@ -366,11 +411,6 @@ module FPublisher =
                     {publisher.VersionController with 
                         PublishTarget = publishTarget } }
 
-        let ensureGitChangesAllPushedWhenRelease (publisher: Publisher) =
-            match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
-            | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
-            | _ -> ()
-
         let nugetPackageState (publisher: Publisher) = 
             match publisher.PaketGitHubServerPublisher with 
             | None -> NugetPackageState.Changed
@@ -380,7 +420,7 @@ module FPublisher =
                     if commitHashLocal = publisher.GitHubData.CommitHashRemote 
                     then NugetPackageState.None
                     else NugetPackageState.Changed
-                | None -> NugetPackageState.Changed
+                | None -> NugetPackageState.Changed            
 
 
         let createAsync (buidingPublisherConfig: PublisherConfig -> PublisherConfig) = task {
@@ -413,9 +453,11 @@ module FPublisher =
                 { PaketGitHubServerPublisher = paketGitHubServerPublisher
                   NugetPacker = publisherConfig.NugetPacker
                   NugetPublisher = { ApiEnvironmentName = publisherConfig.EnvironmentConfig.NugetApiKey }                
-                  Status = PublisherStatus.Init
+                  Status = PublishStatus.Init
                   VersionController = versionController }
         }
+
+
 
         let create (buidingPublisherConfig: PublisherConfig -> PublisherConfig) = 
             let task = createAsync buidingPublisherConfig
@@ -441,16 +483,50 @@ module FPublisher =
             | NugetPackageState.Changed, None -> Path.GetTempPath() |> Some
             | _ -> None
 
-        let writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher =
-            { publisher with 
-                VersionController = VersionController.writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher.VersionController }
+        let ensureGitChangesAllPushedWhenRelease (publisher: Publisher) =
+            match publisher.Status with 
+            | PublishStatus.Init ->
+                match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
+                | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
+                | _ -> { publisher with Status = PublishStatus.CheckGitChangesAllPushedWhenRelease }
+            | _ -> publisher
 
-        let pack (publisher: Publisher) =
-            ensureGitChangesAllPushedWhenRelease publisher
+        let rec writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher = 
+            match publisher.Status with 
+            | PublishStatus.Init -> 
+                ensureGitChangesAllPushedWhenRelease publisher 
+                |> writeReleaseNotesToNextVersionAndPushToRemoteRepository
+            | PublishStatus.CheckGitChangesAllPushedWhenRelease ->       
+                let newVersionController, releaseNotes = VersionController.writeReleaseNotesToNextVersionAndPushToRemoteRepositoryTupledStatus publisher.VersionController
+                { publisher with 
+                    VersionController = newVersionController
+                    Status = PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes }
+            | _ -> publisher
+
+        let rec gitHubDraftAndPublishWhenRelease publisher = async {
+            match publisher.Status with 
+            | PublishStatus.Init -> 
+                return! 
+                    ensureGitChangesAllPushedWhenRelease publisher 
+                    |> gitHubDraftAndPublishWhenRelease
+
+            | PublishStatus.CheckGitChangesAllPushedWhenRelease ->       
+                let! newVersionController, releaseNotes = VersionController.gitHubDraftAndPublishWhenReleaseTupledStatus publisher.VersionController
+                return 
+                    { publisher with 
+                        VersionController = newVersionController
+                        Status = PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes }
+            | _ -> return publisher        
+        }
+
+        let rec pack (publisher: Publisher) =
             
             match publisher.Status with 
-            | PublisherStatus.Init -> 
-                let publisher = writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher 
+            | PublishStatus.Init 
+            | PublishStatus.CheckGitChangesAllPushedWhenRelease ->
+                writeReleaseNotesToNextVersionAndPushToRemoteRepository publisher |> pack
+
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes ->            
 
                 let packer = publisher.NugetPacker
                 
@@ -462,17 +538,17 @@ module FPublisher =
 
                     File.writeString false paketGitHubServerPublisher.PackageVersionCacheFile newJsonCacheText
                     
-                    NugetPacker.pack publisher.Workspace publisher.GitHubData paketGitHubServerPublisher.StoreDir publisher.ReleaseNotes packer
+                    NugetPacker.pack publisher.Workspace publisher.GitHubData paketGitHubServerPublisher.StoreDir releaseNotes packer
                     
                 | NugetPackageState.Changed, None ->
-                    NugetPacker.pack publisher.Workspace publisher.GitHubData (Path.GetTempPath()) publisher.ReleaseNotes packer
+                    NugetPacker.pack publisher.Workspace publisher.GitHubData (Path.GetTempPath()) releaseNotes packer
                 | _ -> Trace.trace "find packages in paketGitHubServer: all packages are up to date"
                 
                 { publisher with 
-                    Status = PublisherStatus.Packed }
+                    Status = PublishStatus.Packed releaseNotes }
 
-            | PublisherStatus.Packed 
-            | PublisherStatus.Published -> publisher  
+            | PublishStatus.Packed _
+            | PublishStatus.PublishToServerStatus _ -> publisher  
 
 
         let nextPackagePaths publisher = 
@@ -487,30 +563,71 @@ module FPublisher =
             | None -> None            
 
 
-        let publishToNugetServer publisher = 
-            ensureGitChangesAllPushedWhenRelease publisher
-            let publisher = pack publisher
+
+        let rec internal publishToNugetServerTupledStatus publisher = async {
             match publisher.Status with 
-            | PublisherStatus.Init 
-            | PublisherStatus.Published -> failwith "invalid token"
-            | PublisherStatus.Packed ->
+            | PublishStatus.Init
+            | PublishStatus.CheckGitChangesAllPushedWhenRelease 
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> 
+                return! publishToNugetServerTupledStatus (pack publisher)
+                
+            | PublishStatus.Packed releaseNotes ->
                 match (nextPackagePaths publisher, publisher.PublishTarget) with 
-                | Some newPackages, PublishTarget.Release -> NugetPublisher.publish newPackages publisher.NugetPublisher
-                | _ -> async {()}
+                | Some newPackages, PublishTarget.Release -> 
+                    do! NugetPublisher.publish newPackages publisher.NugetPublisher 
+
+                    let publishToServerStatus = PublishToServerStatus.NugetServer
+
+                    return ({publisher with Status = PublishStatus.PublishToServerStatus publishToServerStatus}, publishToServerStatus) 
+                | _ -> 
+                    let publishToServerStatus = PublishToServerStatus.None
+                    return ({publisher with Status = PublishStatus.PublishToServerStatus publishToServerStatus}, publishToServerStatus) 
+
+                           
+            | PublishStatus.PublishToServerStatus publishToServerStatus  -> return (publisher, publishToServerStatus)
+        }
+        
+        let publishToNugetServer publisher = async {
+            let! (publisher, _) = publishToNugetServerTupledStatus publisher
+            return publisher
+        }
  
-        let publishToPaketGitHubServer publisher =
-            ensureGitChangesAllPushedWhenRelease publisher
-            let publisher = pack publisher
+        let rec internal publishToPaketGitHubServerTupledStatus publisher = async {
             match publisher.Status with 
-            | PublisherStatus.Init 
-            | PublisherStatus.Published -> failwith "invalid token"
-            | PublisherStatus.Packed ->
+            | PublishStatus.Init
+            | PublishStatus.CheckGitChangesAllPushedWhenRelease 
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> 
+                return! publishToPaketGitHubServerTupledStatus (pack publisher)
+                
+            | PublishStatus.Packed releaseNotes ->
                 match publisher.PaketGitHubServerPublisher with 
                 | Some paketGithubServer -> 
                     let packageNames = Workspace.nugetPackageNames publisher.Workspace
+                    do! PaketGitHubServerPublisher.publish packageNames publisher.RepoName publisher.NextVersion paketGithubServer
+                    
+                    let publishToServerStatus = PublishToServerStatus.PaketGitServer
+                    
+                    return 
+                        ({publisher with 
+                                Status = 
+                                    PublishStatus.PublishToServerStatus publishToServerStatus},
+                            publishToServerStatus)
+                | None ->                
+                    let publishToServerStatus = PublishToServerStatus.None
+                    return 
+                        ({publisher with 
+                            Status = 
+                                PublishStatus.PublishToServerStatus publishToServerStatus},
+                                publishToServerStatus )
+                 
+            | PublishStatus.PublishToServerStatus publishToServerStatus -> return (publisher, publishToServerStatus)
+        }
 
-                    PaketGitHubServerPublisher.publish packageNames publisher.RepoName publisher.NextVersion paketGithubServer
-                | _ -> async {()}
+        let publishToPaketGitHubServer publisher = async {
+            let! (publisher, _) = publishToPaketGitHubServerTupledStatus publisher
+            return publisher            
+        }
+            
 
         let private summary (elapsed: int64) publisher = 
             [ sprintf "current publisher status is %A" publisher.Status
@@ -520,27 +637,35 @@ module FPublisher =
     
 
         /// publish and draft all
-        let publishAndDraftAllAsync publisher = async {
-            traceGitHubData publisher
-            let stopwatch = Stopwatch.StartNew()
+        let rec publishAndDraftAllAsync publisher = async {
+            match publisher.Status with 
+            | PublishStatus.Init
+            | PublishStatus.CheckGitChangesAllPushedWhenRelease
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ -> return! publishAndDraftAllAsync publisher
+            | PublishStatus.Packed releaseNotes ->
+                traceGitHubData publisher
 
-            let publisher = pack publisher 
+                let stopwatch = Stopwatch.StartNew()
 
-            let! publishTask1 = publishToNugetServer publisher |> Async.StartChild
-            let! publishTask2 = publishToPaketGitHubServer publisher |> Async.StartChild
-            let! publishTask3 = VersionController.gitHubDraftAndPublish publisher.VersionController |> Async.StartChild
-            
-            let! _ = publishTask1
-            let! _ = publishTask2
-            let! versionController = publishTask3
+                let publisher = pack publisher 
 
-            let result = 
-                {publisher with 
-                    VersionController = versionController
-                    Status = PublisherStatus.Published }
+                let! publishTask1 = publishToNugetServerTupledStatus publisher |> Async.StartChild
+                let! publishTask2 = publishToPaketGitHubServerTupledStatus publisher |> Async.StartChild
+                let! publishTask3 = gitHubDraftAndPublishWhenRelease publisher |> Async.StartChild
+                
+                let! publisher1, publisherToServerStatus1 = publishTask1
+                let! publisher2, publisherToServerStatus2 = publishTask2
+                let! publisherWithNewVersionController = publishTask3
 
-            Trace.trace (summary stopwatch.ElapsedMilliseconds result)
-        }
+                let result = 
+                    { publisher with 
+                        VersionController = publisherWithNewVersionController.VersionController
+                        Status = 
+                            publisherToServerStatus1 + publisherToServerStatus2
+                            |> PublishStatus.PublishToServerStatus }
+
+                Trace.trace (summary stopwatch.ElapsedMilliseconds result)
+            }
 
         /// publish and draft all
         let publishAndDraftAll publisher = 

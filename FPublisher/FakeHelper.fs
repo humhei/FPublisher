@@ -164,8 +164,8 @@ module FakeHelper =
                     NugetVersion = SemVerInfo.normalize semverInfo
                     SemVer = semverInfo } 
 
-            /// replace current version date tbd to today date
-            /// and add next version with tbd 
+            /// replace next version date tbd to today date
+            /// and add next next version with tbd 
             let writeToNext file (releaseNotes: ReleaseNotes.ReleaseNotes) =
                 File.replaceFindedFirstLine 
                     (fun line -> line.TrimEnd() |> String.endsWith "tbd")
