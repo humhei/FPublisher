@@ -30,7 +30,7 @@ module Utils =
             | Logger.Normal -> Trace.log message
             | Logger.Quiet -> ()
 
-        let inline info format =
+        let info format =
             Printf.ksprintf _info format
 
         let private withTimeStamp (f: string -> unit) =
