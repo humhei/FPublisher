@@ -533,21 +533,7 @@ module FPublisher =
                     Status = PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository releaseNotes }
             | _ -> publisher
 
-        let rec gitHubDraftAndPublishWhenRelease publisher = async {
-            match publisher.Status with 
-            | PublishStatus.Init -> 
-                return! 
-                    ensureGitChangesAllPushedWhenRelease publisher 
-                    |> gitHubDraftAndPublishWhenRelease
 
-            | PublishStatus.CheckGitChangesAllPushedWhenRelease ->       
-                let! newVersionController = VersionController.gitHubDraftAndPublishWhenRelease publisher.VersionController
-                return 
-                    { publisher with 
-                        VersionController = newVersionController
-                        Status = PublishStatus.PublishToServerStatus PublishToServerStatus.GitHubPublishAndDraftNewRelease }
-            | _ -> return publisher        
-        }
 
         let rec pack (publisher: Publisher) =
             
@@ -660,6 +646,24 @@ module FPublisher =
             return publisher            
         }
             
+
+        let rec gitHubDraftAndPublishWhenRelease publisher = async {
+            match publisher.Status with 
+            | PublishStatus.Init 
+            | PublishStatus.CheckGitChangesAllPushedWhenRelease 
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepository _ ->  
+                return! 
+                    pack publisher 
+                    |> gitHubDraftAndPublishWhenRelease
+                    
+            | PublishStatus.Packed _ ->
+                let! newVersionController = VersionController.gitHubDraftAndPublishWhenRelease publisher.VersionController
+                return 
+                    { publisher with 
+                        VersionController = newVersionController
+                        Status = PublishStatus.PublishToServerStatus PublishToServerStatus.GitHubPublishAndDraftNewRelease }
+            | PublishStatus.PublishToServerStatus _ -> return publisher        
+        }
 
         let private summary (elapsed: int64) publisher = 
             [ sprintf "current publisher status is %A" publisher.Status
