@@ -18,9 +18,9 @@ with
 
     member x.FakeCacheDir = x.WorkingDir </> ".fake"
 
-    member x.SlnName = x.Name 
+    member x.DefaultSlnName = x.Name 
 
-    member x.SlnPath = x.WorkingDir </> (sprintf "%s.sln" x.SlnName)
+    member x.DefaultSlnPath = x.WorkingDir </> (sprintf "%s.sln" x.DefaultSlnName)
 
 [<RequireQualifiedAccess>]
 module Workspace =
@@ -58,20 +58,22 @@ module Workspace =
 
     let cleanBinAndObj (workspace: Workspace) =
         allfsprojses workspace
-        |> cleanBinAndObjForDirs    
+        |> cleanBinAndObjForDirs  
 
-    let createSlnCommon isForce (workspace: Workspace) =
-        let slnPath = workspace.SlnPath
+    let createSlnWith slnPath isForce (workspace: Workspace) =
+        let projectPaths = (fsprojses workspace)
+        Solution.checkValidSlnPath slnPath
+        let slnName = Path.GetFileNameWithoutExtension slnPath
         if isForce then File.delete slnPath         
         if not <| File.exists slnPath then
-            dotnet "new sln" [] workspace
-            fsprojses workspace
+            dotnet "new" ["sln" ;"--name"; slnName] workspace
+            projectPaths
             |> Seq.iter (fun proj ->
-                dotnet (sprintf "sln %s add" slnPath) [proj] workspace   
-            )
+                dotnet  (sprintf "sln %s add" slnPath) [proj] workspace
+            )  
+        
 
-    /// create sln if sln is not exists                
-    let createSln (workspace: Workspace) = createSlnCommon false workspace 
+    let createDefaultSln isForce (workspace: Workspace) =
+        createSlnWith workspace.DefaultSlnPath isForce
 
-    let createSlnForce (workspace: Workspace) = createSlnCommon true workspace   
 

@@ -7,6 +7,7 @@ open FPublisher.FPublisher
 open System.IO
 open Fake.IO
 open FPublisher.Utils
+open System.Text.RegularExpressions
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
@@ -25,9 +26,14 @@ Logger.info "End create publisher"
 let MyTests =
   testList "Interation tests" [
     testCase "next build" <| fun _ -> 
-      Publisher.publishAndDraftAll publisher
+      Publisher.build publisher
+      |> ignore
 
-    ftestCase "next release" <| fun _ -> 
+    testCase "next release" <| fun _ -> 
       Publisher.setPublishTarget PublishTarget.Release publisher
       |> Publisher.publishAndDraftAll
+
+    testCase "init publisher" <| fun _ -> 
+      Publisher.init publisher
+      |> ignore
   ]

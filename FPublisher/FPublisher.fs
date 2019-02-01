@@ -15,9 +15,11 @@ open Nuget
 open Git
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open Types
-open System.Diagnostics
 open FPublisher
-open System
+open System.Diagnostics
+open Microsoft.FSharp.Reflection
+open System.Reflection
+open FPublisher
 
 module FPublisher =
 
@@ -53,7 +55,7 @@ module FPublisher =
         let private commitMsg neighborRepoName (version: SemVerInfo) =
             sprintf "Bump %s version to %s" neighborRepoName (SemVerInfo.normalize version)
 
-        let create config =
+        let create (config: PaketGitHubServerPublisherConfig) =
             let packageVersionCacheFile = config.Workspace.WorkingDir </> "hash.json"
             { Config = config 
               PackageVersionMap = 
@@ -348,6 +350,7 @@ module FPublisher =
                   Status = VersionControllerStatus.Init }
         }
 
+
     [<RequireQualifiedAccess>]
     type PublishToServerStatus =
         | NugetServer
@@ -370,20 +373,55 @@ module FPublisher =
             | PublishToServerStatus.NugetServer, _ -> PublishToServerStatus.NugetServer
             | _ -> failwith "unexcepted token"
 
-    [<RequireQualifiedAccess>]
-    type PublishStatus =
-        | Init
-        | CheckGitChangesAllPushedAndInDefaultBranchWhenRelease
-        | WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease of ReleaseNotes.ReleaseNotes
-        | Packed of ReleaseNotes.ReleaseNotes
-        | PublishToServerStatus of PublishToServerStatus
+    type InitModel = 
+        { Solution: Solution }
 
-    type Publisher =
+    type ReleaseModel = 
+        { Solution: Solution 
+          ReleaseNotes: ReleaseNotes.ReleaseNotes }
+
+    // [<RequireQualifiedAccess>]
+    // type PublishStatus =
+    //     | None
+    //     | Init of InitModel
+    //     | Build of InitModel
+    //     | RunTest of InitModel
+    //     | EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease of InitModel
+    //     | WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease of ReleaseModel
+    //     | Packed of ReleaseModel
+    //     | PublishToServer of PublishToServerStatus
+
+    [<RequireQualifiedAccess>]
+
+    module PublishStatus =
+                                            
+        let internal unionCaseNames = 
+            lazy
+                let tp =typeof<PublishStatus>
+                FSharpType.GetUnionCases tp
+                |> Array.map (fun uc -> uc.Name)
+
+        let getUnionCaseName (publishStatus: PublishStatus) =
+            let unionCase =
+                FSharpValue.GetUnionFields(publishStatus,typeof<PublishStatus>)
+                |> fst    
+
+            unionCase.Name            
+
+        let getUnionCaseIndexerByName name =
+            Array.findIndex (String.equalIgnoreCaseAndEdgeSpace name) unionCaseNames.Value
+
+        let getUnionCaseIndexer (publishStatus: PublishStatus) =
+            getUnionCaseName publishStatus            
+            |> getUnionCaseIndexerByName
+
+
+    type Publisher<'PublishStatus> =
         { PaketGitHubServerPublisher: PaketGitHubServerPublisher option
           PackTargetDir: string option
           NugetPacker: NugetPacker
           NugetPublisher: NugetPublisher
-          Status: PublishStatus
+          Status: 'PublishStatus
           VersionController: VersionController
           NugetPackageState: NugetPackageState }
     with 
@@ -419,6 +457,9 @@ module FPublisher =
               FromReleaseNotes = x.ReleaseNotes.SemVer
               FromNugetServer = x.VersionFromNugetServer }
 
+        member x.SlnPath = x.WorkingDir </> ("FPublisher." + x.Workspace.DefaultSlnName + ".sln")
+            
+            
 
     [<RequireQualifiedAccess>]
     module Publisher =
@@ -442,6 +483,53 @@ module FPublisher =
                     Some paketGitHubServerPublisher.StoreDir
                 | NugetPackageState.Changed, None -> Path.GetTempPath() |> Some
                 | _ -> None        
+
+        type private ReflectionMethodsAccessor = interface end
+
+        let private reflectionMethods = 
+            lazy 
+                let currentModule = typeof<ReflectionMethodsAccessor>.DeclaringType 
+                currentModule.GetMethods() 
+
+        let private inPublishStatus unionPropExpr currrentMatchExpr publisher =
+            let namedPushStatusUCIndexer = 
+                Expr.nameof unionPropExpr
+                |> PublishStatus.getUnionCaseIndexerByName
+
+            let pushStatusUCIndexer = PublishStatus.getUnionCaseIndexer publisher.Status
+
+            if pushStatusUCIndexer >= namedPushStatusUCIndexer then publisher
+            else     
+                let dependencyAction = 
+                    let dependencyIndexer = namedPushStatusUCIndexer - 1
+                    if dependencyIndexer < 1 then id
+                    else 
+
+                        let dependencyPSUCName = PublishStatus.unionCaseNames.Value.[dependencyIndexer]
+                        let dependencyMethodInfo =
+                            reflectionMethods.Value 
+                            |> Array.find (fun methodInfo -> String.equalIgnoreCaseAndEdgeSpace dependencyPSUCName methodInfo.Name)
+
+                        fun (input: Publisher) -> 
+                            let input = unbox input
+                            
+                            dependencyMethodInfo.Invoke(null,[|input|])
+                            |> unbox
+
+
+                let stopwatch = Stopwatch.StartNew()
+
+                let targetName = PublishStatus.getUnionCaseName publisher.Status
+                Logger.important "Starting target %s" targetName
+                let result = currrentMatchExpr (dependencyAction publisher)   
+                Logger.important "Finished target %s in %O" targetName stopwatch.Elapsed
+                result
+
+
+        let private inPublishStatusAsync unionPropExpr currrentMatchExpr publisher = async {
+            return inPublishStatus unionPropExpr currrentMatchExpr publisher            
+        }
+
 
         let setPublishTarget publishTarget (publisher: Publisher) =
             { publisher with 
@@ -486,13 +574,13 @@ module FPublisher =
                 { PaketGitHubServerPublisher = paketGitHubServerPublisher
                   NugetPacker = publisherConfig.NugetPacker
                   NugetPublisher = { ApiEnvironmentName = publisherConfig.EnvironmentConfig.NugetApiKey }                
-                  Status = PublishStatus.Init
+                  Status = PublishStatus.None
                   VersionController = versionController
                   NugetPackageState = GitHubData.nugetPackageState paketGitHubServerPublisher githubData
                   PackTargetDir = GitHubData.packTargetDir paketGitHubServerPublisher githubData }
         }
 
-
+        
 
         let create (buidingPublisherConfig: PublisherConfig -> PublisherConfig) = 
             let task = createAsync buidingPublisherConfig
@@ -508,50 +596,81 @@ module FPublisher =
               ("Current version is " + RetrievedVersionInfo.currentVersionText publisher.RetrievedVersionInfo)
               ("Next version is " + publisher.NextVersionText) ] 
             |> String.concat "\n"
-            |> Trace.trace            
+            |> Logger.info "%s"         
         
 
-        let ensureGitChangesAllPushedAndInDefaultBranchWhenRelease (publisher: Publisher) =
-            let githubData = publisher.GitHubData
 
+        let init = inPublishStatus <@PublishStatus.Init@> (fun publisher ->
             match publisher.Status with 
-            | PublishStatus.Init ->
-                match githubData.IsInDefaultBranch with 
-                | true ->
-                    match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
-                    | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
-                    | _ -> { publisher with Status = PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease }
-                | false ->
-                    failwithf "Current branch %s is not in default branch %s" githubData.BranchName githubData.DefaultBranch
-                
-            | _ -> publisher
+            | PublishStatus.None -> 
+                let workspace = publisher.Workspace
+                let initModel = 
+                    { Solution = 
+                        Workspace.createSlnWith publisher.SlnPath false workspace
+                        Solution.read publisher.SlnPath }
+                    
+                { publisher with Status = PublishStatus.Init initModel }
+            | _ -> failwith "invalid token" 
+        )   
 
 
-        let rec writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease publisher = 
+
+
+        let build = inPublishStatus <@PublishStatus.Build@> (fun publisher ->
+            match publisher.Status with
+            | PublishStatus.Init initModel ->
+                Solution.build initModel.Solution
+                { publisher with Status = PublishStatus.Build initModel }                                    
+            | _ -> failwith "invalid token"
+        )
+
+        let runTest  = inPublishStatus <@PublishStatus.RunTest@> (fun publisher ->
             match publisher.Status with 
-            | PublishStatus.Init -> 
-                ensureGitChangesAllPushedAndInDefaultBranchWhenRelease publisher 
-                |> writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease
-            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease ->       
-                let newVersionController, releaseNotes = VersionController.writeReleaseNotesToNextVersionAndPushToRemoteRepositoryTupledStatus publisher.VersionController
-                { publisher with 
-                    VersionController = newVersionController
-                    Status = PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease releaseNotes }
-            | _ -> publisher
+            | PublishStatus.Build initModel ->
+                Solution.test initModel.Solution
+                { publisher with Status = PublishStatus.RunTest initModel }                                    
+            | _ -> failwith "invalid token"    
+        )
 
 
+        let ensureGitChangesAllPushedAndInDefaultBranchWhenRelease =
+            inPublishStatus <@PublishStatus.EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease@> (fun publisher ->
+                match publisher.Status  with 
+                | PublishStatus.RunTest initModel ->
+                    let githubData = publisher.GitHubData
+                    match githubData.IsInDefaultBranch with 
+                    | true ->
+                        match (Workspace.repoState publisher.Workspace, publisher.PublishTarget) with 
+                        | RepoState.Changed, PublishTarget.Release -> failwith "Please push all changes to git server before you draft new a release"
+                        | _ -> { publisher with Status = PublishStatus.EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease initModel }
+                    | false ->
+                        failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch
+                | _ -> failwith "invalid token"                   
+            )
 
-        let rec pack (publisher: Publisher) =
+
+        let writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease = 
+            inPublishStatus <@PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease@> (fun publisher ->
+
+                match publisher.Status with 
+                | PublishStatus.EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease initModel -> 
+                    let newVersionController, releaseNotes = VersionController.writeReleaseNotesToNextVersionAndPushToRemoteRepositoryTupledStatus publisher.VersionController
+                    { publisher with 
+                        VersionController = newVersionController
+                        Status = 
+                            PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease
+                                { Solution = initModel.Solution 
+                                  ReleaseNotes = releaseNotes }  }
+                | _ -> failwith "invalid token" 
+            )            
+
             
+        let pack = inPublishStatus <@PublishStatus.Packed@> (fun publisher ->
             match publisher.Status with 
-            | PublishStatus.Init 
-            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease ->
-                writeReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease publisher |> pack
-
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease releaseNotes ->            
-
+            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease releaseModel ->
                 let packer = publisher.NugetPacker
-                
+                let releaseNotes = releaseModel.ReleaseNotes
+
                 match (publisher.NugetPackageState, publisher.PaketGitHubServerPublisher) with 
                 | NugetPackageState.Changed, Some paketGitHubServerPublisher -> 
                     let newJsonCacheText = 
@@ -560,17 +679,17 @@ module FPublisher =
 
                     File.writeString false paketGitHubServerPublisher.PackageVersionCacheFile newJsonCacheText
                     
-                    NugetPacker.pack publisher.Workspace publisher.GitHubData paketGitHubServerPublisher.StoreDir releaseNotes packer
+                    NugetPacker.pack publisher.SlnPath publisher.Workspace publisher.GitHubData paketGitHubServerPublisher.StoreDir releaseNotes packer
                     
                 | NugetPackageState.Changed, None ->
-                    NugetPacker.pack publisher.Workspace publisher.GitHubData (Path.GetTempPath()) releaseNotes packer
-                | _ -> Trace.trace "find packages in paketGitHubServer: all packages are up to date"
+                    NugetPacker.pack publisher.SlnPath publisher.Workspace publisher.GitHubData (Path.GetTempPath()) releaseNotes packer
+                | _ -> Logger.info "find packages in paketGitHubServer: all packages are up to date"
                 
                 { publisher with 
-                    Status = PublishStatus.Packed releaseNotes }
+                    Status = PublishStatus.Packed releaseModel }
 
-            | PublishStatus.Packed _
-            | PublishStatus.PublishToServerStatus _ -> publisher  
+            | _ -> failwith "invalid token"                   
+        )
 
 
 
@@ -587,13 +706,10 @@ module FPublisher =
             | None -> None            
 
 
-        let rec internal publishToNugetServerTupledStatus publisher = async {
+        let rec internal publishToNugetServerTupledStatus publisher = 
             match publisher.Status with 
-            | PublishStatus.Init
-            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease 
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ -> 
+            | PublishStatusActivePattern.BeforePacked ->
                 return! publishToNugetServerTupledStatus (pack publisher)
-                
             | PublishStatus.Packed releaseNotes ->
                 match (nextPackagePaths publisher, publisher.PublishTarget) with 
                 | Some newPackages, PublishTarget.Release -> 
@@ -608,7 +724,8 @@ module FPublisher =
                     return ({publisher with Status = PublishStatus.PublishToServerStatus publishToServerStatus}, publishToServerStatus) 
 
                            
-            | PublishStatus.PublishToServerStatus publishToServerStatus  -> return (publisher, publishToServerStatus)
+            | PublishStatusActivePattern.AfterPublishToServerStatus publishToServerStatus  -> return (publisher, publishToServerStatus)
+            | _ -> return failwith "invalid token"
         }
         
         let publishToNugetServer publisher = async {
@@ -618,9 +735,7 @@ module FPublisher =
  
         let rec internal publishToPaketGitHubServerTupledStatus publisher = async {
             match publisher.Status with 
-            | PublishStatus.Init
-            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease 
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ -> 
+            | PublishStatusActivePattern.BeforePacked -> 
                 return! publishToPaketGitHubServerTupledStatus (pack publisher)
                 
             | PublishStatus.Packed releaseNotes ->
@@ -644,7 +759,8 @@ module FPublisher =
                                 PublishStatus.PublishToServerStatus publishToServerStatus},
                                 publishToServerStatus )
                  
-            | PublishStatus.PublishToServerStatus publishToServerStatus -> return (publisher, publishToServerStatus)
+            | PublishStatusActivePattern.AfterPublishToServerStatus publishToServerStatus  -> return (publisher, publishToServerStatus)
+            | _ -> return failwith "invalid token"
         }
 
         let publishToPaketGitHubServer publisher = async {
@@ -655,9 +771,7 @@ module FPublisher =
 
         let rec gitHubDraftAndPublishWhenRelease publisher = async {
             match publisher.Status with 
-            | PublishStatus.Init 
-            | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease 
-            | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ ->  
+            | PublishStatusActivePattern.BeforePacked ->  
                 return! 
                     pack publisher 
                     |> gitHubDraftAndPublishWhenRelease
@@ -668,7 +782,8 @@ module FPublisher =
                     { publisher with 
                         VersionController = newVersionController
                         Status = PublishStatus.PublishToServerStatus PublishToServerStatus.GitHubPublishAndDraftNewRelease }
-            | PublishStatus.PublishToServerStatus _ -> return publisher        
+            | PublishStatusActivePattern.AfterPublishToServerStatus publishToServerStatus  -> return publisher
+            | _ -> return failwith "invalid token"        
         }
 
         let private summary (elapsed: int64) publisher = 
@@ -684,11 +799,8 @@ module FPublisher =
             traceBaseInfo publisher
             let rec loop publisher = 
                 async {
-                    Logger.importantts "running target %A" publisher.Status
                     match publisher.Status with 
-                    | PublishStatus.Init
-                    | PublishStatus.CheckGitChangesAllPushedAndInDefaultBranchWhenRelease
-                    | PublishStatus.WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease _ -> 
+                    | PublishStatusActivePattern.BeforePacked _ -> 
                         return! loop (pack publisher)
                     | PublishStatus.Packed releaseNotes ->
 
@@ -709,8 +821,9 @@ module FPublisher =
                                     publisherToServerStatus1 + publisherToServerStatus2
                                     |> PublishStatus.PublishToServerStatus }
                         return result
-                    | PublishStatus.PublishToServerStatus _ -> return publisher            
-                }
+                    | PublishStatusActivePattern.AfterPublishToServerStatus publishToServerStatus  -> return publisher
+                    | _ -> return failwith "invalid token" 
+            }
             let! result = loop publisher   
             Trace.trace (summary stopwatch.ElapsedMilliseconds result)
         }
@@ -718,17 +831,15 @@ module FPublisher =
         let publishAndDraftAll publisher = 
             publishAndDraftAllAsync publisher
             |> Async.RunSynchronously
-
+        
         /// update paket and fake dependencies
         let updateDependencies publisher = 
             let workspace = publisher.Workspace
-            Workspace.createSln workspace
-
+ 
             let fakeCacheDir = workspace.FakeCacheDir
             !! (fakeCacheDir + "./**/assemblies.txt")
             |> File.deleteAll 
 
             Workspace.paket ["update"] workspace
             Workspace.fake ["build"] workspace
-            Workspace.dotnet "restore" [workspace.SlnPath] workspace                     
-
+            Workspace.dotnet "restore" [] workspace                     

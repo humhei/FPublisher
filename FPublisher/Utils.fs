@@ -3,7 +3,9 @@ open FParsec
 open Fake.IO
 open Fake.DotNet
 open Fake.Core
+open Microsoft.FSharp.Quotations
 module Utils = 
+
     let inline dtntSmpl arg = DotNet.Options.lift id arg
     
     [<RequireQualifiedAccess>]
@@ -101,15 +103,27 @@ module Utils =
                 | Success (r,_,_) -> true
                 | Failure (error,_,_) -> false
 
+    
+    [<RequireQualifiedAccess>]
+    module Expr =
+        let nameof (q:Expr<_>) = 
+            match q with 
+            | Patterns.Let(_, _, DerivedPatterns.Lambdas(_, Patterns.Call(_, mi, _))) -> mi.Name
+            | Patterns.PropertyGet(_, mi, _) -> mi.Name
+            | DerivedPatterns.Lambdas(_, Patterns.Call(_, mi, _)) -> mi.Name
+            | DerivedPatterns.Lambdas(_, Patterns.NewUnionCase(uc,_)) -> uc.Name
+            | _ -> failwith "Unexpected format"    
+
     [<RequireQualifiedAccess>]
     module String =
         open System
         let ofCharList chars = chars |> List.toArray |> String
         
         let equalIgnoreCaseAndEdgeSpace (text1: string) (text2: string) = 
-            match text1.Trim().CompareTo (text2.Trim()) with 
-            | 0 -> true
-            | _ -> false
+            let trimedText1 = text1.Trim()
+            let trimedText2 = text2.Trim()
+
+            String.Equals(trimedText1,trimedText2,StringComparison.InvariantCultureIgnoreCase)
 
     [<RequireQualifiedAccess>]
     module Seq =

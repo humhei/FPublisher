@@ -3,9 +3,13 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+  
     <Compile Include="Utils.fs" />
     <Compile Include="FakeHelper.fs" />
     <Compile Include="Types.fs" />
+    <Compile Include="ProjectCoreCraker.fs" />
+    <Compile Include="CrackedFsproj.fs" />
+    <Compile Include="Solution.fs" />
     <Compile Include="Workspace.fs" />
     <Compile Include="Git.fs" />
     <Compile Include="GitHub.fs" />

@@ -1,1 +1,1 @@
-# Typed build system (Nor Targets) 
+# Using fsharp types to replace fake target (An alternative to Fake.Target) 

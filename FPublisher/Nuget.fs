@@ -88,9 +88,8 @@ module Nuget =
     [<RequireQualifiedAccess>]
     module NugetPacker =
 
-        let pack (workspace: Workspace) githubData targetDirectory (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
+        let pack slnPath (workspace: Workspace) githubData targetDirectory (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
             Workspace.workaroundPaketNuSpecBug workspace
-            Workspace.createSln workspace
             
             let githubRepository = githubData.Repository
             Environment.setEnvironVar "GenerateDocumentationFile" (string nugetPacker.GenerateDocumentationFile)
@@ -120,7 +119,7 @@ module Nuget =
                 |> buildingOptionsUser
                 |> dtntSmpl      
                     
-            DotNet.pack buildingPackOptions workspace.SlnPath                
+            DotNet.pack buildingPackOptions slnPath                
 
     type NugetPublisher =
         { ApiEnvironmentName: string }
