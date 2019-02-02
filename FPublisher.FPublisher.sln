@@ -7,8 +7,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPbulisher.FakerTests", "FP
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher", "FPublisher\FPublisher.fsproj", "{E3B0739C-0425-40A8-9D05-C48D11C46649}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher.Tests", "FPublisher.Tests\FPublisher.Tests.fsproj", "{327E39DA-6779-499A-BA14-B8C0CC3A9799}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

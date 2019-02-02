@@ -5,11 +5,19 @@ open Fake.Tools.Git.CommandHelper
 open Fake.Tools.Git
 open Microsoft.FSharp.Core.Operators
 open Fake.IO
-open FParsec.CharParsers
-open FParsec
 open Utils
+open Fake.Core.SemVerActivePattern
 open System
 module FakeHelper =
+
+    [<RequireQualifiedAccess>]
+
+    module ProcessResult =
+        let ensureExitCode (processResult: ProcessResult) =
+            if processResult.ExitCode <> 0 
+            then
+                failwithf "%A" processResult.Errors          
+
     module CommandHelper = 
 
         let toCommandLine args = 
@@ -21,12 +29,23 @@ module FakeHelper =
             |> ProcessUtils.tryFindFileOnPath
             |> function Some t -> t | _ -> failwithf "%s not found" tool
 
+        let dotnetWith dir command args =
+            DotNet.exec 
+                (fun ops -> {ops with WorkingDirectory = dir})
+                command
+                (toCommandLine args)
+
+        let dotnetFail dir command args =
+            dotnetWith dir command args            
+            |> ProcessResult.ensureExitCode
+
         let dotnet dir command args =
             DotNet.exec 
                 (fun ops -> {ops with WorkingDirectory = dir})
                 command
                 (toCommandLine args)
-                |> ignore    
+                |> ignore
+         
 
         let exec tool dir args =
             args
@@ -61,25 +80,26 @@ module FakeHelper =
     module Build =
         [<RequireQualifiedAccess>]
         module PreReleaseSegment =
-        
+            
             let incr (preReleaseSegment: PreReleaseSegment) =
                 match preReleaseSegment with 
                 | PreReleaseSegment.AlphaNumeric text -> 
-                    
-                    let alpha,number = runToResult (many1Chars asciiLetter .>>. many digit) text
-
-                    match number with 
-                    | [] -> alpha + "001"
-                    | _ ->
-                        let numberString =
-                            let maxValue = pown 10 number.Length - 1
-                            let numberValue = Int32.Parse (String.ofCharList number)
-                            let newNumberValue = numberValue + 1
-                            if newNumberValue > maxValue then failwithf "Version can not exceed maxValue %d" maxValue
-                            let format = sprintf "D%d" number.Length
-                            newNumberValue.ToString(format)
-                        alpha + numberString
-                    |> PreReleaseSegment.AlphaNumeric
+                    match text with 
+                    | ParseRegex "(?<alpha>[a-zA-Z]+)(?<number>[0-9]+)" [alpha; number] ->
+                        
+                        match number with 
+                        | "" -> alpha + "001"
+                        | _ ->
+                            let numberString =
+                                let maxValue = pown 10 number.Length - 1
+                                let numberValue = Int32.Parse number
+                                let newNumberValue = numberValue + 1
+                                if newNumberValue > maxValue then failwithf "Version can not exceed maxValue %d" maxValue
+                                let format = sprintf "D%d" number.Length
+                                newNumberValue.ToString(format)
+                            alpha + numberString
+                        |> PreReleaseSegment.AlphaNumeric
+                    | _ -> failwithf "cannot parse alpha numberic %s" text
                 | PreReleaseSegment.Numeric _ -> failwith "Not implemented" 
 
         [<RequireQualifiedAccess>]

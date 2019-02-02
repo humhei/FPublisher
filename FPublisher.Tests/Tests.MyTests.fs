@@ -26,14 +26,24 @@ Logger.info "End create publisher"
 let MyTests =
   testList "Interation tests" [
     testCase "next build" <| fun _ -> 
-      Publisher.build publisher
+      publisher
+      |> Publisher.publishAndDraftAll
       |> ignore
 
     testCase "next release" <| fun _ -> 
       Publisher.setPublishTarget PublishTarget.Release publisher
       |> Publisher.publishAndDraftAll
-
-    testCase "init publisher" <| fun _ -> 
-      Publisher.init publisher
       |> ignore
+
+    testCase "build project" <| fun _ -> 
+      publisher
+      |> Publisher.build
+      |> ignore  
+
+    testCase "run test" <| fun _ -> 
+      Publisher.runTest publisher
+      |> ignore
+
+    
+
   ]

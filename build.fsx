@@ -15,8 +15,15 @@ open System.Text
 open FParsec.CharParsers
 open Fake.Core.SemVerActivePattern
 open System.Text.RegularExpressions
+open FSharp.Literate
+
+let md = """# Markdown is cool
+especially with *FSharp.Formatting* ! """
+            |> FSharp.Markdown.Markdown.TransformHtml
+
 type ReleaseModel = double
 type InitModel = int
+
 [<RequireQualifiedAccess>]
 type PublishStatus =
     | None
@@ -33,27 +40,3 @@ let keyValuePair =
 
 
 let pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w.]+)\",[ ]+\"(?<relativePath>[\w\\\.]+)\""
-let collection = Regex.Matches(line,pattern,RegexOptions.ExplicitCapture)
-let s = collection.[0]
-let rec parseAll line =
-    match line with 
-    | ParseRegex pattern (s::a::_) -> 
-        s,a
-    | other -> failwith "Hello"
-
-
-let projectHex = hex <|> anyOf ['-';'{';'}';'\"'] 
-let parser: Parser<_,unit> = pstring "Project(\"{" >>. many1Chars projectHex >>. pstring "}\""
-
-let s = run parser line
-let readProjects (slnPath: string) = 
-    File.readWithEncoding Encoding.UTF8 slnPath
-    |> List.ofSeq
-
-let text = readProjects @"D:\VsCode\Github\FPublisher\FPublisher.FPublisher.sln"
-
-
-let result = Version.getLastNuGetVersion "https://www.nuget.org/api/v2" "FcsWatch"
-let version = "0.1.4-beta001"
-let semver = SemVer.parse version
-semver.PreRelease

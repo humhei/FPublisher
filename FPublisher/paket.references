@@ -3,7 +3,6 @@ Fake.Api.GitHub
 TaskBuilder.fs    
 Fake.DotNet.Cli
 Fake.Tools.Git
-FParsec
 FSharp.Data
 Fake.DotNet.NuGet
 FSharp.Compiler.Service

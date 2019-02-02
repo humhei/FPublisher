@@ -3,7 +3,6 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-  
     <Compile Include="Utils.fs" />
     <Compile Include="FakeHelper.fs" />
     <Compile Include="Types.fs" />
@@ -15,6 +14,10 @@
     <Compile Include="GitHub.fs" />
     <Compile Include="Nuget.fs" />
     <Compile Include="FPublisher.fs" />
+    <Compile Include="Roles/Primitives.fs" />
+    <Compile Include="Roles/Forker.fs" />
+    <Compile Include="Roles/Collaborator.fs" />
+    <Compile Include="Roles/Owner.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

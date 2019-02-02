@@ -47,11 +47,13 @@ module Solution =
             |> Async.RunSynchronously
             |> List.ofSeq }
          
-    
     let build (solution: Solution) =
-        dotnet solution.WorkingDir "build" [solution.Path]
+        dotnet solution.WorkingDir "build" [solution.Path]     
+    
+    let buildFail (solution: Solution) =
+        dotnetFail solution.WorkingDir "build" [solution.Path]
 
-    let test (solution: Solution) =
+    let testFail (solution: Solution) =
         solution.TestProjects
         |> List.collect (fun crackedFsproj ->
             crackedFsproj.Value
@@ -59,7 +61,7 @@ module Solution =
         |> List.map (fun crackedProjSingleTarget ->
             let targetPath = crackedProjSingleTarget.TargetPath 
             let dir = Path.getDirectory targetPath
-            async {return dotnet dir crackedProjSingleTarget.TargetPath [] }
+            async {return dotnetFail dir crackedProjSingleTarget.TargetPath [] }
         )
         |> Async.Parallel
         |> Async.RunSynchronously

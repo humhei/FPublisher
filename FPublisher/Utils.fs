@@ -1,10 +1,49 @@
 namespace FPublisher
-open FParsec
 open Fake.IO
 open Fake.DotNet
 open Fake.Core
 open Microsoft.FSharp.Quotations
+open System.Collections.Concurrent
+open Microsoft.FSharp.Reflection
 module Utils = 
+
+
+    [<RequireQualifiedAccess>]
+    module internal UnionCase =
+        let private cache = new ConcurrentDictionary<System.Type,UnionCaseInfo []>()
+
+        let private getUnionCaseInfos (tp: System.Type) =
+            cache.GetOrAdd(tp,FSharpType.GetUnionCases)
+
+        /// simple union case (nor of expression)
+        /// valid: type T = | A | B | C
+        /// Invalid: type T = | A of int | B | B 
+        let createByIndex<'UnionCaseType> index : 'UnionCaseType =
+            let unionCaseInfo =
+                getUnionCaseInfos typeof<'UnionCaseType> 
+                |> Array.item index
+
+            FSharpValue.MakeUnion(unionCaseInfo,[||])
+            |> unbox
+
+        let findIndex (unionCase: 'UnionCaseType) =
+            let unionCases = getUnionCaseInfos typeof<'UnionCaseType>
+
+            let currentUnionCase = 
+                FSharpValue.GetUnionFields(unionCase,typeof<'UnionCaseType>)
+                |> fst        
+
+            unionCases
+            |> Array.findIndex (fun unionCase -> unionCase.Name =  currentUnionCase.Name)
+
+        let isLast (unionCase: 'UnionCaseType) =
+            let index = findIndex unionCase
+            let unionCaseInfos = getUnionCaseInfos typeof<'UnionCaseType>
+            unionCaseInfos.Length - 1 = index
+
+
+        let isFirst (unionCase: 'UnionCaseType) =
+            findIndex unionCase = 0              
 
     let inline dtntSmpl arg = DotNet.Options.lift id arg
     
@@ -67,41 +106,6 @@ module Utils =
               
         let error message =
             Trace.traceError message        
-
-    [<AutoOpen>]
-    module FParsec =
-
-        let inline (+>>+) parser1 parser2 =
-            (parser1 |>> string) .>>. (parser2 |>> string)
-            |>> fun (r1,r2) -> r1 + r2
-
-        let runWithInputReturnOp parsers input =
-            match run parsers input with 
-            | ParserResult.Success (result,_,_) -> Some input
-            | ParserResult.Failure (error,_,_) -> None
-
-        let runWithInputReturn parsers input =
-            match run parsers input with 
-            | ParserResult.Success (result,_,_) -> input
-            | ParserResult.Failure (error,_,_) -> failwithf "%s" error
-
-        let runToResultOp p s = 
-            run p s 
-            |> function
-                | Success (r,_,_) -> Some r
-                | Failure (_msg,_error,_) -> None
-
-        let runToResult p s = 
-            run p s 
-            |> function
-                | Success (r,_,_) -> r
-                | Failure (error,_,_) -> failwithf "%s" error
-        
-        let runToBoolen p s = 
-            run p s 
-            |> function
-                | Success (r,_,_) -> true
-                | Failure (error,_,_) -> false
 
     
     [<RequireQualifiedAccess>]
