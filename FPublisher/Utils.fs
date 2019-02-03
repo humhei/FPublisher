@@ -12,19 +12,19 @@ module Utils =
     module internal UnionCase =
         let private cache = new ConcurrentDictionary<System.Type,UnionCaseInfo []>()
 
-        let private getUnionCaseInfos (tp: System.Type) =
+        let getUnionCaseInfos (tp: System.Type) =
             cache.GetOrAdd(tp,FSharpType.GetUnionCases)
 
-        /// simple union case (nor of expression)
-        /// valid: type T = | A | B | C
-        /// Invalid: type T = | A of int | B | B 
-        let createByIndex<'UnionCaseType> index : 'UnionCaseType =
+        let createByIndexWith<'UnionCaseType> index values  : 'UnionCaseType =
             let unionCaseInfo =
                 getUnionCaseInfos typeof<'UnionCaseType> 
                 |> Array.item index
 
-            FSharpValue.MakeUnion(unionCaseInfo,[||])
+            FSharpValue.MakeUnion(unionCaseInfo,values)
             |> unbox
+        
+        let createByIndex<'UnionCaseType> index : 'UnionCaseType =
+            createByIndexWith index [||]
 
         let findIndex (unionCase: 'UnionCaseType) =
             let unionCases = getUnionCaseInfos typeof<'UnionCaseType>

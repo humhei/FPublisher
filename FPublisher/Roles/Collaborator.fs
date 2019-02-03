@@ -137,7 +137,7 @@ module Collaborator =
 
 
     let run (msg: Target) (role: Role) =
-        Primitives.run msg role (function 
+        Primitives.runParent msg role (function 
             | Target.ForkerTarget forkerStatus ->
                 let forker = Forker.run forkerStatus role.Forker
                 if UnionCase.isLast forker.Status then 
