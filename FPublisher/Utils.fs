@@ -26,6 +26,13 @@ module Utils =
         let createByIndex<'UnionCaseType> index : 'UnionCaseType =
             createByIndexWith index [||]
 
+        let getName (unionCase: 'UnionCaseType) =
+            let uci = 
+                FSharpValue.GetUnionFields(unionCase,typeof<'UnionCaseType>)
+                |> fst  
+            uci.Name            
+                      
+
         let findIndex (unionCase: 'UnionCaseType) =
             let unionCases = getUnionCaseInfos typeof<'UnionCaseType>
 

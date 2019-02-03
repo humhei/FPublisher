@@ -9,8 +9,11 @@ open Fake.IO.FileSystemOperators
 open FPublisher.Utils
 open System.Threading.Tasks
 open FPublisher.Types
-open Microsoft.Build.Logging.StructuredLogger
 open Primitives
+open FPublisher.Git
+open System.IO
+open FPublisher.FakeHelper
+open Fake.IO.Globbing.Operators
 
 [<RequireQualifiedAccess>]
 module Collaborator =
@@ -61,6 +64,12 @@ module Collaborator =
             else failwithf "next version %s is smaller than current version %s" nextVersion.AsString currentVersion.AsString        
 
 
+        member x.NextReleaseNotes =
+            x.ReleaseNotes
+            |> ReleaseNotes.updateWithSemVerInfo x.NextVersion
+            |> ReleaseNotes.updateDateToToday    
+
+
 
     type Config =
         { NugetPacker: NugetPacker
@@ -103,52 +112,128 @@ module Collaborator =
 
 
     [<RequireQualifiedAccess>]
-    type Target =
-        | ForkerTarget of Forker.Target
-        | EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease
-        | WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease
+    type Msg =
+        | ForkerMsg of Forker.Msg
+        | EnsureGitChangesAllPushedAndInDefaultBranch
+        | WriteReleaseNotesToNextVersionAndPushToRemoteRepository
         | Pack
         | PublishAndDraftAll
+
+    type TargetState =
+        { ForkerTargetState: Forker.TargetState
+          EnsureGitChangesAllPushedAndInDefaultBranch: SimpleState
+          WriteReleaseNotesToNextVersionAndPushToRemoteRepository: SimpleState
+          Pack: SimpleState
+          PublishAndDraftAll: SimpleState }
+
+    [<RequireQualifiedAccess>]
+    module TargetState =
+        let init = 
+            { ForkerTargetState = Forker.TargetState.init
+              EnsureGitChangesAllPushedAndInDefaultBranch = SimpleState.Init
+              WriteReleaseNotesToNextVersionAndPushToRemoteRepository = SimpleState.Init
+              Pack = SimpleState.Init
+              PublishAndDraftAll = SimpleState.Init }
 
 
     type Role =
         { NugetPacker: NugetPacker
+          TargetPackDir: string
           Forker: Forker.Role
           NugetPublisher: NugetPublisher
-          Status: Target
+          TargetState: TargetState
+          Workspace: Workspace
           VersionController: Task<VersionController> }
     with 
-        member x.ChildRole = x.Forker
-        member x.NickStatus = x.Status
+        member x.Solution = x.Forker.Solution
+
+        member x.GitHubData = x.VersionController.Result.GitHubData
+
+        interface IRole<TargetState>
 
     let create (config: Config) =
-
         let workspace = config.Workspace         
 
         let forker = Forker.create workspace
-
         { NugetPacker = config.NugetPacker
+          TargetPackDir =
+            Path.GetTempPath() </> Path.GetRandomFileName()
+            |> Directory.ensureReturn
           NugetPublisher = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }                
-          Status = Target.ForkerTarget forker.Status
+          TargetState = TargetState.init
+          Workspace = workspace
           VersionController = Config.fetchVersionController config
           Forker = forker }
 
-          
+    let (!^) (forkerMsg: Forker.Msg) = Msg.ForkerMsg forkerMsg
 
+    let run =
+        Role.update (function 
+            | Msg.ForkerMsg forkerMsg -> 
+                let roleAction = Forker.roleAction forkerMsg
+                { PreviousMsgs = roleAction.PreviousMsgs |> List.map (!^)
+                  Action = 
+                    fun role ->
+                        roleAction.Action role.Forker }
 
-    let run (msg: Target) (role: Role) =
-        Primitives.runParent msg role (function 
-            | Target.ForkerTarget forkerStatus ->
-                let forker = Forker.run forkerStatus role.Forker
-                if UnionCase.isLast forker.Status then 
-                    { role with
-                        Status = Target.EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease
-                        Forker = forker }
-                else 
-                    { role with
-                        Status = Target.ForkerTarget forker.Status
-                        Forker = forker }                         
+            | Msg.EnsureGitChangesAllPushedAndInDefaultBranch ->
+                { PreviousMsgs = []
+                  Action = 
+                    fun role -> 
+                        let githubData = role.VersionController.Result.GitHubData
+                        match githubData.IsInDefaultBranch with 
+                        | true ->
+                            match (Workspace.repoState role.Workspace) with 
+                            | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
+                            | RepoState.None -> 
+                                failwith "Please push all changes to git server before you draft new a release"
+                        | false ->
+                            failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch }
 
+            | Msg.WriteReleaseNotesToNextVersionAndPushToRemoteRepository ->
+                { PreviousMsgs = 
+                    [ Msg.EnsureGitChangesAllPushedAndInDefaultBranch; !^ Forker.Msg.Test ]
+                  Action = 
+                    fun role -> 
+                        let githubData = role.VersionController.Result.GitHubData
+                        match githubData.IsInDefaultBranch with 
+                        | true ->
+                            match (Workspace.repoState role.Workspace) with 
+                            | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
+                            | RepoState.None -> 
+                                failwith "Please push all changes to git server before you draft new a release"
+                        | false ->
+                            failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch }    
+            | Msg.Pack ->
+                { PreviousMsgs = [ !^ Forker.Msg.Test ]
+                  Action = 
+                    fun role -> 
+                        let packer = role.NugetPacker
+                        let versionController = role.VersionController.Result
+
+                        NugetPacker.pack 
+                            role.Solution.Path 
+                            role.Workspace 
+                            role.GitHubData 
+                            role.TargetPackDir 
+                            versionController.NextReleaseNotes
+                            packer }
+
+            | Msg.PublishAndDraftAll ->
+                { PreviousMsgs = [ !^ Forker.Msg.Test ; Msg.Pack ; Msg.WriteReleaseNotesToNextVersionAndPushToRemoteRepository ]
+                  Action = 
+                    fun role -> 
+                        let versionController = role.VersionController.Result
+
+                        let newPackages = 
+                            !! (role.TargetPackDir + "./*.nupkg")
+                            |> List.ofSeq 
+
+                        [ GitHubData.draftAndPublishWithNewRelease versionController.NextReleaseNotes versionController.GitHubData
+                          NugetPublisher.publish newPackages role.NugetPublisher ]
+                        |> Async.Parallel
+                        |> Async.RunSynchronously
+                        |> ignore } 
         )               
                                                                                    
             

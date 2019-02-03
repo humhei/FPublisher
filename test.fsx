@@ -1,4 +1,11 @@
-open System.IO
-open System
-let file = "https://github.com/humhei/FPublisher.git"
-Path.GetFileNameWithoutExtension file
+let a = 
+    [
+        yield 
+            let a = 1
+            a
+
+        yield 
+            let b = 2 
+            b 
+            
+    ]

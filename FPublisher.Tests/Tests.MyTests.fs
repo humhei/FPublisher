@@ -8,22 +8,25 @@ open System.IO
 open Fake.IO
 open FPublisher.Utils
 open System.Text.RegularExpressions
+open FPublisher.Roles
+open FPublisher
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
 let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../"))
-Logger.info "Begin create publisher" 
-let publisher = Publisher.create (fun config ->
-  { config with 
-      PublishTarget = PublishTarget.Build
-      WorkingDir = root
-      BuildingPaketGitHubServerPublisher = Some id
-      Logger = Logger.Normal }
-)
-Logger.info "End create publisher" 
 
-let MyTests =
+
+let MyTests() =
+  let publisher = Publisher.create (fun config ->
+    { config with 
+        PublishTarget = PublishTarget.Build
+        WorkingDir = root
+        BuildingPaketGitHubServerPublisher = Some id
+        Logger = Logger.Normal }
+  )
+
+
   testList "Interation tests" [
     testCase "next build" <| fun _ -> 
       publisher
@@ -46,4 +49,16 @@ let MyTests =
 
     
 
+  ]
+
+let forker = Forker.create (Workspace root)
+
+let forkerTests() =
+  testList "Forker tests" [
+    testCase "build project" <| fun _ ->
+      Forker.run Forker.Msg.Build forker
+      |> ignore
+    ftestCase "test project" <| fun _ ->
+      Forker.run Forker.Msg.Test forker
+      |> ignore        
   ]

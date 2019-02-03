@@ -10,49 +10,49 @@ open Primitives
 module Forker =
 
     [<RequireQualifiedAccess>]
-    type Target =
-        | Init
+    type Msg =
         | Build 
         | Test
 
+    type TargetState =
+        { Build: SimpleState
+          Test: SimpleState }
+
+    [<RequireQualifiedAccess>]
+    module TargetState =
+        let init =
+            { Build = SimpleState.Init 
+              Test = SimpleState.Init }
 
     type Role =
         { Solution: Solution 
           Workspace: Workspace
-          Status: Target }
+          TargetState: TargetState }
     with 
-        interface IRole<Target> with 
+        interface IRole<TargetState>
             
-            member x.NickStatus = x.Status
-
-            member role.Run msg = 
-                Primitives.run msg (role :> IRole<Target>) (fun status ->
-                    match status with 
-                    | Target.Init ->
-                        Solution.buildFail role.Solution      
-                        { role with
-                            Status = Target.Build } 
-                    | Target.Build ->
-                        Solution.testFail role.Solution      
-                        { role with
-                            Status = Target.Build } 
-                    | Target.Test -> role 
-                    :> IRole<Target>  
-                )        
-            
-    let create (workspace: Workspace) =
+    let create (workspace: Workspace) = 
 
         let slnPath = 
             let workingDir = workspace.WorkingDir
             workingDir </> ("FPublisher." + workspace.DefaultSlnName + ".sln")
 
         Workspace.createSlnWith slnPath false workspace
-
+                
         { Solution = Solution.read slnPath   
           Workspace = workspace
-          Status = Target.Init }
+          TargetState = TargetState.init }
         
+    let internal roleAction msg = 
+        (fun msg ->
+            match msg with 
+            | Msg.Build ->
+                { PreviousMsgs = []
+                  Action = fun role -> Solution.buildFail role.Solution } 
+            | Msg.Test -> 
+                { PreviousMsgs = [Msg.Build]
+                  Action = fun role -> Solution.testFail role.Solution } 
+        ) msg
 
-                                                                                   
-                                                                                   
-        
+    let run =
+        Role.update roleAction

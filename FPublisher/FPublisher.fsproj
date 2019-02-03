@@ -17,7 +17,6 @@
     <Compile Include="Roles/Primitives.fs" />
     <Compile Include="Roles/Forker.fs" />
     <Compile Include="Roles/Collaborator.fs" />
-    <Compile Include="Roles/Owner.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

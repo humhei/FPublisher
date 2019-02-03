@@ -11,7 +11,7 @@ let testConfig =
 
 let allTests = 
     testList "All tests" [  
-        MyTests
+        forkerTests()
     ]
 
 [<EntryPoint>]

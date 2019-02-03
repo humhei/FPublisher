@@ -32,10 +32,13 @@ module Solution =
 
     let read slnPath = 
         checkValidSlnPath slnPath
+        let workingDir = Path.getDirectory slnPath
+
+        dotnet workingDir "restore" [slnPath]
 
         { Path = slnPath
           Projects = 
-            let workingDir = Path.getDirectory slnPath
+            
             let input = File.readAsStringWithEncoding Encoding.UTF8 slnPath
             [ for m in Regex.Matches(input,pattern) -> m ]
             |> List.map (fun m -> 
@@ -47,8 +50,11 @@ module Solution =
             |> Async.RunSynchronously
             |> List.ofSeq }
          
+    let restore (solution: Solution) =
+        dotnet solution.WorkingDir "restore" [solution.Path]     
+
     let build (solution: Solution) =
-        dotnet solution.WorkingDir "build" [solution.Path]     
+        dotnetWith solution.WorkingDir "build" [solution.Path]     
     
     let buildFail (solution: Solution) =
         dotnetFail solution.WorkingDir "build" [solution.Path]
