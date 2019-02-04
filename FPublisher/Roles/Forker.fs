@@ -43,16 +43,13 @@ module Forker =
           Workspace = workspace
           TargetState = TargetState.init }
         
-    let internal roleAction msg = 
-        (fun msg ->
-            match msg with 
-            | Msg.Build ->
-                { PreviousMsgs = []
-                  Action = fun role -> Solution.buildFail role.Solution } 
-            | Msg.Test -> 
-                { PreviousMsgs = [Msg.Build]
-                  Action = fun role -> Solution.testFail role.Solution } 
-        ) msg
+    let internal roleAction = function
+        | Msg.Build ->
+            { PreviousMsgs = []
+              Action = fun role -> Solution.buildFail role.Solution } 
+        | Msg.Test -> 
+            { PreviousMsgs = [Msg.Build]
+              Action = fun role -> Solution.testFail role.Solution } 
 
     let run =
         Role.update roleAction

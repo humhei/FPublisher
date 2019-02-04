@@ -19,19 +19,27 @@ module Nuget =
             !! (root + "./*/obj/**/*.nuspec")
             |> File.deleteAll  
 
-        let versionFromNugetServer (workspace: Workspace) = async {
+    [<RequireQualifiedAccess>]
+    module Solution =        
+ 
+        let versionFromServer server solution = async {
             let versions = 
-                Workspace.nugetPackageNames workspace
+                Solution.nugetPackageNames solution
                 |> Seq.map (fun packageName ->
-                    async {return Version.getLastNuGetVersion "https://www.nuget.org/api/v2" packageName}    
+                    async {return Version.getLastNuGetVersion server packageName}    
                 )
                 |> Async.Parallel
                 |> Async.RunSynchronously
                 |> Array.choose id
                 
             if versions.Length > 0 then return Some (Array.max versions) 
-            else return None   
+            else return None       
         }
+
+        let versionFromNugetServerV2 (solution: Solution) = versionFromServer "https://www.nuget.org/api/v2" solution
+
+        let versionFromNugetServer (solution: Solution) = versionFromServer "https://api-v2v3search-0.nuget.org" solution
+        
 
     type NugetPackage =
         { Name: string

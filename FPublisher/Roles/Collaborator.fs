@@ -6,7 +6,6 @@ open FPublisher.GitHub
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open FPublisher.FakeHelper.Build
 open Fake.IO.FileSystemOperators
-open FPublisher.Utils
 open System.Threading.Tasks
 open FPublisher.Types
 open Primitives
@@ -14,6 +13,7 @@ open FPublisher.Git
 open System.IO
 open FPublisher.FakeHelper
 open Fake.IO.Globbing.Operators
+open Fake.Tools.Git
 
 [<RequireQualifiedAccess>]
 module Collaborator =
@@ -74,7 +74,8 @@ module Collaborator =
     type Config =
         { NugetPacker: NugetPacker
           EnvironmentConfig: EnvironmentConfig
-          Workspace: Workspace }
+          Workspace: Workspace
+          LoggerLevel: Logger.Level }
 
     with 
         member x.WorkingDir = x.Workspace.WorkingDir
@@ -85,10 +86,10 @@ module Collaborator =
         let fetchVersionController (config: Config) = 
             let task = 
                 task {
-                    Logger.infots "Begin fetch versionController"
-                    Logger.infots "Begin fetch github data"
+                    logger.Infots "Begin fetch versionController"
+                    logger.Infots "Begin fetch github data"
                     let! githubData = GitHubData.fetch config.Workspace config.EnvironmentConfig
-                    Logger.infots "End fetch github data"        
+                    logger.Infots "End fetch github data"        
 
                     let workspace = Workspace config.WorkingDir 
                     
@@ -96,10 +97,10 @@ module Collaborator =
                         let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
                         ReleaseNotes.loadTbd releaseNotesFile
 
-                    Logger.infots "Begin fetch version from nuget server"
+                    logger.Infots "Begin fetch version from nuget server"
                     let! versionFromNugetServer = Workspace.versionFromNugetServer workspace   
-                    Logger.infots "End fetch version from nuget server"
-                    Logger.infots "End fetch versionController"
+                    logger.Infots "End fetch version from nuget server"
+                    logger.Infots "End fetch versionController"
 
                     return 
                         { GitHubData = githubData 
@@ -143,18 +144,23 @@ module Collaborator =
           NugetPublisher: NugetPublisher
           TargetState: TargetState
           Workspace: Workspace
+          Permission: Lazy<Permission>
           VersionController: Task<VersionController> }
     with 
         member x.Solution = x.Forker.Solution
 
         member x.GitHubData = x.VersionController.Result.GitHubData
 
-        interface IRole<TargetState>
+        interface IRole<TargetState> 
 
     let create (config: Config) =
+        logger <- Logger.create(config.LoggerLevel)
         let workspace = config.Workspace         
 
         let forker = Forker.create workspace
+
+        let versionController = Config.fetchVersionController config
+
         { NugetPacker = config.NugetPacker
           TargetPackDir =
             Path.GetTempPath() </> Path.GetRandomFileName()
@@ -162,8 +168,15 @@ module Collaborator =
           NugetPublisher = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }                
           TargetState = TargetState.init
           Workspace = workspace
-          VersionController = Config.fetchVersionController config
-          Forker = forker }
+          VersionController = versionController
+          Forker = forker
+          Permission =
+            lazy 
+                { GitHub = 
+                    
+                    PermissionLevel.Allow 
+                  Nuget = PermissionLevel.Deny}
+                 }
 
     let (!^) (forkerMsg: Forker.Msg) = Msg.ForkerMsg forkerMsg
 
@@ -185,8 +198,7 @@ module Collaborator =
                         | true ->
                             match (Workspace.repoState role.Workspace) with 
                             | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
-                            | RepoState.None -> 
-                                failwith "Please push all changes to git server before you draft new a release"
+                            | RepoState.None -> ()
                         | false ->
                             failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch }
 
@@ -195,15 +207,21 @@ module Collaborator =
                     [ Msg.EnsureGitChangesAllPushedAndInDefaultBranch; !^ Forker.Msg.Test ]
                   Action = 
                     fun role -> 
-                        let githubData = role.VersionController.Result.GitHubData
-                        match githubData.IsInDefaultBranch with 
-                        | true ->
-                            match (Workspace.repoState role.Workspace) with 
-                            | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
-                            | RepoState.None -> 
-                                failwith "Please push all changes to git server before you draft new a release"
-                        | false ->
-                            failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch }    
+                        let versionController = role.VersionController.Result
+
+                        let nextVersion = versionController.NextVersion
+
+                        let releaseNotesFile = versionController.ReleaseNotesFile
+
+                        let releaseNotesWithNextVersion = ReleaseNotes.updateWithSemVerInfo nextVersion versionController.ReleaseNotes
+
+                        ReleaseNotes.writeToNext versionController.ReleaseNotesFile releaseNotesWithNextVersion
+
+                        Workspace.git (sprintf "add %s" releaseNotesFile) versionController.Workspace |> ignore
+
+                        Commit.exec versionController.WorkingDir (sprintf "Bump version to %s" nextVersion.AsString)
+
+                        Branches.push versionController.WorkingDir }      
             | Msg.Pack ->
                 { PreviousMsgs = [ !^ Forker.Msg.Test ]
                   Action = 

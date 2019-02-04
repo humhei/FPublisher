@@ -25,6 +25,12 @@ with
 [<RequireQualifiedAccess>]
 module Solution =
     
+    let nugetPackageNames (solution: Solution) = 
+        solution.Projects
+        |> List.map (fun fsproj ->
+            Path.GetFileNameWithoutExtension fsproj.ProjPath
+        )
+
     let private pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w.]+)\",[ ]+\"(?<relativePath>[\w\\\.]+)\""
         
     let checkValidSlnPath path = 

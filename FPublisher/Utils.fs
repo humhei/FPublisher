@@ -54,67 +54,9 @@ module Utils =
 
     let inline dtntSmpl arg = DotNet.Options.lift id arg
     
-    [<RequireQualifiedAccess>]
-    type Logger =
-        | Minimal
-        | Normal
-        | Quiet
-
-    [<RequireQualifiedAccess>]
-    module Logger = 
-        open System
-
-        let mutable private logger = Logger.Minimal
-        let internal setDefaultLogger newLogger = logger <- newLogger
-
-        let private timeStamp (time:DateTime) = time.ToString("yyyy-MM-dd HH:mm:ss.fff")
-        let diagnostics text =
-            System.Diagnostics.Debugger.Log(1,"",sprintf "%s %s\n" (timeStamp DateTime.UtcNow) text)
+                               
 
 
-        let private _info message =
-            match logger with 
-            | Logger.Minimal -> ()
-            | Logger.Normal -> Trace.log message
-            | Logger.Quiet -> ()
-
-        let info format =
-            Printf.ksprintf _info format
-
-        let private withTimeStamp (f: string -> unit) =
-            fun message ->
-                let now = timeStamp DateTime.Now
-                sprintf "%s %s" now message 
-                |> f
-
-        /// with timeStamp
-        let infots format =
-            Printf.ksprintf (withTimeStamp _info) format
-            
-
-        let writelog (s:string) = printfn "LOG: %s" s
-        let writelogf fmt = Printf.kprintf writelog fmt
-
-
-
-        let private _important message =
-            match logger with 
-            | Logger.Quiet -> ()
-            | _ -> Trace.trace message  
-        
-        let important format =
-            Printf.ksprintf _important format   
-
-        let importantts format =
-            Printf.ksprintf (withTimeStamp _important) format           
-
-        let warn message =
-            Trace.traceImportant message  
-              
-        let error message =
-            Trace.traceError message        
-
-    
     [<RequireQualifiedAccess>]
     module Expr =
         let nameof (q:Expr<_>) = 

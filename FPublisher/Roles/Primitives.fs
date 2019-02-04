@@ -4,8 +4,7 @@ open FPublisher.Utils
 open Microsoft.FSharp.Reflection
 open System.Threading.Tasks
 open Microsoft.FSharp.Quotations
-open Microsoft.Build.Logging
-open System
+
 
 module Primitives =
         
@@ -34,6 +33,14 @@ module Primitives =
                 SimpleState.Result ()
             | SimpleState.Result _ -> state 
 
+    [<RequireQualifiedAccess>]
+    type PermissionLevel =
+        | Deny
+        | Allow
+
+    type Permission =
+        { GitHub: PermissionLevel
+          Nuget: PermissionLevel }    
 
     [<AutoOpen>]
     module internal Reflection = 
@@ -77,6 +84,7 @@ module Primitives =
         [<RequireQualifiedAccess>]            
         module Role =
             let rec update (makeRoleAction: 'msg -> RoleAction<'role,'msg>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
+                
                 let targetState: 'TargetState =
                     let tp = typeof<'role>
                     tp.GetProperty("TargetState").GetValue(role)

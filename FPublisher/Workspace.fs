@@ -51,10 +51,6 @@ module Workspace =
         allfsprojses workspace
         -- (workspace.WorkingDir + "/paket-files/**/*.fsproj")
 
-    let nugetPackageNames (workspace: Workspace) = 
-        fsprojses workspace
-        |> Seq.map (Path.GetFileNameWithoutExtension)
-        |> List.ofSeq
 
     let cleanBinAndObj (workspace: Workspace) =
         allfsprojses workspace
