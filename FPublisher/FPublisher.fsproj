@@ -5,7 +5,6 @@
   <ItemGroup>
     <Compile Include="Utils.fs" />
     <Compile Include="FakeHelper.fs" />
-    <Compile Include="Types.fs" />
     <Compile Include="ProjectCoreCraker.fs" />
     <Compile Include="CrackedFsproj.fs" />
     <Compile Include="Solution.fs" />
@@ -15,6 +14,7 @@
     <Compile Include="Nuget.fs" />
     <Compile Include="Logger.fs" />
     <Compile Include="Roles/Primitives.fs" />
+    <Compile Include="Roles\NonGit.fs" />
     <Compile Include="Roles/Forker.fs" />
     <Compile Include="Roles/Collaborator.fs" />
   </ItemGroup>

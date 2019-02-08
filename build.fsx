@@ -16,6 +16,9 @@ open FParsec.CharParsers
 open Fake.Core.SemVerActivePattern
 open System.Text.RegularExpressions
 open FSharp.Literate
+open FSharp.Data
+
+let response = Http.Request("http://localhost:5000/v3/index.json", silentHttpErrors = true)
 
 let md = """# Markdown is cool
 especially with *FSharp.Formatting* ! """

@@ -15,6 +15,3 @@ nuget Fake.Core.Target
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease
 
-
-
-    

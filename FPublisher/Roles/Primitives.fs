@@ -4,11 +4,14 @@ open FPublisher.Utils
 open Microsoft.FSharp.Reflection
 open System.Threading.Tasks
 open Microsoft.FSharp.Quotations
-
+open System.Diagnostics
+open Fake.Core
+open FPublisher.GitHub
+open Fake.IO.FileSystemOperators
+open FPublisher.FakeHelper.Build
 
 module Primitives =
         
-
     type IRole<'TargetState> = interface end
 
     [<RequireQualifiedAccess>]    
@@ -22,16 +25,25 @@ module Primitives =
         | Init    
         | Result of 'Result       
 
-    type SimpleState = State<unit> 
-    
+    type BoxedState = State<obj> 
+
+    let none = box ()
+
     [<RequireQualifiedAccess>]
-    module SimpleState =
-        let update action (state: SimpleState) =
+    module State =
+        let update stateName (action: unit -> 'result) (state: State<'result>) =
             match state with 
-            | SimpleState.Init -> 
-                action()
-                SimpleState.Result ()
-            | SimpleState.Result _ -> state 
+            | State.Init -> 
+                logger.Important "Start target %s" stateName
+                let stopWatch = Stopwatch.StartNew()
+                let result = action()
+                logger.Important "Finished target %s in %O" stateName stopWatch.Elapsed
+                State.Result result
+            | State.Result _ -> state
+
+        let getResult = function 
+            | State.Init -> failwith "result have not been evaluated"
+            | State.Result result -> result |> unbox
 
     [<RequireQualifiedAccess>]
     type PermissionLevel =
@@ -64,37 +76,34 @@ module Primitives =
 
         [<RequireQualifiedAccess>]
         module TargetState =
-            let updateByStateName stateName action (targetState: 'targetState): 'targetState =
-                Record.setProperty stateName (function 
-                    | :? SimpleState as simpleState ->
-                        SimpleState.update action simpleState
-                        |> box
-                    | _ -> failwith "not implemented"         
+            let updateByStateName stateName (action: unit -> 'stateResult) (targetState: 'targetState): 'targetState =
+                Record.setProperty stateName (fun value ->
+                    State.update stateName action (unbox value)
+                    |> box
                 ) targetState
 
             let update (expr: Expr<_>) action (targetState: 'targetState): 'targetState =
                 let stateName = Expr.nameof expr
                 updateByStateName stateName action targetState
                 
-        type RoleAction<'role,'msg> =
+        type RoleAction<'role,'msg,'stateResult> =
             { PreviousMsgs: 'msg list 
-              Action: 'role -> unit }
+              Action: 'role -> 'stateResult }
 
-        
         [<RequireQualifiedAccess>]            
         module Role =
-            let rec update (makeRoleAction: 'msg -> RoleAction<'role,'msg>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
+            let rec updateComplex (makeRoleAction: 'role -> 'msg -> RoleAction<'role,'msg,'stateResult>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
                 
                 let targetState: 'TargetState =
                     let tp = typeof<'role>
                     tp.GetProperty("TargetState").GetValue(role)
                     |> unbox 
                     
-                let roleAction = makeRoleAction msg
+                let roleAction = makeRoleAction role msg
 
                 let role = 
                     roleAction.PreviousMsgs |> List.fold (fun role msg ->
-                        update makeRoleAction msg role
+                        updateComplex makeRoleAction msg role
                     ) role                  
 
                 let newTargetState = 
@@ -104,3 +113,6 @@ module Primitives =
                     ) targetState               
                                 
                 Record.setProperty "TargetState" (fun _ -> box newTargetState) role
+
+            let update (makeRoleAction: 'msg -> RoleAction<'role, 'msg, 'stateResult>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
+                updateComplex (fun _ msg -> makeRoleAction msg) msg role

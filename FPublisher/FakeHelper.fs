@@ -146,7 +146,6 @@ module FakeHelper =
 
 
 
-
             let nextMinorVersion (semverInfo: SemVerInfo) =
                 { nextPatchVersion semverInfo with 
                     Minor = semverInfo.Minor + 1u }               

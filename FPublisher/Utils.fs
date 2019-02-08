@@ -5,7 +5,7 @@ open Fake.Core
 open Microsoft.FSharp.Quotations
 open System.Collections.Concurrent
 open Microsoft.FSharp.Reflection
-module Utils = 
+module internal Utils = 
 
 
     [<RequireQualifiedAccess>]

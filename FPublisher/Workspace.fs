@@ -70,6 +70,6 @@ module Workspace =
         
 
     let createDefaultSln isForce (workspace: Workspace) =
-        createSlnWith workspace.DefaultSlnPath isForce
+        createSlnWith workspace.DefaultSlnPath isForce workspace
 
 

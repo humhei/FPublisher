@@ -3,7 +3,7 @@ module Tests.MyTests
 #load "../.fake/build.fsx/intellisense_lazy.fsx"
 #endif
 open Expecto
-open FPublisher.FPublisher
+open FPublisher
 open System.IO
 open Fake.IO
 open FPublisher.Utils
