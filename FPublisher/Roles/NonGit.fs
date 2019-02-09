@@ -31,7 +31,8 @@ module NonGit =
     with 
         interface IRole<TargetState>
             
-    let create (workspace: Workspace) = 
+    let create loggerLevel (workspace: Workspace) = 
+        logger <- Logger.create(loggerLevel)
 
         let slnPath = 
             let workingDir = workspace.WorkingDir
@@ -43,13 +44,13 @@ module NonGit =
           Workspace = workspace
           TargetState = TargetState.init }
         
-    let internal roleAction = function
-        | Msg.Build ->
-            { PreviousMsgs = []
-              Action = fun role -> Solution.buildFail role.Solution } 
-        | Msg.Test -> 
-            { PreviousMsgs = [Msg.Build]
-              Action = fun role -> Solution.testFail role.Solution } 
 
     let run =
-        Role.update roleAction
+        Role.update (function 
+            | Msg.Build ->
+                { PreviousMsgs = []
+                  Action = MapState (fun role -> Solution.buildFail role.Solution) } 
+            | Msg.Test -> 
+                { PreviousMsgs = [Msg.Build]
+                  Action = MapState (fun role -> Solution.testFail role.Solution) } 
+        )

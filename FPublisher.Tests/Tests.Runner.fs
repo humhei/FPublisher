@@ -11,7 +11,7 @@ let testConfig =
 
 let allTests = 
     testList "All tests" [  
-        // forkerTests()
+        forkerTests()
         //workspaceTests()
         collaboratorTests()
     ]

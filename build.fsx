@@ -18,7 +18,10 @@ open System.Text.RegularExpressions
 open FSharp.Literate
 open FSharp.Data
 
-let response = Http.Request("http://localhost:5000/v3/index.json", silentHttpErrors = true)
+let s1 = SemVer.parse "0.1.0-beta.0.0"
+let s2 = SemVer.parse "0.1.0-beta.0"
+
+s1 > s2
 
 let md = """# Markdown is cool
 especially with *FSharp.Formatting* ! """

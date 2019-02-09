@@ -8,6 +8,7 @@ open Fake.IO
 open Utils
 open Fake.Core.SemVerActivePattern
 open System
+open Fake.DotNet.NuGet
 module FakeHelper =
 
     [<RequireQualifiedAccess>]
@@ -78,89 +79,108 @@ module FakeHelper =
             directory
 
     module Build =
-        [<RequireQualifiedAccess>]
-        module PreReleaseSegment =
-            
-            let incr (preReleaseSegment: PreReleaseSegment) =
-                match preReleaseSegment with 
-                | PreReleaseSegment.AlphaNumeric text -> 
-                    match text with 
-                    | ParseRegex "(?<alpha>[a-zA-Z]+)(?<number>[0-9]+)" [alpha; number] ->
-                        
-                        match number with 
-                        | "" -> alpha + "001"
-                        | _ ->
-                            let numberString =
-                                let maxValue = pown 10 number.Length - 1
-                                let numberValue = Int32.Parse number
-                                let newNumberValue = numberValue + 1
-                                if newNumberValue > maxValue then failwithf "Version can not exceed maxValue %d" maxValue
-                                let format = sprintf "D%d" number.Length
-                                newNumberValue.ToString(format)
-                            alpha + numberString
-                        |> PreReleaseSegment.AlphaNumeric
-                    | _ -> failwithf "cannot parse alpha numberic %s" text
-                | PreReleaseSegment.Numeric _ -> failwith "Not implemented" 
 
         [<RequireQualifiedAccess>]
-        module SemVerInfo =
-            let normalize (semverInfo: SemVerInfo) =
-                let build = if semverInfo.Build > 0I then ("." + semverInfo.Build.ToString("D5")) else ""
-                            
+        module internal SemVerInfo =
+            let private alphaLiterals =
+                [ "alpha"
+                  "rc"
+                  "beta" ]
+
+
+                
+
+            let internal normalize (semverInfo: SemVerInfo) =
+                let build = 
+                    if semverInfo.Build > 0I then ("." + semverInfo.Build.ToString("D")) else ""
+                        
                 let pre = 
                     match semverInfo.PreRelease with
                     | Some preRelease -> ("-" + preRelease.Origin)
                     | None -> ""
 
-                sprintf "%d.%d.%d%s%s" semverInfo.Major semverInfo.Minor semverInfo.Patch pre build
+                sprintf "%d.%d.%d%s%s" semverInfo.Major semverInfo.Minor semverInfo.Patch pre build    
+
+
+
 
             let mainVersionText (semverInfo: SemVerInfo) =
                 sprintf "%d.%d.%d" semverInfo.Major semverInfo.Minor semverInfo.Patch    
 
-            let nextBuildVersion (semverInfo: SemVerInfo) =
-                {semverInfo with Build = semverInfo.Build + 1I}
 
-            let nextPatchVersion (semverInfo: SemVerInfo) =
-                sprintf "%d.%d.%d" semverInfo.Major semverInfo.Minor (semverInfo.Patch + 1u)
-                |> SemVer.parse 
+
+            /// 0.1.4-alpha.0.1 -> 0.1.4-alpha.0+1
+            let normalizeBuild (semVerInfo: SemVerInfo) =
+                match semVerInfo.PreRelease with 
+                | Some prelease ->
+                    match prelease.Values with 
+                    | [segment1; segment2; segment3] ->
+                        match (segment1,segment2,segment3) with 
+                        | ( PreReleaseSegment.AlphaNumeric alpha, 
+                            PreReleaseSegment.Numeric num, 
+                            PreReleaseSegment.Numeric buildNum ) ->
+                            let v = sprintf "%s-%s.%O+%O" (mainVersionText semVerInfo) alpha num buildNum |> SemVer.parse
+                            { v with Build = buildNum }
+                            
+                        | _ -> semVerInfo
+                    | _ -> semVerInfo
+
+                | None -> semVerInfo
+
+            let internal parse text = 
+                SemVer.parse text
+                |> normalizeBuild
+
+            /// 0.1.4-alpha -> 0.1.4-alpha.0
+            let normalizeAlpha (semverInfo: SemVerInfo) =
+                match semverInfo.PreRelease with 
+                | Some preRelease ->
+                    match preRelease.Values with 
+                    | [segment] -> 
+                        match segment with 
+                        | PreReleaseSegment.AlphaNumeric text ->
+                            if List.contains text alphaLiterals 
+                            then
+                                sprintf "%s-%s.0" (mainVersionText semverInfo) text
+                                |> parse
+                            else semverInfo
+                        | _ -> semverInfo
+                    | _ -> semverInfo
+                | None -> semverInfo
+
+            let nextBuildVersion (semverInfo: SemVerInfo) =
+                let semverInfo = normalizeAlpha semverInfo
+
+                match semverInfo.PreRelease with 
+                | Some prerelease ->
+                    {semverInfo with Build = semverInfo.Build + 1I} 
+                    |> normalize
+                    |> parse
+                | None -> 
+                    let build = (semverInfo.Build + 1I).ToString("D")
+                    sprintf "%s-alpha.0.%s" (mainVersionText semverInfo) build
+                    |> parse
                 
             let nextBetaVersion (semverInfo: SemVerInfo) =
+                let semverInfo = normalizeAlpha semverInfo
+
                 let newVersionText =         
                     match semverInfo.PreRelease with 
                     | Some prelease ->  
-                        let segment = 
-                            match prelease.Values with 
-                            | [segment] -> PreReleaseSegment.incr segment 
-                            | _ -> failwith "not implemented"  
-                        
-                        match segment with 
-                        | PreReleaseSegment.AlphaNumeric origin -> 
-                            sprintf "%s-%s" (mainVersionText semverInfo) origin
-                        | _ -> failwith "not implemented" 
-
+                        match prelease.Values with 
+                        | [segment1;segment2] -> 
+                            match segment1,segment2 with 
+                            | PreReleaseSegment.AlphaNumeric alpha, PreReleaseSegment.Numeric num ->
+                                sprintf "%s-%s.%s" (mainVersionText semverInfo) alpha ((num + 1I).ToString())
+                            | _ -> failwith "not implementd"
+                        | _ -> failwith "not implemented"  
                     | None -> 
-                        let nextPatchVersion = nextPatchVersion semverInfo 
-                        sprintf "%s-%s" nextPatchVersion.AsString "alpha001"
-                SemVer.parse newVersionText
+                        let nextPatchVersion = { Version.IncPatch semverInfo with PreRelease = None }
+                        sprintf "%s-%s" (normalize nextPatchVersion) "alpha.1"
+
+                parse newVersionText
 
 
-
-
-            let nextMinorVersion (semverInfo: SemVerInfo) =
-                { nextPatchVersion semverInfo with 
-                    Minor = semverInfo.Minor + 1u }               
-        
-            let nextMajorVersion (semverInfo: SemVerInfo) =
-                { nextMinorVersion semverInfo with 
-                    Major = semverInfo.Major + 1u }     
-
-            let nextBetaVersionText (semverInfo: SemVerInfo) =
-                let newSemverInfo = nextBetaVersion semverInfo
-                normalize newSemverInfo
-
-            let nextBuildVersionText (semverInfo: SemVerInfo) =
-                let newSemverInfo = nextBuildVersion semverInfo
-                normalize newSemverInfo
 
         [<RequireQualifiedAccess>]
         module ReleaseNotes =
@@ -168,11 +188,11 @@ module FakeHelper =
                 match releaseNotes.SemVer.PreRelease with 
                 | Some prelease -> sprintf "## %s-%s - tbd" (SemVerInfo.mainVersionText releaseNotes.SemVer) prelease.Name
                 | None -> 
-                    let newPatchVersion = SemVerInfo.nextPatchVersion releaseNotes.SemVer
-                    sprintf "## %s-alpha - tbd" newPatchVersion.AsString
+                    let newPatchVersion = { Version.IncPatch releaseNotes.SemVer with PreRelease = None }
+                    sprintf "## %s-alpha - tbd" (SemVerInfo.normalize newPatchVersion)
 
             let private todayHeaderLine (releaseNotes: ReleaseNotes.ReleaseNotes) =
-                sprintf "## %s - %s" releaseNotes.SemVer.AsString (DateTime.Now.ToString("yyyy-MM-dd"))        
+                sprintf "## %s - %s" (SemVerInfo.normalize releaseNotes.SemVer) (DateTime.Now.ToString("yyyy-MM-dd"))        
 
             let updateDateToToday (releaseNotes: ReleaseNotes.ReleaseNotes) =
                 { releaseNotes with Date = Some DateTime.Today }
@@ -208,3 +228,11 @@ module FakeHelper =
                         | None -> fstReleaseNotes
                     | [] -> failwith "cannot find a tbd release note"
 
+
+            let loadLast (file: string) =
+                let lines = File.readWithEncoding System.Text.Encoding.UTF8 file
+
+                lines 
+                |> ReleaseNotes.parseAll
+                |> List.filter (fun releaseNotes -> releaseNotes.Date <> None)
+                |> List.tryHead

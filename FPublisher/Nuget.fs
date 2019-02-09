@@ -14,6 +14,7 @@ open FSharp.Data
 open Newtonsoft.Json
 open Octokit
 open FakeHelper
+open FakeHelper.Build
 
 module Nuget =
 
@@ -58,8 +59,8 @@ module Nuget =
         type NugetSearchItemResultV3 =
             { version: string }
 
-        type private NugetSearchResultV3 =
-            { data: NugetSearchItemResultV3 list}
+        type NugetSearchResultV3 =
+            { data: NugetSearchItemResultV3 list }
 
         let private getLastNugetVersionV3 server packageName = 
             let json = Http.RequestString (server,["q",packageName;"prerelease","true"]) 
@@ -67,7 +68,7 @@ module Nuget =
             result.data 
             |> List.tryHead
             |> Option.map (fun nugetItem ->
-                SemVer.parse nugetItem.version
+                SemVerInfo.parse nugetItem.version
             )
         
 
@@ -75,36 +76,6 @@ module Nuget =
         let lastVersionFromOfficalNugetServer (solution: Solution) = versionFromServer getLastNugetVersionV3 officalNugetV3SearchQueryServiceUrl solution
 
 
-        
-
-    type NugetPackage =
-        { Name: string
-          Version: SemVerInfo
-          Path: string }
-          
-    [<RequireQualifiedAccess>]          
-    module NugetPackage =
-        let private pattern =
-            @"(?<name>[\w.]+)" +
-            @"(\.(?<major>\d+))" +
-            @"(\.(?<minor>\d+))" +
-            @"(\.(?<patch>\d+))" +
-            @"(\-(?<pre>[0-9A-Za-z\-\.]+))?" +
-            @"(\.(?<build>[0-9A-Za-z\-\.]+))?$"  
-
-        let tryCreateByPath (fullPath: string) =
-            
-            let fileName = Path.GetFileNameWithoutExtension fullPath
-
-            match fileName with
-            | ParseRegex pattern (packageName :: _) ->
-                let versionText = fileName.Replace (packageName + ".", "")
-                
-                { Name = packageName
-                  Version = SemVer.parse versionText 
-                  Path = fullPath }
-                |> Some
-            | _ -> None   
 
 
     [<RequireQualifiedAccess>]
@@ -124,9 +95,13 @@ module Nuget =
         { Authors: NugetAuthors
           GenerateDocumentationFile: bool
           SourceLinkCreate: bool
-          PackageIconUrl: string option
-          BuildingPackOptions: DotNet.PackOptions -> DotNet.PackOptions }
-    
+          PackageIconUrl: string option }
+    with 
+        static member DefaultValue =  
+            { Authors = NugetAuthors.GithubLoginName
+              GenerateDocumentationFile = false 
+              SourceLinkCreate = false
+              PackageIconUrl = None }
 
     [<RequireQualifiedAccess>]
     module NugetPacker =
@@ -161,11 +136,9 @@ module Nuget =
                         OutputPath = Some targetDirectory
                         Common = { options.Common with CustomParams = Some versionParam }}
 
-                let buildingOptionsUser = nugetPacker.BuildingPackOptions
 
                 options                    
                 |> basicBuildingOptions
-                |> buildingOptionsUser
                 |> dtntSmpl      
                     
             DotNet.pack buildingPackOptions solution.Path 
@@ -234,7 +207,10 @@ module Nuget =
             match x with 
             | LocalNugetServer.BaGet (serviceable, searchQueryService) -> 
                 { ApiEnvironmentName = None; Serviceable = serviceable; SearchQueryService = searchQueryService}
+        member x.Serviceable = x.AsNugetServer.Serviceable
 
+        static member DefaultValue = LocalNugetServer.BaGet ("http://localhost:5000/v3/index.json","http://localhost:5000/v3/search")
+    
     [<RequireQualifiedAccess>]
     module LocalNugetServer =
 

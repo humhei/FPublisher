@@ -21,6 +21,10 @@ module Git =
         let diff (Workspace dir) =
             Git.diff dir
 
+        let isRepo workspace =
+            let _, lines, _ = Workspace.git (sprintf "config --get remote.origin.url") workspace
+            lines.Length <> 0
+
         let branchName workspace = 
             let _, lines, _ = Workspace.git (sprintf "rev-parse --abbrev-ref HEAD") workspace
             lines |> List.exactlyOne    

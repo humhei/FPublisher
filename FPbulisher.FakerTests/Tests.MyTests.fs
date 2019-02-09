@@ -6,7 +6,6 @@ open Expecto
 open FPublisher
 open System.IO
 open Fake.IO
-open FPublisher.Utils
 open System.Text.RegularExpressions
 
 let pass() = Expect.isTrue true "passed"

@@ -8,6 +8,7 @@ open FSharp.Data.HttpRequestHeaders
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open Utils
 open Git
+open FakeHelper.Build
 
 module GitHub = 
     type Topics =
@@ -46,7 +47,7 @@ module GitHub =
         
         let draftAndPublishWithNewRelease user repoName (release: ReleaseNotes.ReleaseNotes) (client: Async<GitHubClient>) =
             client
-            |> GitHub.draftNewRelease user repoName (release.SemVer.AsString) (release.SemVer.PreRelease <> None) release.Notes
+            |> GitHub.draftNewRelease user repoName (SemVerInfo.normalize release.SemVer) (release.SemVer.PreRelease <> None) release.Notes
             |> GitHub.publishDraft
 
         

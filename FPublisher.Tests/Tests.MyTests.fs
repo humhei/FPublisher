@@ -21,41 +21,8 @@ let fail() = Expect.isTrue false "failed"
 let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../"))
 
 
-// let MyTests() =
-//   let publisher = Publisher.create (fun config ->
-//     { config with 
-//         PublishTarget = PublishTarget.Build
-//         WorkingDir = root
-//         BuildingPaketGitHubServerPublisher = Some id
-//         Logger = Logger.Normal }
-//   )
-
-
-  // testList "Interation tests" [
-  //   testCase "next build" <| fun _ -> 
-  //     publisher
-  //     |> Publisher.publishAndDraftAll
-  //     |> ignore
-
-  //   testCase "next release" <| fun _ -> 
-  //     Publisher.setPublishTarget PublishTarget.Release publisher
-  //     |> Publisher.publishAndDraftAll
-  //     |> ignore
-
-  //   testCase "build project" <| fun _ -> 
-  //     publisher
-  //     |> Publisher.build
-  //     |> ignore  
-
-  //   testCase "run test" <| fun _ -> 
-  //     Publisher.runTest publisher
-  //     |> ignore
-
-    
-
-  // ]
-
 let workspace = (Workspace root)  
+
 
 let workspaceTests() =
   testList "Fake tests" [
@@ -63,30 +30,39 @@ let workspaceTests() =
       Workspace.createDefaultSln false workspace 
   ]
 
-let forker = Forker.create workspace
+let collaborator = 
+    Collaborator.create 
+        { Collaborator.Config.DefaultValue 
+            with 
+                WorkingDir = root
+                LoggerLevel = Logger.Level.Normal }
 
-let forkerTests() =
-  testList "Forker tests" [
+
+let nonGitTests() =
+  testList "NonGit tests" [
     testCase "build project" <| fun _ ->
-      Forker.run Forker.Msg.Build forker
+      Collaborator.run (!^ NonGit.Msg.Build) collaborator
       |> ignore
-    
     testCase "test project" <| fun _ ->
-      Forker.run Forker.Msg.Test forker
-      |> ignore        
+      Collaborator.run (!^ NonGit.Msg.Test) collaborator
+      |> ignore     
   ]
   
-let collaborator = Collaborator.create (fun config ->
-    { config with 
-        WorkingDir = root
-        LocalNugetServer = 
-            Some (LocalNugetServer.BaGet ("http://localhost:5000/v3/index.json","http://localhost:5000/v3/search")) })
+
+
+let forkerTests() =
+  testList "forker tests" [
+    testCase "pbulish to local nuget server" <| fun _ ->
+      Collaborator.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) collaborator
+      |> ignore
+  ]
+
 
 let collaboratorTests() =
     
   testList "Collaborator Tests" [
     ftestCase "next build" <| fun _ ->
-      Collaborator.run (Collaborator.Msg.PublishAndDraftAll PublishTarget.Build) collaborator
+      Collaborator.run Collaborator.Msg.NextRelease collaborator
       |> ignore
       Console.ReadLine() |> ignore
   ]
