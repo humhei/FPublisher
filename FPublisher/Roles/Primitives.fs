@@ -5,9 +5,19 @@ open Microsoft.FSharp.Reflection
 open System.Threading.Tasks
 open Microsoft.FSharp.Quotations
 open System.Diagnostics
+open FPublisher.FakeHelper.Build
+open Fake.Core
 
 module Primitives =
         
+    type Logger.Logger with 
+        member x.CurrentVersion (currentVersionOp: SemVerInfo option) =
+            match currentVersionOp with 
+            | Some currentVersion ->
+                logger.Important "Current version is %s" (SemVerInfo.normalize currentVersion)
+            | None -> 
+                logger.Important "Current version is None"
+
     type IRole<'TargetState> = interface end
 
     [<RequireQualifiedAccess>]    

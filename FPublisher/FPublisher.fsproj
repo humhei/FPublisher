@@ -3,6 +3,7 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Logger.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="FakeHelper.fs" />
     <Compile Include="ProjectCoreCraker.fs" />
@@ -12,7 +13,6 @@
     <Compile Include="Git.fs" />
     <Compile Include="GitHub.fs" />
     <Compile Include="Nuget.fs" />
-    <Compile Include="Logger.fs" />
     <Compile Include="Roles/Primitives.fs" />
     <Compile Include="Roles\NonGit.fs" />
     <Compile Include="Roles/Forker.fs" />

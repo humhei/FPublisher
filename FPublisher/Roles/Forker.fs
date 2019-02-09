@@ -227,11 +227,7 @@ module Forker =
                 |> Async.RunSynchronously
             
             let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
-            match currentVersion with 
-            | Some currentVersion ->
-                logger.Important "Current version is %s" (SemVerInfo.normalize currentVersion)
-            | None -> 
-                logger.Important "Current version is None"
+            logger.CurrentVersion currentVersion
 
             let nextReleaseNotes = Role.nextReleaseNotes versionFromLocalNugetServer role
 
