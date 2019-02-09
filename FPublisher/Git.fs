@@ -3,7 +3,7 @@ open System
 open Fake.Tools.Git
 open FakeHelper.CommandHelper
 open System.IO
-
+open Utils
 module Git =
 
     [<RequireQualifiedAccess>]
@@ -41,10 +41,17 @@ module Git =
             let _, lines, _ = Workspace.git (sprintf "rev-parse %s" branchName) workspace
             lines |> List.exactlyOne
             
+        let unPushed workspace =
+            let _, lines, _ = Workspace.git "cherry -v" workspace
+            lines
+
         let repoState workspace = 
-            let msgs = diff workspace
-            match msgs with 
-            | [] -> RepoState.None
+            let diffLines = 
+                diff workspace |> List.filter (String.equalIgnoreCaseAndEdgeSpace "RELEASE_NOTES.md")
+            let unPushedLines = unPushed workspace
+
+            match diffLines, unPushedLines with 
+            | [], [] -> RepoState.None
             | _ -> RepoState.Changed
 
         let gitPush commitMsg workspace = async {
