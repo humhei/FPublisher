@@ -47,7 +47,7 @@ module Git =
 
         let repoState workspace = 
             let diffLines = 
-                diff workspace |> List.filter (String.equalIgnoreCaseAndEdgeSpace "RELEASE_NOTES.md")
+                diff workspace |> List.filter (String.equalIgnoreCaseAndEdgeSpace "RELEASE_NOTES.md" >> not)
             let unPushedLines = unPushed workspace
 
             match diffLines, unPushedLines with 
