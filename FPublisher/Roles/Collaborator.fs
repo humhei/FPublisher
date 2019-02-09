@@ -315,7 +315,8 @@ module Collaborator =
                     logger.Important "Next version is %s" (SemVerInfo.normalize nextVersion)
 
                     Role.writeReleaseNotesToNextVersionAndPushToRemoteRepository role
-                    [ yield GitHubData.draftAndPublishWithNewRelease nextReleaseNotes role.GitHubData 
+                    GitHubData.draftAndPublishWithNewRelease nextReleaseNotes role.GitHubData  |> Async.RunSynchronously
+                    [ 
                       match role.LocalNugetServer with 
                       | Some localNugetServer -> 
                             let newPackages = role.Forker.TargetState.Pack |> State.getResult
