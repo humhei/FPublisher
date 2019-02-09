@@ -221,12 +221,10 @@ module FakeHelper =
 
                 lines 
                 |> ReleaseNotes.parseAll
-                |> function
-                    | fstReleaseNotes :: _ -> 
-                        match fstReleaseNotes.Date with 
-                        | Some _ -> failwith "cannot find a tbd release note"
-                        | None -> fstReleaseNotes
-                    | [] -> failwith "cannot find a tbd release note"
+                |> List.filter (fun releaseNotes -> releaseNotes.Date = None)
+                |> function 
+                    | [tbdReleaseNotes] -> tbdReleaseNotes
+                    | _ -> failwith "Cannot find a tbd release notes"
 
 
             let loadLast (file: string) =
@@ -235,4 +233,10 @@ module FakeHelper =
                 lines 
                 |> ReleaseNotes.parseAll
                 |> List.filter (fun releaseNotes -> releaseNotes.Date <> None)
-                |> List.tryHead
+                |> function 
+                    | values when values.Length > 0 -> 
+                        values 
+                        |> List.maxBy (fun releaseNotes -> releaseNotes.Date)
+                        |> Some
+
+                    | _ -> None
