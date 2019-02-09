@@ -236,7 +236,7 @@ module FakeHelper =
                 |> function 
                     | values when values.Length > 0 -> 
                         values 
-                        |> List.maxBy (fun releaseNotes -> releaseNotes.Date)
+                        |> List.maxBy (fun releaseNotes -> releaseNotes.Date, releaseNotes.SemVer)
                         |> Some
 
                     | _ -> None
