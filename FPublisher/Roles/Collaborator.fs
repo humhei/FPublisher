@@ -280,13 +280,13 @@ module Collaborator =
               Action = 
                 MapState (fun role ->
                     let githubData = role.VersionController.Result.GitHubData
-                    match githubData.IsInDefaultBranch with 
-                    | true ->
-                        match (Workspace.repoState role.Workspace) with 
-                        | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
-                        | RepoState.None -> none
-                    | false ->
-                        failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch 
+                    //match githubData.IsInDefaultBranch with 
+                    //| true ->
+                    match (Workspace.repoState role.Workspace) with 
+                    | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
+                    | RepoState.None -> none
+                    //| false ->
+                        //failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch 
                 )
             }
                 
