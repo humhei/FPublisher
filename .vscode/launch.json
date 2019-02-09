@@ -7,7 +7,7 @@
             "request": "launch",
             "preLaunchTask": "Build Tests",
             "type": "coreclr",            
-            "program": "${workspaceRoot}/FPublisher.Tests/bin/Debug/netcoreapp3.0/FPublisher.Tests.dll",
+            "program": "${workspaceRoot}/FPublisher.Tests/bin/Debug/netcoreapp2.2/FPublisher.Tests.dll",
             "args": [],
             "cwd": "${workspaceRoot}/FPublisher.Tests",
             "stopAtEntry": false,

@@ -318,8 +318,8 @@ module Collaborator =
                     [ yield GitHubData.draftAndPublishWithNewRelease nextReleaseNotes role.GitHubData 
                       match role.LocalNugetServer with 
                       | Some localNugetServer -> 
-                        let newPackages = role.Forker.TargetState.Pack |> State.getResult
-                        yield LocalNugetServer.publish newPackages localNugetServer 
+                            let newPackages = role.Forker.TargetState.Pack |> State.getResult
+                            yield LocalNugetServer.publish newPackages localNugetServer 
                       | None -> ()]
                     |> Async.Parallel
                     |> Async.RunSynchronously
