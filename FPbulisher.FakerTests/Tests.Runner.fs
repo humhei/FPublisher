@@ -11,9 +11,7 @@ let testConfig =
 
 let allTests = 
     testList "All tests" [  
-        forkerTests()
-        //workspaceTests()
-        collaboratorTests()
+        MyTests
     ]
 
 [<EntryPoint>]

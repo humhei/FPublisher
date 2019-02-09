@@ -1,4 +1,4 @@
-﻿// Learn more about F# at http://fsharp.org
+// Learn more about F# at http://fsharp.org
 module Runner
 open Expecto
 open Expecto.Logging
@@ -11,9 +11,7 @@ let testConfig =
 
 let allTests = 
     testList "All tests" [  
-        forkerTests()
-        //workspaceTests()
-        collaboratorTests()
+        MyTests
     ]
 
 [<EntryPoint>]
