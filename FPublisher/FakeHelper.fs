@@ -79,15 +79,15 @@ module FakeHelper =
             directory
 
     module Build =
+        
 
+        /// Compatible SemVerInfo module for nuget
         [<RequireQualifiedAccess>]
         module internal SemVerInfo =
             let private alphaLiterals =
                 [ "alpha"
                   "rc"
                   "beta" ]
-
-
                 
 
             let internal normalize (semverInfo: SemVerInfo) =

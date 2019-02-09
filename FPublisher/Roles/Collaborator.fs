@@ -220,6 +220,7 @@ module Collaborator =
                 match versionFromTbdReleaseNotes.PreRelease with
                 | Some prerelease -> 
                     SemVerInfo.normalizeAlpha versionFromTbdReleaseNotes
+                    |> SemVerInfo.nextBetaVersion
                 | None -> versionFromTbdReleaseNotes
                         
             | Some currentVersion ->
@@ -227,7 +228,10 @@ module Collaborator =
                 then SemVerInfo.nextBetaVersion currentVersion                       
                 else 
                     match versionFromTbdReleaseNotes.PreRelease with 
-                    | Some _ -> SemVerInfo.normalizeAlpha versionFromTbdReleaseNotes
+                    | Some _ -> 
+                        SemVerInfo.normalizeAlpha versionFromTbdReleaseNotes
+                        |> SemVerInfo.nextBetaVersion
+
                     | None -> versionFromTbdReleaseNotes  
 
 
