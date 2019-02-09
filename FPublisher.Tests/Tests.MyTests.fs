@@ -35,7 +35,8 @@ let collaborator =
         { Collaborator.Config.DefaultValue 
             with 
                 WorkingDir = root
-                LoggerLevel = Logger.Level.Normal }
+                LoggerLevel = Logger.Level.Normal
+                LocalNugetServer = Some LocalNugetServer.DefaultValue }
 
 
 let nonGitTests() =
