@@ -65,5 +65,4 @@ let collaboratorTests() =
     ftestCase "next build" <| fun _ ->
       Collaborator.run Collaborator.Msg.NextRelease collaborator
       |> ignore
-      Console.ReadLine() |> ignore
   ]
