@@ -1,5 +1,5 @@
 language: csharp
-dotnet: 2.2.103
+dotnet: 2.2
 mono: none
 
 install:
