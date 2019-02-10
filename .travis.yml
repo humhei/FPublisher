@@ -3,8 +3,5 @@ dist: xenial
 dotnet: 2.2
 mono: none
 
-install:
-  - dotnet tool install fake-cli -g
-
 script:
   - ./fake.sh build -t "Test"

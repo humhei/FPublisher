@@ -3,7 +3,7 @@ install:
   - cinst fake
 
 build_script: 
-  - cmd: fake build -t "PublishAll"
+  - cmd: fake.cmd build -t PublishAll
 
 version: '{build}'
 
