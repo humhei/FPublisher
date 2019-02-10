@@ -1,6 +1,6 @@
 language: csharp
 dotnet: 2.2.103
-mono: latest
+mono: none
 
 install:
   - dotnet tool install fake-cli -g
