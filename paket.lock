@@ -1,3 +1,4 @@
+STORAGE: NONE
 NUGET
   remote: https://api.nuget.org/v3/index.json
     Argu (5.2) - restriction: || (>= net461) (>= netstandard2.0)
