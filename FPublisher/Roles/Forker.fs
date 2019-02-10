@@ -217,7 +217,6 @@ module Forker =
                     nextReleaseNotes
                     role.NugetPacker
                 |> box
-                
                 )
             } 
 

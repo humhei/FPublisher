@@ -2,8 +2,8 @@
 #r "paket: groupref Main //"
 #endif
 #if !FAKE
-#r "netstandard" // windows
-
+#r "Facades/netstandard"
+#r "netstandard"
 #endif
 #load "./.fake/build.fsx/intellisense.fsx"
 
@@ -15,34 +15,37 @@ open System.Text
 open FParsec.CharParsers
 open Fake.Core.SemVerActivePattern
 open System.Text.RegularExpressions
-open FSharp.Literate
 open FSharp.Data
-
-let s1 = SemVer.parse "0.1.0-beta.0.0"
-let s2 = SemVer.parse "0.1.0-beta.0"
-
-s1 > s2
-
-let md = """# Markdown is cool
-especially with *FSharp.Formatting* ! """
-            |> FSharp.Markdown.Markdown.TransformHtml
-
-type ReleaseModel = double
-type InitModel = int
-
-[<RequireQualifiedAccess>]
-type PublishStatus =
-    | None
-    | Init of InitModel
-    | Build of InitModel
-    | RunTest of InitModel
-    | EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease of InitModel
-    | WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease of ReleaseModel
-    | Packed of ReleaseModel
-
-let keyValuePair =
-    let tp =typeof<PublishStatus>
-    tp.GetProperties() |> Array.map (fun prop -> prop.Name )
+open FPublisher.Roles
+open FPublisher
+open FPublisher.Nuget
+open System
 
 
-let pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w.]+)\",[ ]+\"(?<relativePath>[\w\\\.]+)\""
+let collaborator = 
+    Collaborator.create 
+        { Collaborator.Config.DefaultValue 
+            with 
+                LocalNugetServer = Some LocalNugetServer.DefaultValue }
+
+
+Target.create "Build" <| fun _ ->
+    Collaborator.run (!^ NonGit.Msg.Build) collaborator
+    |> ignore
+
+Target.create "Test" <| fun _ ->
+    Collaborator.run (!^ NonGit.Msg.Test) collaborator
+    |> ignore     
+
+Target.create "publishToLocalNugetServer" <| fun _ ->
+    Collaborator.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) collaborator
+    |> ignore
+
+    
+Target.create "nextRelease" <| fun _ ->
+    Collaborator.run Collaborator.Msg.NextRelease collaborator
+    |> ignore
+
+Target.create "Default" ignore
+
+Target.runOrDefault "Default"

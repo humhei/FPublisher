@@ -6,7 +6,6 @@ open Fake.Tools.Git
 open Microsoft.FSharp.Core.Operators
 open Fake.IO
 open Utils
-open Fake.Core.SemVerActivePattern
 open System
 open Fake.DotNet.NuGet
 module FakeHelper =
@@ -36,24 +35,20 @@ module FakeHelper =
                 command
                 (toCommandLine args)
 
-        let dotnetFail dir command args =
+        let dotnet dir command args =
             dotnetWith dir command args            
             |> ProcessResult.ensureExitCode
 
-        let dotnet dir command args =
-            DotNet.exec 
-                (fun ops -> {ops with WorkingDirectory = dir})
-                command
-                (toCommandLine args)
-                |> ignore
-         
 
         let exec tool dir args =
-            args
-            |> CreateProcess.fromRawCommand tool
-            |> CreateProcess.withWorkingDirectory dir
-            |> Proc.run
-            |> ignore  
+            let result =
+                args
+                |> CreateProcess.fromRawCommand tool
+                |> CreateProcess.withWorkingDirectory dir
+                |> Proc.run
+
+            if result.ExitCode <> 0 
+            then failwithf "Error while running %s with args %A" tool (List.ofSeq args)
 
         let git args dir = exec "git" dir args     
         [<RequireQualifiedAccess>]

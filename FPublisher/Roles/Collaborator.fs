@@ -303,6 +303,7 @@ module Collaborator =
                 match role.LocalNugetServer with 
                 | Some localNugetServer -> !^(Forker.Msg.Pack nextReleaseNotes) :: baseMsgs
                 | None -> baseMsgs
+
               Action = 
                 MapState (fun role ->
 

@@ -11,6 +11,8 @@ nuget FSharp.Core < 4.6
 nuget FSharp.Compiler.Service
 nuget Dotnet.ProjInfo
 nuget Fake.Core.Target
+source http://localhost:5000/v3/index.json
+nuget FPublisher prerelease
 
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease

@@ -1,16 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Tests.MyTests.fs" />
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
-
-  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\FPublisher\FPublisher.fsproj" />
   </ItemGroup>

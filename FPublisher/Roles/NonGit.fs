@@ -49,8 +49,8 @@ module NonGit =
         Role.update (function 
             | Msg.Build ->
                 { PreviousMsgs = []
-                  Action = MapState (fun role -> Solution.buildFail role.Solution) } 
+                  Action = MapState (fun role -> Solution.build role.Solution) } 
             | Msg.Test -> 
                 { PreviousMsgs = [Msg.Build]
-                  Action = MapState (fun role -> Solution.testFail role.Solution) } 
+                  Action = MapState (fun role -> Solution.test role.Solution) } 
         )

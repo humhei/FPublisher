@@ -60,12 +60,9 @@ module Solution =
         dotnet solution.WorkingDir "restore" [solution.Path]     
 
     let build (solution: Solution) =
-        dotnetWith solution.WorkingDir "build" [solution.Path]     
+        dotnet solution.WorkingDir "build" [solution.Path]     
     
-    let buildFail (solution: Solution) =
-        dotnetFail solution.WorkingDir "build" [solution.Path]
-
-    let testFail (solution: Solution) =
+    let test (solution: Solution) =
         solution.TestProjects
         |> List.collect (fun crackedFsproj ->
             crackedFsproj.Value
@@ -73,7 +70,7 @@ module Solution =
         |> List.map (fun crackedProjSingleTarget ->
             let targetPath = crackedProjSingleTarget.TargetPath 
             let dir = Path.getDirectory targetPath
-            async {return dotnetFail dir crackedProjSingleTarget.TargetPath [] }
+            async {return dotnet dir crackedProjSingleTarget.TargetPath [] }
         )
         |> Async.Parallel
         |> Async.RunSynchronously
