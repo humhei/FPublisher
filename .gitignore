@@ -172,7 +172,7 @@ packages/
 # Test results produced by build
 TestResults.xml
 
-# Nuget outputs
+# Nuget outputs 
 nuget/*.nupkg
 release.cmd
 release.sh
