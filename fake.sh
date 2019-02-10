@@ -1,2 +1,3 @@
 #!/bin/bash
-fake $@
+dotnet restore build.proj
+dotnet fake $@

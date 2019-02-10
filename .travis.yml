@@ -1,7 +1,5 @@
 language: csharp
 dist: xenial
-os: osx
-osx_image: xcode9.3
 dotnet: 2.2
 mono: none
 
