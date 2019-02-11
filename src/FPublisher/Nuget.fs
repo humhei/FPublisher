@@ -160,16 +160,22 @@ module Nuget =
             Directory.ensure targetDirName
 
             packages |> Shell.copyFiles targetDirName
-
-            dotnet targetDirName
-                "nuget" 
-                [
-                    yield! [ "push"; "*.nupkg"; "-s"; nugetServer.Serviceable ] 
-                    match nugetServer.ApiEnvironmentName with 
-                    | Some envName -> 
-                        yield! [ "-k"; Environment.environVarOrFail envName ]
-                    | None -> ()
-                ]
+            !! (targetDirName + "./*.nupkg")
+            |> Seq.map (fun nupkg -> async {
+                dotnet targetDirName
+                    "nuget" 
+                    [
+                        yield! [ "push"; nupkg; "-s"; nugetServer.Serviceable ] 
+                        match nugetServer.ApiEnvironmentName with 
+                        | Some envName -> 
+                            yield! [ "-k"; Environment.environVarOrFail envName ]
+                        | None -> ()
+                    ]
+                }
+            )
+            |> Async.Parallel
+            |> Async.RunSynchronously
+            |> ignore
         }
 
         let getLastVersion (solution: Solution) nugetServer =
@@ -218,3 +224,9 @@ module Nuget =
             let nugetServer = localNugetServer.AsNugetServer 
             NugetServer.publish packages nugetServer
 
+        let ping (localNugetServer: LocalNugetServer) =
+            try 
+                Http.Request(localNugetServer.Serviceable,silentHttpErrors = true) |> ignore
+                Some localNugetServer
+            with _ ->
+                None

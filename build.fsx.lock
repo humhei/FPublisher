@@ -1,8 +1,0 @@
-STORAGE: NONE
-RESTRICTION: == netstandard2.0
-
-GROUP groupref Legacy //
-
-
-GROUP groupref Main
-

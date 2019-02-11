@@ -3,7 +3,7 @@ storage: none
 nuget Expecto
 nuget Fake.Core.ReleaseNotes
 nuget Fake.Api.GitHub
-nuget TaskBuilder.fs    
+nuget TaskBuilder.fs
 nuget Fake.DotNet.Cli
 nuget Fake.Tools.Git
 nuget FSharp.Data
@@ -12,9 +12,8 @@ nuget FSharp.Core < 4.6
 nuget FSharp.Compiler.Service
 nuget Dotnet.ProjInfo
 nuget Fake.Core.Target
-source http://localhost:5000/v3/index.json
+nuget Fake.BuildServer.AppVeyor
 nuget FPublisher prerelease
 
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease
-

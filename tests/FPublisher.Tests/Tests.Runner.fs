@@ -12,7 +12,7 @@ let testConfig =
 let allTests = 
     testList "All tests" [  
         forkerTests()
-        //workspaceTests()
+        workspaceTests()
         collaboratorTests()
     ]
 

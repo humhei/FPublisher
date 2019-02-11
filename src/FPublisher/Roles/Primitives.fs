@@ -96,6 +96,7 @@ module Primitives =
 
         [<RequireQualifiedAccess>]            
         module Role =
+
             let rec updateComplex (makeRoleAction: 'role -> 'msg -> RoleAction<'role,'msg,'stateResult,'childTargetState>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
                 
                 let targetState: 'TargetState =

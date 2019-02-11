@@ -221,6 +221,11 @@ module Forker =
             } 
 
         | Msg.PublishToLocalNugetServer localNugetServer ->
+
+            match LocalNugetServer.ping localNugetServer with 
+            | Some _ -> ()
+            | None -> failwithf "Can not access local nuget server %s" localNugetServer.Serviceable
+
             let versionFromLocalNugetServer = 
                 VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
                 |> Async.RunSynchronously

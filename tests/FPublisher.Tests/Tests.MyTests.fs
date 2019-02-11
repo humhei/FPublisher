@@ -1,6 +1,6 @@
 module Tests.MyTests
 #if INTERACTIVE
-#load "../.fake/build.fsx/intellisense_lazy.fsx"
+#load "../../.fake/build.fsx/intellisense_lazy.fsx"
 #endif
 open Expecto
 open System.IO
@@ -14,26 +14,26 @@ open System
 open FPublisher.Nuget
 open FPublisher.Roles
 open FPublisher.Roles.Primitives
+open Fake.Core
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
-let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../"))
+let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
-
-let workspace = (Workspace root)  
+let workspace = (Workspace root)
 
 
 let workspaceTests() =
   testList "Fake tests" [
     testCase "add default solution" <| fun _ ->
-      Workspace.createDefaultSln false workspace 
+      Workspace.createDefaultSln false workspace
   ]
 
-let collaborator = 
-    Collaborator.create 
-        { Collaborator.Config.DefaultValue 
-            with 
+let role =
+    BuildServer.create BuildServer.buildServer
+        { Collaborator.Config.DefaultValue
+            with
                 WorkingDir = root
                 LoggerLevel = Logger.Level.Normal
                 LocalNugetServer = Some LocalNugetServer.DefaultValue }
@@ -42,27 +42,27 @@ let collaborator =
 let nonGitTests() =
   testList "NonGit tests" [
     testCase "build project" <| fun _ ->
-      Collaborator.run (!^ NonGit.Msg.Build) collaborator
+      BuildServer.run (!^ NonGit.Msg.Build) role
       |> ignore
     testCase "test project" <| fun _ ->
-      Collaborator.run (!^ NonGit.Msg.Test) collaborator
-      |> ignore     
+      BuildServer.run (!^ NonGit.Msg.Test) role
+      |> ignore
   ]
-  
+
 
 
 let forkerTests() =
   testList "forker tests" [
     testCase "pbulish to local nuget server" <| fun _ ->
-      Collaborator.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) collaborator
+      BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) role
       |> ignore
   ]
 
 
 let collaboratorTests() =
-    
   testList "Collaborator Tests" [
-    ftestCase "next build" <| fun _ ->
-      Collaborator.run Collaborator.Msg.NextRelease collaborator
+    testCase "next release" <| fun _ ->
+      BuildServer.run (!^ Collaborator.Msg.NextRelease) role
       |> ignore
   ]
+

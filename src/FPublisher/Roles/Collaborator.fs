@@ -16,6 +16,7 @@ open Fake.Tools.Git
 open Fake.IO
 open Fake.Api
 open FSharp.Data
+#nowarn "0064"
 
 type EnvironmentConfig =
     { NugetApiKey: string
@@ -130,13 +131,8 @@ module Collaborator =
     module Config =
         let tweak (config: Config) =
             { config with 
-                LocalNugetServer = config.LocalNugetServer |> Option.map (fun localNugetServer ->
-                    try 
-                        Http.Request(localNugetServer.Serviceable,silentHttpErrors = true) |> ignore
-                        Some localNugetServer
-                    with _ ->
-                        None
-                ) |> Option.flatten }
+                LocalNugetServer = config.LocalNugetServer |> Option.map LocalNugetServer.ping
+                |> Option.flatten }
 
         let fetchVersionController (forkerVersionController: Lazy<Forker.VersionController>) solution (config: Config) = 
             lazy 
@@ -194,6 +190,8 @@ module Collaborator =
 
         member x.Workspace = x.Forker.Workspace
 
+        member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
+        
         member x.Solution = x.Forker.Solution
 
         member x.GitHubData = x.VersionController.Value.GitHubData
@@ -270,10 +268,25 @@ module Collaborator =
           Forker = forker
           LocalNugetServer = config.LocalNugetServer }
 
-    let upcastMsg (forkerMsg: Forker.Msg) = Msg.Forker forkerMsg
+    [<AutoOpen>]
+    module SRTPMsgs =
 
-    let (!^) (forkerMsg: Forker.Msg) = Msg.Forker forkerMsg
-    let (!^^) (nonGitMsg: NonGit.Msg) = !^ (Forker.upcastMsg nonGitMsg)
+        type Ext = Ext
+            with
+                static member Bar (ext : Ext, nonGit : NonGit.Msg) = 
+                    Forker.upcastMsg nonGit
+                    |> Msg.Forker
+
+                static member Bar (ext : Ext, forker : Forker.Msg) = 
+                    Msg.Forker forker
+
+    let inline upcastMsg msg =
+        ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
+        
+    let inline private (!^) msg =
+        ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
+
+
 
     let private roleAction role = function 
         | Msg.Forker forkerMsg -> 
@@ -299,7 +312,7 @@ module Collaborator =
             let nextReleaseNotes = Role.nextReleaseNotes role
 
             { PreviousMsgs = 
-                let baseMsgs = [ !^^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
+                let baseMsgs = [ !^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
                 match role.LocalNugetServer with 
                 | Some localNugetServer -> !^(Forker.Msg.Pack nextReleaseNotes) :: baseMsgs
                 | None -> baseMsgs

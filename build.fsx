@@ -7,43 +7,42 @@
 #endif
 #load "./.fake/build.fsx/intellisense.fsx"
 
-open Fake.DotNet.NuGet
 open Fake.Core
-open FParsec
-open Fake.IO
-open System.Text
-open FParsec.CharParsers
-open Fake.Core.SemVerActivePattern
-open System.Text.RegularExpressions
-open FSharp.Data
 open FPublisher.Roles
 open FPublisher
 open FPublisher.Nuget
-open System
+open FPublisher.Git
 
-
-let collaborator = 
-    Collaborator.create 
-        { Collaborator.Config.DefaultValue 
-            with 
+let buildServer =
+    BuildServer.create BuildServer.AppVeyor
+        { Collaborator.Config.DefaultValue
+            with
                 LocalNugetServer = Some LocalNugetServer.DefaultValue }
 
 
-Target.create "Build" <| fun _ ->
-    Collaborator.run (!^ NonGit.Msg.Build) collaborator
+Target.create "Workspace.CreateDefaultSln" <| fun _ ->
+    Workspace.createDefaultSln false buildServer.Collaborator.Workspace
     |> ignore
 
-Target.create "Test" <| fun _ ->
-    Collaborator.run (!^ NonGit.Msg.Test) collaborator
-    |> ignore     
-
-Target.create "publishToLocalNugetServer" <| fun _ ->
-    Collaborator.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) collaborator
+Target.create "NonGit.Build" <| fun _ ->
+    BuildServer.run (!^ NonGit.Msg.Build) buildServer
     |> ignore
 
-    
-Target.create "nextRelease" <| fun _ ->
-    Collaborator.run Collaborator.Msg.NextRelease collaborator
+Target.create "NonGit.Test" <| fun _ ->
+    BuildServer.run (!^ NonGit.Msg.Test) buildServer
+    |> ignore
+
+Target.create "Forker.PublishToLocalNugetServer" <| fun _ ->
+    BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) buildServer
+    |> ignore
+
+
+Target.create "Collaborator.NextRelease" <| fun _ ->
+    BuildServer.run (!^ Collaborator.Msg.NextRelease) buildServer
+    |> ignore
+
+Target.create "RunCI" <| fun _ ->
+    BuildServer.run (BuildServer.Msg.RunCI) buildServer
     |> ignore
 
 Target.create "Default" ignore

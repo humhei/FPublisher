@@ -44,9 +44,13 @@ module Solution =
 
         { Path = slnPath
           Projects = 
-            
             let input = File.readAsStringWithEncoding Encoding.UTF8 slnPath
             [ for m in Regex.Matches(input,pattern) -> m ]
+            |> List.filter (fun m ->
+                let relativePath = m.Groups.[2].Value 
+                let ext = Path.GetExtension relativePath
+                ext = ".csproj" || ext = ".fsproj"
+            )
             |> List.map (fun m -> 
                 let relativePath = m.Groups.[2].Value 
                 let projPath = Path.getFullName (workingDir </> relativePath)
