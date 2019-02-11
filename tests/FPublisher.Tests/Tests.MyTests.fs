@@ -31,8 +31,8 @@ let workspaceTests() =
   ]
 
 let role =
-    BuildServer.create BuildServer.buildServer
-        { Collaborator.Config.DefaultValue
+    BuildServer.create
+        { BuildServer.Config.DefaultValue
             with
                 WorkingDir = root
                 LoggerLevel = Logger.Level.Normal
@@ -53,7 +53,7 @@ let nonGitTests() =
 
 let forkerTests() =
   testList "forker tests" [
-    testCase "pbulish to local nuget server" <| fun _ ->
+    testCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) role
       |> ignore
   ]

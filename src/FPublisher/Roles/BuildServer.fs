@@ -116,7 +116,7 @@ module BuildServer =
         | Msg.RunCI ->
             match BuildServer.buildServer with 
             | BuildServer.LocalBuild -> failwith "Expect buildServer context, but currently run in local context"
-            | buildServer when buildServer = role.MajorCI ->
+            | buildServer when buildServer = role.MajorCI && Role.afterDraftedNewRelease role ->
                 
                 let nextReleaseNotes = ReleaseNotes.loadLast role.Collaborator.ReleaseNotesFile
                 match nextReleaseNotes with 
@@ -126,9 +126,8 @@ module BuildServer =
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
 
-                        if Role.afterDraftedNewRelease role then
-                            OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
-                            |> Async.RunSynchronously
+                        OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
+                        |> Async.RunSynchronously
                     )}
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
             
