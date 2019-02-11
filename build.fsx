@@ -14,8 +14,8 @@ open FPublisher.Nuget
 open FPublisher.Git
 
 let buildServer =
-    BuildServer.create BuildServer.AppVeyor
-        { Collaborator.Config.DefaultValue
+    BuildServer.create
+        { BuildServer.Config.DefaultValue
             with
                 LocalNugetServer = Some LocalNugetServer.DefaultValue }
 
