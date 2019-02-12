@@ -76,6 +76,19 @@ module BuildServer =
             | _ -> 
                 failwith "not implemted"
             
+        let nextReleaseNotes role = 
+            if afterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
+            else 
+                let nextVersion = 
+                    let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
+                    let mainVersionText = SemVerInfo.mainVersionText forkerNextVersionIgnoreLocalNugetServer
+                    (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
+                    |> SemVerInfo.parse
+
+                ReleaseNotes.loadTbd role.ReleaseNotesFile
+                |> ReleaseNotes.updateWithSemVerInfo nextVersion
+                |> ReleaseNotes.updateDateToToday 
+                |> Some
 
     let create (config: Config) =
         BuildServer.install [
@@ -128,21 +141,7 @@ module BuildServer =
 
                 let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
 
-                let nextReleaseNotes = 
-                    if isAfterDraftedNewRelease then ReleaseNotes.loadLast role.ReleaseNotesFile
-                    else 
-                        let nextVersion = 
-                            let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
-                            let mainVersionText = SemVerInfo.mainVersionText forkerNextVersionIgnoreLocalNugetServer
-                            (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
-                            |> SemVerInfo.parse
-
-                        ReleaseNotes.loadTbd role.ReleaseNotesFile
-                        |> ReleaseNotes.updateWithSemVerInfo nextVersion
-                        |> ReleaseNotes.updateDateToToday 
-                        |> Some
-
-                match nextReleaseNotes with 
+                match Role.nextReleaseNotes role with 
                 | Some nextReleaseNotes ->
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
                       Action = MapState (fun role ->

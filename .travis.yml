@@ -4,4 +4,4 @@ dotnet: 2.2
 mono: none
 
 script:
-  - ./fake.sh build -t NonGit.Test
+  - ./fake.sh build -t NonGit.Test -v
