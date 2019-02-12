@@ -53,7 +53,7 @@ let nonGitTests() =
 
 let forkerTests() =
   testList "forker tests" [
-    testCase "publish to local nuget server" <| fun _ ->
+    ftestCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) role
       |> ignore
   ]

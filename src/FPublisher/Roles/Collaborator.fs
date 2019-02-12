@@ -41,9 +41,8 @@ module Collaborator =
 
     type GitHubData =
         { Forker: Forker.GitHubData
-          ReleaseUserName: string
+          EnvironmentConfig: EnvironmentConfig
           BranchName: string
-          ReleaseUserToken: string
           CommitHashRemote: string
           CommitHashLocal: string }
     with 
@@ -61,22 +60,25 @@ module Collaborator =
 
         member x.RepoName = x.Repository.Name 
 
-        member x.IsLogin = x.LoginName = x.ReleaseUserName
 
     [<RequireQualifiedAccess>]              
     module GitHubData =
+        let githubToken githubData =
+            Environment.environVarOrFail githubData.EnvironmentConfig.GitHubToken
 
-        let draftAndPublishWithNewRelease (releaseNotes: ReleaseNotes.ReleaseNotes) (gitHubData: GitHubData) =
-            GitHub.createClientWithToken gitHubData.ReleaseUserToken
-            |> GitHubClient.draftAndPublishWithNewRelease gitHubData.ReleaseUserName gitHubData.RepoName releaseNotes
+        let releaseUserName githubData = 
+            Environment.environVarOrFail githubData.EnvironmentConfig.GitHubReleaseUser
+
+        let draftAndPublishWithNewRelease (releaseNotes: ReleaseNotes.ReleaseNotes) (githubData: GitHubData) =
+            GitHub.createClientWithToken (githubToken githubData)
+            |> GitHubClient.draftAndPublishWithNewRelease (releaseUserName githubData) githubData.RepoName releaseNotes
 
         let fetch forkerGitHubData workspace (environmentConfig: EnvironmentConfig) = task {
             let branchName = Workspace.branchName workspace
             return 
                 { Forker = forkerGitHubData
-                  ReleaseUserName = Environment.environVarOrFail environmentConfig.GitHubReleaseUser
+                  EnvironmentConfig =  environmentConfig
                   BranchName = branchName
-                  ReleaseUserToken = Environment.environVarOrFail environmentConfig.GitHubToken
                   CommitHashLocal = Workspace.commitHashLocal branchName workspace
                   CommitHashRemote = Workspace.commitHashRemote branchName workspace }
         }
