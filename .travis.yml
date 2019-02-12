@@ -4,4 +4,4 @@ dotnet: 2.2
 mono: latest
 
 script:
-  - ./fake.sh build
+  - ./fake.sh build -t RunCI
