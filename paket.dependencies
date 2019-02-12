@@ -12,7 +12,9 @@ nuget FSharp.Compiler.Service
 nuget Dotnet.ProjInfo
 nuget Fake.Core.Target
 nuget Fake.BuildServer.AppVeyor
-nuget FPublisher prerelease
+source https://ci.appveyor.com/nuget/fpublisher
+
+nuget FPublisher build
 nuget Fake.BuildServer.Travis
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease
