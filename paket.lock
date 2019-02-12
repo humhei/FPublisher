@@ -145,7 +145,7 @@ NUGET
       FSharp.Core (>= 4.0.0.1) - restriction: >= net40
       FSharp.Core (>= 4.2.3) - restriction: && (< net40) (>= netstandard1.6)
       NETStandard.Library (>= 1.6.1) - restriction: && (< net40) (>= netstandard1.6)
-    FPublisher (0.1.4-alpha.5.4)
+    FPublisher (0.1.4-alpha.5.5)
       Dotnet.ProjInfo (>= 0.31) - restriction: >= netstandard2.0
       Fake.Api.GitHub (>= 5.12) - restriction: >= netstandard2.0
       Fake.BuildServer.AppVeyor (>= 5.12) - restriction: >= netstandard2.0

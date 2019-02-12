@@ -16,6 +16,8 @@ open Fake.Tools.Git
 open Fake.IO
 open Fake.Api
 open FSharp.Data
+open FPublisher.Utils
+
 #nowarn "0064"
 
 type EnvironmentConfig =
@@ -25,7 +27,7 @@ type EnvironmentConfig =
 
 with 
     static member DefaultValue =
-        { NugetApiKey = "NugetApiKey"
+        { NugetApiKey = "nuget_api_key"
           GitHubToken = "github_token"
           GitHubReleaseUser = "github_release_user" }
 
@@ -134,29 +136,26 @@ module Collaborator =
                 LocalNugetServer = config.LocalNugetServer |> Option.map LocalNugetServer.ping
                 |> Option.flatten }
 
-        let fetchVersionController (forkerVersionController: Lazy<Forker.VersionController>) solution (config: Config) = 
-            lazy 
-                let task = 
-                    task {
-                        let workspace = Workspace config.WorkingDir 
-                        let forkerVersionController = forkerVersionController.Value
+        let fetchVersionController (forkerVersionController: Task<Forker.VersionController>) solution (config: Config) = 
+            task {
+                let workspace = Workspace config.WorkingDir 
+                let forkerVersionController = forkerVersionController.Result
 
-                        let versionFromLocalNugetServer = 
-                            match config.LocalNugetServer with
-                            | Some localNugetServer -> 
+                let versionFromLocalNugetServer = 
+                    match config.LocalNugetServer with
+                    | Some localNugetServer -> 
                             
-                                Forker.VersionController.versionFromLocalNugetServer solution localNugetServer forkerVersionController
-                                |> Async.RunSynchronously
-                            | None -> None
+                        Forker.VersionController.versionFromLocalNugetServer solution localNugetServer forkerVersionController
+                        |> Async.RunSynchronously
+                    | None -> None
 
-                        let! githubData = GitHubData.fetch forkerVersionController.GitHubData workspace config.EnvironmentConfig
+                let! githubData = GitHubData.fetch forkerVersionController.GitHubData workspace config.EnvironmentConfig
 
-                        return 
-                            { GitHubData = githubData 
-                              Forker = forkerVersionController               
-                              VersionFromLocalNugetServer = versionFromLocalNugetServer }
-                    }
-                task.Result     
+                return 
+                    { GitHubData = githubData 
+                      Forker = forkerVersionController               
+                      VersionFromLocalNugetServer = versionFromLocalNugetServer }
+            }
 
 
     [<RequireQualifiedAccess>]
@@ -183,7 +182,7 @@ module Collaborator =
           OfficalNugetServer: OfficalNugetServer
           TargetState: TargetState
           LocalNugetServer: LocalNugetServer option
-          VersionController: Lazy<VersionController> }
+          VersionController: Task<VersionController> }
     with 
 
         member x.NugetPacker = x.Forker.NugetPacker
@@ -194,14 +193,14 @@ module Collaborator =
         
         member x.Solution = x.Forker.Solution
 
-        member x.GitHubData = x.VersionController.Value.GitHubData
+        member x.GitHubData = x.VersionController.Result.GitHubData
 
         interface IRole<TargetState> 
 
     [<RequireQualifiedAccess>]
     module Role =
         let nextVersion (role: Role) =
-            let versionController = role.VersionController.Value
+            let versionController = role.VersionController.Result
 
             let currentVersion = VersionController.currentVersion versionController
 
@@ -234,13 +233,13 @@ module Collaborator =
 
 
         let nextReleaseNotes (role: Role) =
-            let versionController = role.VersionController.Value
+            let versionController = role.VersionController.Result
             versionController.TbdReleaseNotes
             |> ReleaseNotes.updateWithSemVerInfo (nextVersion role)
             |> ReleaseNotes.updateDateToToday   
 
         let internal writeReleaseNotesToNextVersionAndPushToRemoteRepository role =
-            let versionController = role.VersionController.Value
+            let versionController = role.VersionController.Result
 
             let nextVersion = nextVersion role
 
@@ -259,7 +258,7 @@ module Collaborator =
 
     let create (config: Config) =
         let config = Config.tweak config
-        let forker = Forker.create config.LoggerLevel config.Workspace config.EnvironmentConfig.GitHubToken config.NugetPacker
+        let forker = Forker.create config.LoggerLevel config.Workspace config.NugetPacker
 
         let versionController = Config.fetchVersionController forker.VersionController forker.Solution config
         { OfficalNugetServer = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }                
@@ -300,7 +299,7 @@ module Collaborator =
                     let githubData = role.GitHubData
                     //match githubData.IsInDefaultBranch with 
                     //| true ->
-                    match (Workspace.repoState role.Workspace) with 
+                    match (Workspace.repoStateWith (List.filter (String.equalIgnoreCaseAndEdgeSpace "RELEASE_NOTES.md" >> not)) role.Workspace) with 
                     | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
                     | RepoState.None -> none
                     //| false ->
@@ -314,14 +313,14 @@ module Collaborator =
             { PreviousMsgs = 
                 let baseMsgs = [ !^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
                 match role.LocalNugetServer with 
-                | Some localNugetServer -> !^(Forker.Msg.Pack nextReleaseNotes) :: baseMsgs
+                | Some localNugetServer -> !^(Forker.Msg.Pack (nextReleaseNotes, "") ) :: baseMsgs
                 | None -> baseMsgs
 
               Action = 
                 MapState (fun role ->
 
                     let currentVersion = 
-                        VersionController.currentVersion role.VersionController.Value
+                        VersionController.currentVersion role.VersionController.Result
                     logger.CurrentVersion currentVersion
 
                     let nextVersion = Role.nextVersion role
@@ -335,7 +334,7 @@ module Collaborator =
                       | Some localNugetServer -> 
                             let newPackages = role.Forker.TargetState.Pack |> State.getResult
                             yield LocalNugetServer.publish newPackages localNugetServer 
-                      | None -> ()]
+                      | None -> () ]
                     |> Async.Parallel
                     |> Async.RunSynchronously
                     |> ignore

@@ -5,17 +5,17 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C95D7E60-A844-483C-93FD-B28E5646594D}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher", "src\FPublisher\FPublisher.fsproj", "{43576B03-CD7D-45EF-BB1A-B5FF46760D66}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher", "src\FPublisher\FPublisher.fsproj", "{43576B03-CD7D-45EF-BB1A-B5FF46760D66}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher.Legacy", "src\FPublisher.Legacy\FPublisher.Legacy.fsproj", "{C72B2165-02FB-4541-AEC6-D35BA9D6E5A9}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Legacy", "src\FPublisher.Legacy\FPublisher.Legacy.fsproj", "{C72B2165-02FB-4541-AEC6-D35BA9D6E5A9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9F795E7B-5D10-4061-B8FC-D66D08A1D5A6}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPbulisher.FakerTests", "tests\FPbulisher.FakerTests\FPbulisher.FakerTests.fsproj", "{989F4719-6587-4C5A-BF3A-478838F5F80D}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPbulisher.FakerTests", "tests\FPbulisher.FakerTests\FPbulisher.FakerTests.fsproj", "{989F4719-6587-4C5A-BF3A-478838F5F80D}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher.Legacy.Tests", "tests\FPublisher.Legacy.Tests\FPublisher.Legacy.Tests.fsproj", "{F0715BF4-8618-494A-9A90-8F9B0966EE9B}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Legacy.Tests", "tests\FPublisher.Legacy.Tests\FPublisher.Legacy.Tests.fsproj", "{F0715BF4-8618-494A-9A90-8F9B0966EE9B}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher.Tests", "tests\FPublisher.Tests\FPublisher.Tests.fsproj", "{58DC0187-9ECA-4FEA-A273-90F660906825}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Tests", "tests\FPublisher.Tests\FPublisher.Tests.fsproj", "{58DC0187-9ECA-4FEA-A273-90F660906825}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,9 +25,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{43576B03-CD7D-45EF-BB1A-B5FF46760D66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -91,11 +88,17 @@ Global
 		{58DC0187-9ECA-4FEA-A273-90F660906825}.Release|x86.ActiveCfg = Release|Any CPU
 		{58DC0187-9ECA-4FEA-A273-90F660906825}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{43576B03-CD7D-45EF-BB1A-B5FF46760D66} = {C95D7E60-A844-483C-93FD-B28E5646594D}
 		{C72B2165-02FB-4541-AEC6-D35BA9D6E5A9} = {C95D7E60-A844-483C-93FD-B28E5646594D}
 		{989F4719-6587-4C5A-BF3A-478838F5F80D} = {9F795E7B-5D10-4061-B8FC-D66D08A1D5A6}
 		{F0715BF4-8618-494A-9A90-8F9B0966EE9B} = {9F795E7B-5D10-4061-B8FC-D66D08A1D5A6}
 		{58DC0187-9ECA-4FEA-A273-90F660906825} = {9F795E7B-5D10-4061-B8FC-D66D08A1D5A6}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {366C70D6-6D57-4F8C-8344-683CCBB1F8DC}
 	EndGlobalSection
 EndGlobal

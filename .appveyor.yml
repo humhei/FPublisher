@@ -3,7 +3,9 @@ image: Visual Studio 2017
 build_script:
   - cmd: fake.cmd build -t RunCI
 
-version: '{build}'
+environment:
+  nuget_api_key:
+    secure: Lc/W0t6HcHEaR1ctcaSRtx/fLHYJ1z/2V8lJlobqMy14W/rF79WOupeMgG3QTHXd
 
 artifacts:
   - path: build_output\*.nupkg

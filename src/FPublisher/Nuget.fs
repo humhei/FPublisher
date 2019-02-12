@@ -106,7 +106,7 @@ module Nuget =
     [<RequireQualifiedAccess>]
     module NugetPacker =
         
-        let pack (solution: Solution) (nobuild:bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
+        let pack (solution: Solution) (packageIdSuffix: string) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
             
             let targetDirectory = 
                 let tmpDir = Path.GetTempPath()
@@ -127,21 +127,31 @@ module Nuget =
             Environment.setEnvironVar "PackageProjectUrl" repository.HtmlUrl
             Environment.setEnvironVar "PackageLicenseUrl" license.HtmlUrl
             
-            let buildingPackOptions (options: DotNet.PackOptions) =  
+            let buildingPackOptions packageID (options: DotNet.PackOptions) =  
                 let basicBuildingOptions (options: DotNet.PackOptions) =
-                    let versionParam = "/p:Version=" + packageReleaseNotes.NugetVersion
+                    let versionParam = 
+                        [ yield "/p:PackageId=" + packageID
+                          yield "/p:Version=" + packageReleaseNotes.NugetVersion
+                          if noRestore then 
+                            yield "--no-restore" ]
+                        |> toCommandLine
+
                     { options with 
                         NoBuild = nobuild
                         Configuration = DotNet.BuildConfiguration.Debug
                         OutputPath = Some targetDirectory
                         Common = { options.Common with CustomParams = Some versionParam }}
 
-
                 options                    
                 |> basicBuildingOptions
                 |> dtntSmpl      
-                    
-            DotNet.pack buildingPackOptions solution.Path 
+            
+
+            solution.Projects 
+            |> List.iter (fun proj -> 
+                let packageId = proj.Name + packageIdSuffix
+                DotNet.pack (buildingPackOptions packageId) proj.ProjPath
+            )
 
             !! (targetDirectory + "./*.nupkg")
             |> List.ofSeq 

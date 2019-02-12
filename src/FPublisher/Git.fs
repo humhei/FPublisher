@@ -45,14 +45,15 @@ module Git =
             let _, lines, _ = Workspace.git "cherry -v" workspace
             lines
 
-        let repoState workspace = 
-            let diffLines = 
-                diff workspace |> List.filter (String.equalIgnoreCaseAndEdgeSpace "RELEASE_NOTES.md" >> not)
-            let unPushedLines = unPushed workspace
+        let internal repoStateWith diffFilter workspace =
+            let diffLines = diff workspace |> diffFilter
+            let unPushedLines = unPushed workspace |> diffFilter
 
             match diffLines, unPushedLines with 
             | [], [] -> RepoState.None
             | _ -> RepoState.Changed
+
+        let repoState workspace = repoStateWith id workspace
 
         let gitPush commitMsg workspace = async {
             match repoState workspace with 

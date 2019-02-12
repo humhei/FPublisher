@@ -13,7 +13,6 @@ open FPublisher
 
 #nowarn "0064"
 
-/// Minor CI ----- Run tests only
 [<RequireQualifiedAccess>]
 module BuildServer =
     type Config = 
@@ -116,18 +115,23 @@ module BuildServer =
         | Msg.RunCI ->
             match BuildServer.buildServer with 
             | BuildServer.LocalBuild -> failwith "Expect buildServer context, but currently run in local context"
-            | buildServer when buildServer = role.MajorCI && Role.afterDraftedNewRelease role ->
-                
-                let nextReleaseNotes = ReleaseNotes.loadLast role.Collaborator.ReleaseNotesFile
+            | buildServer when buildServer = role.MajorCI  ->
+
+                let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
+
+                let nextReleaseNotes = 
+                    if isAfterDraftedNewRelease then ReleaseNotes.loadLast role.Collaborator.ReleaseNotesFile
+                    else Some (Collaborator.Role.nextReleaseNotes role.Collaborator)
+
                 match nextReleaseNotes with 
                 | Some nextReleaseNotes ->
-                    { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack nextReleaseNotes); ]
+                    { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
                       Action = MapState (fun role ->
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
-
-                        OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
-                        |> Async.RunSynchronously
+                        if isAfterDraftedNewRelease then 
+                            OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
+                            |> Async.RunSynchronously
                     )}
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
             

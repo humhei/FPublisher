@@ -11,6 +11,11 @@ open Octokit
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open Fake.Api
 open FPublisher.Git
+open System.Net.Http
+open System
+open Octokit.Internal
+open System.Reflection
+open System.Threading
 
  
 
@@ -22,13 +27,12 @@ module Forker =
           Repository: Repository
           License: RepositoryContentLicense }
 
+
     [<RequireQualifiedAccess>]
     module GitHubData =
-        let fetch workspace githubTokenEnv = task {
-                               
-            let githubToken = Environment.environVarOrFail githubTokenEnv
-            
-            let! client = GitHub.createClientWithToken githubToken
+        let fetch workspace = task {
+
+            let! client = GitHubClient.createWithoutToken()
 
             let! repository = 
                 let repoName = Workspace.repoName workspace 
@@ -90,42 +94,39 @@ module Forker =
             |> ReleaseNotes.updateWithSemVerInfo (nextVersion)
             |> ReleaseNotes.updateDateToToday  
 
-        let fetch solution githubTokenEnv workspace = 
-            lazy
-                let task = 
-                    task {
-                        logger.Infots "Begin fetch forker versionController"
-                        logger.Infots "Begin fetch github data"
-                        let! githubData = GitHubData.fetch workspace githubTokenEnv 
-                        logger.Infots "End fetch github data"        
+        let fetch solution workspace = 
+            task {
+                logger.Infots "Begin fetch forker versionController"
+                logger.Infots "Begin fetch github data"
+                let! githubData = GitHubData.fetch workspace
+                logger.Infots "End fetch github data"        
 
-                        let tbdReleaseNotes,lastReleaseNotes = 
-                            let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
-                            ReleaseNotes.loadTbd releaseNotesFile,ReleaseNotes.loadLast releaseNotesFile
+                let tbdReleaseNotes,lastReleaseNotes = 
+                    let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
+                    ReleaseNotes.loadTbd releaseNotesFile,ReleaseNotes.loadLast releaseNotesFile
 
-                        logger.Infots "Begin fetch version from nuget server"
-                        let! versionFromOfficalNugetServer = Solution.lastVersionFromOfficalNugetServer solution
-                        logger.Infots "End fetch version from nuget server"
-                        logger.Infots "End fetch forker versionController"
+                logger.Infots "Begin fetch version from nuget server"
+                let! versionFromOfficalNugetServer = Solution.lastVersionFromOfficalNugetServer solution
+                logger.Infots "End fetch version from nuget server"
+                logger.Infots "End fetch forker versionController"
 
 
-                        let result = 
-                            { GitHubData = githubData 
-                              Workspace = workspace
-                              TbdReleaseNotes = tbdReleaseNotes
-                              LastReleaseNotes = lastReleaseNotes
-                              VersionFromOfficalNugetServer = versionFromOfficalNugetServer }
+                let result = 
+                    { GitHubData = githubData 
+                      Workspace = workspace
+                      TbdReleaseNotes = tbdReleaseNotes
+                      LastReleaseNotes = lastReleaseNotes
+                      VersionFromOfficalNugetServer = versionFromOfficalNugetServer }
 
-                        logger.Info "%A" result
+                logger.Info "%A" result
 
-                        return result
-                    }
-                task.Result  
+                return result
+            }
 
     [<RequireQualifiedAccess>]
     type Msg =
         | NonGit of NonGit.Msg
-        | Pack of nextReleaseNotes: ReleaseNotes.ReleaseNotes
+        | Pack of nextReleaseNotes: ReleaseNotes.ReleaseNotes * packageIdSuffix: string
         | PublishToLocalNugetServer of LocalNugetServer
 
     let (!^) (nonGitMsg: NonGit.Msg) = Msg.NonGit nonGitMsg
@@ -148,21 +149,20 @@ module Forker =
         { NonGit: NonGit.Role
           TargetState: TargetState
           NugetPacker: NugetPacker
-          VersionController: Lazy<VersionController>
-          GitTokenEnv: string }
+          VersionController: Task<VersionController> }
     with
         member x.Solution = x.NonGit.Solution
 
         member x.Workspace = x.NonGit.Workspace
 
-        member x.GitHubData = x.VersionController.Value.GitHubData
+        member x.GitHubData = x.VersionController.Result.GitHubData
 
         interface IRole<TargetState>
 
     [<RequireQualifiedAccess>]
     module Role =
         let nextVersion versionFromLocalNugetServer (role: Role) =
-            let versionController = role.VersionController.Value
+            let versionController = role.VersionController.Result
             let currentVersion = VersionController.currentVersion versionFromLocalNugetServer versionController
 
             [ currentVersion
@@ -173,29 +173,28 @@ module Forker =
                 
 
         let nextVersionWithFetch localNugetServer (role: Role) = async {
-            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
+            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Result
             return nextVersion versionFromLocalNugetServer role
         }
         
         let nextReleaseNotes versionFromLocalNugetServer role =
             let nextVersion = nextVersion versionFromLocalNugetServer role
-            VersionController.nextReleaseNotes nextVersion role.VersionController.Value
+            VersionController.nextReleaseNotes nextVersion role.VersionController.Result
 
         let nextReleaseNotesWithFetch localNugetServer (role: Role) = async {
-            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
+            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Result
             return nextReleaseNotes versionFromLocalNugetServer role
         }
 
 
 
-    let create loggerLevel workspace githubTokenEnv nugetPacker = 
+    let create loggerLevel workspace nugetPacker = 
         let nonGit = NonGit.create loggerLevel workspace
         
         { NonGit = nonGit
           NugetPacker = nugetPacker
           TargetState = TargetState.init
-          VersionController = VersionController.fetch nonGit.Solution githubTokenEnv nonGit.Workspace
-          GitTokenEnv = githubTokenEnv }
+          VersionController = VersionController.fetch nonGit.Solution nonGit.Workspace }
         
 
     let private roleAction (role: Role) = function
@@ -203,14 +202,16 @@ module Forker =
             { PreviousMsgs = []
               Action = MapChild (fun (role: Role) -> NonGit.run nonGitMsg role.NonGit )}
 
-        | Msg.Pack nextReleaseNotes -> 
+        | Msg.Pack (nextReleaseNotes,packageIDSuffix) -> 
             { PreviousMsgs = [!^ NonGit.Msg.Test]
               Action = MapState (fun role -> 
                 let githubData = role.GitHubData
 
                 NugetPacker.pack 
                     role.Solution 
+                    packageIDSuffix
                     true 
+                    true
                     githubData.Topics 
                     githubData.License 
                     githubData.Repository
@@ -227,17 +228,17 @@ module Forker =
             | None -> failwithf "Can not access local nuget server %s" localNugetServer.Serviceable
 
             let versionFromLocalNugetServer = 
-                VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
+                VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Result
                 |> Async.RunSynchronously
             
-            let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
+            let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Result
             logger.CurrentVersion currentVersion
 
             let nextReleaseNotes = Role.nextReleaseNotes versionFromLocalNugetServer role
 
             logger.Important "next build version %s" (SemVerInfo.normalize nextReleaseNotes.SemVer)
 
-            { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
+            { PreviousMsgs = [ Msg.Pack (nextReleaseNotes, "")]
               Action = MapState (fun role -> 
                 let newPackages = State.getResult role.TargetState.Pack
                 NugetServer.publish newPackages localNugetServer.AsNugetServer |> Async.RunSynchronously
