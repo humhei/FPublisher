@@ -43,7 +43,6 @@ module Solution =
     let read slnPath = 
         checkValidSlnPath slnPath
         let workingDir = Path.getDirectory slnPath
-        logger.Important "Begin read sln"
 
         dotnet workingDir "restore" [slnPath]
 
