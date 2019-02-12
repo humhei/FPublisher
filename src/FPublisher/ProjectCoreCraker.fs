@@ -176,7 +176,7 @@ type private FrameWork =
     | SingleTarget of string
 
 let private getFrameWork (projectFile: string) =
-
+    let projectFile = projectFile.Replace('\\','/')
     let doc = new XmlDocument()
     doc.Load(projectFile)
     match doc.GetElementsByTagName "TargetFramework" with 

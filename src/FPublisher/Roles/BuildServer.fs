@@ -91,14 +91,10 @@ module BuildServer =
                 |> Some
 
     let create (config: Config) =
-        Trace.trace "Test1"
-
         BuildServer.install [
             AppVeyor.Installer
             Travis.Installer
         ]
-        Trace.trace "Test2"
-        logger.Important "Test3"
 
 
         { Collaborator = Collaborator.create config.AsCollaborator
