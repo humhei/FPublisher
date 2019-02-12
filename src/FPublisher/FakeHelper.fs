@@ -20,10 +20,6 @@ module FakeHelper =
 
     module CommandHelper = 
 
-        let toCommandLine args = 
-            if Environment.isUnix then Args.toLinuxShellCommandLine args
-            else Args.toWindowsCommandLine args
-
         let platformTool tool =
             tool
             |> ProcessUtils.tryFindFileOnPath
@@ -33,7 +29,7 @@ module FakeHelper =
             DotNet.exec 
                 (fun ops -> {ops with WorkingDirectory = dir})
                 command
-                (toCommandLine args)
+                (Args.toWindowsCommandLine args)
 
         let dotnet dir command args =
             dotnetWith dir command args            

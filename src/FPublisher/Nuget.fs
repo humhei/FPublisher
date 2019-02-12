@@ -134,7 +134,7 @@ module Nuget =
                           yield "/p:Version=" + packageReleaseNotes.NugetVersion
                           if noRestore then 
                             yield "--no-restore" ]
-                        |> toCommandLine
+                        |> Args.toWindowsCommandLine
 
                     { options with 
                         NoBuild = nobuild
