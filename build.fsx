@@ -14,7 +14,6 @@ open FPublisher.Nuget
 open FPublisher.Git
 
 let buildServer =
-    Trace.trace "Test"
     BuildServer.create
         { BuildServer.Config.DefaultValue
             with

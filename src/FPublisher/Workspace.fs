@@ -12,7 +12,7 @@ with
         let (Workspace value) = x
         value
 
-    member x.Name = Path.GetFileName (x.WorkingDir.TrimEnd '\\')
+    member x.Name =  DirectoryInfo(x.WorkingDir).Name
 
     member x.PaketLockerFile = x.WorkingDir </> "paket.lock"
 
