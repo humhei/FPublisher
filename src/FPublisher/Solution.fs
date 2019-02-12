@@ -6,7 +6,7 @@ open System.IO
 open Fake.IO.FileSystemOperators
 open FakeHelper.CommandHelper
 open CrackedFsproj
-
+open Fake.Core
 
 type Solution =
     { Path: string 
@@ -16,11 +16,15 @@ with
 
     member x.TestProjects = 
         x.Projects |> List.filter (fun project ->
-            project.Name.EndsWith "Tests"
+            match project.ProjectTarget with 
+            | ProjectTarget.Exe -> project.Name.Contains "test" || project.Name.Contains "Test" 
+            | ProjectTarget.Library -> false
         )
 
     member x.LibraryProjects =
-        x.Projects |> List.except x.TestProjects    
+        x.Projects |> List.filter (fun project ->
+            project.ProjectTarget = ProjectTarget.Library
+        )
 
 [<RequireQualifiedAccess>]
 module Solution =
@@ -74,7 +78,17 @@ module Solution =
         |> List.map (fun crackedProjSingleTarget ->
             let targetPath = crackedProjSingleTarget.TargetPath 
             let dir = Path.getDirectory targetPath
-            async {return dotnet dir crackedProjSingleTarget.TargetPath [] }
+            async { 
+                dotnet dir crackedProjSingleTarget.TargetPath ["--summary"]
+                
+                let dll = crackedProjSingleTarget.TargetFileName
+                
+                let testResultXml = 
+                    let name = Path.GetFileNameWithoutExtension dll + ".TestResults.xml"
+                    crackedProjSingleTarget.TargetDir </> name
+                if File.Exists testResultXml then 
+                    Trace.publish (ImportData.Nunit NunitDataVersion.Nunit) testResultXml
+            }
         )
         |> Async.Parallel
         |> Async.RunSynchronously

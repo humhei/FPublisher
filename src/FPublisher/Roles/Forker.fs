@@ -16,6 +16,7 @@ open System
 open Octokit.Internal
 open System.Reflection
 open System.Threading
+open FPublisher.Utils
 
  
 
@@ -95,33 +96,34 @@ module Forker =
             |> ReleaseNotes.updateDateToToday  
 
         let fetch solution workspace = 
-            task {
-                logger.Infots "Begin fetch forker versionController"
-                logger.Infots "Begin fetch github data"
-                let! githubData = GitHubData.fetch workspace
-                logger.Infots "End fetch github data"        
+            lazy 
+                task {
+                    logger.Infots "Begin fetch forker versionController"
+                    logger.Infots "Begin fetch github data"
+                    let! githubData = GitHubData.fetch workspace
+                    logger.Infots "End fetch github data"        
 
-                let tbdReleaseNotes,lastReleaseNotes = 
-                    let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
-                    ReleaseNotes.loadTbd releaseNotesFile, ReleaseNotes.loadLast releaseNotesFile
+                    let tbdReleaseNotes,lastReleaseNotes = 
+                        let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
+                        ReleaseNotes.loadTbd releaseNotesFile, ReleaseNotes.loadLast releaseNotesFile
 
-                logger.Infots "Begin fetch version from nuget server"
-                let! versionFromOfficalNugetServer = Solution.lastVersionFromOfficalNugetServer solution
-                logger.Infots "End fetch version from nuget server"
-                logger.Infots "End fetch forker versionController"
+                    logger.Infots "Begin fetch version from nuget server"
+                    let! versionFromOfficalNugetServer = Solution.lastVersionFromOfficalNugetServer solution
+                    logger.Infots "End fetch version from nuget server"
+                    logger.Infots "End fetch forker versionController"
 
 
-                let result = 
-                    { GitHubData = githubData 
-                      Workspace = workspace
-                      TbdReleaseNotes = tbdReleaseNotes
-                      LastReleaseNotes = lastReleaseNotes
-                      VersionFromOfficalNugetServer = versionFromOfficalNugetServer }
+                    let result = 
+                        { GitHubData = githubData 
+                          Workspace = workspace
+                          TbdReleaseNotes = tbdReleaseNotes
+                          LastReleaseNotes = lastReleaseNotes
+                          VersionFromOfficalNugetServer = versionFromOfficalNugetServer }
 
-                logger.Info "%A" result
+                    logger.Info "%A" result
 
-                return result
-            }
+                    return result
+                } |> Task.getResult
 
     [<RequireQualifiedAccess>]
     type Msg =
@@ -149,20 +151,20 @@ module Forker =
         { NonGit: NonGit.Role
           TargetState: TargetState
           NugetPacker: NugetPacker
-          VersionController: Task<VersionController> }
+          VersionController: Lazy<VersionController> }
     with
         member x.Solution = x.NonGit.Solution
 
         member x.Workspace = x.NonGit.Workspace
 
-        member x.GitHubData = x.VersionController.Result.GitHubData
+        member x.GitHubData = x.VersionController.Value.GitHubData
 
         interface IRole<TargetState>
 
     [<RequireQualifiedAccess>]
     module Role =
         let nextVersion versionFromLocalNugetServer (role: Role) =
-            let versionController = role.VersionController.Result
+            let versionController = role.VersionController.Value
             let currentVersion = VersionController.currentVersion versionFromLocalNugetServer versionController
 
             [ currentVersion
@@ -173,16 +175,16 @@ module Forker =
                 
 
         let nextVersionWithFetch localNugetServer (role: Role) = async {
-            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Result
+            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
             return nextVersion versionFromLocalNugetServer role
         }
         
         let nextReleaseNotes versionFromLocalNugetServer role =
             let nextVersion = nextVersion versionFromLocalNugetServer role
-            VersionController.nextReleaseNotes nextVersion role.VersionController.Result
+            VersionController.nextReleaseNotes nextVersion role.VersionController.Value
 
         let nextReleaseNotesWithFetch localNugetServer (role: Role) = async {
-            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Result
+            let! versionFromLocalNugetServer = VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
             return nextReleaseNotes versionFromLocalNugetServer role
         }
 
@@ -228,10 +230,10 @@ module Forker =
             | None -> failwithf "Can not access local nuget server %s" localNugetServer.Serviceable
 
             let versionFromLocalNugetServer = 
-                VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Result
+                VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
                 |> Async.RunSynchronously
             
-            let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Result
+            let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
             logger.CurrentVersion currentVersion
 
             let nextReleaseNotes = Role.nextReleaseNotes versionFromLocalNugetServer role

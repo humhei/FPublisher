@@ -1,1 +1,3 @@
+group tests
 Expecto
+Expecto.TestResults

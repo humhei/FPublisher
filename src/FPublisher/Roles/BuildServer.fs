@@ -78,6 +78,11 @@ module BuildServer =
             
 
     let create (config: Config) =
+        BuildServer.install [
+            AppVeyor.Installer
+            Travis.Installer
+        ]
+
         { Collaborator = Collaborator.create config.AsCollaborator
           TargetState = 
             { Collaborator = Collaborator.TargetState.init

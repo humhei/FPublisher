@@ -8,3 +8,4 @@ Fake.DotNet.NuGet
 FSharp.Compiler.Service
 Dotnet.ProjInfo
 Fake.BuildServer.AppVeyor
+Fake.BuildServer.Travis

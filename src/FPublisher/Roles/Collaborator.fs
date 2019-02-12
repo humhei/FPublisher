@@ -138,26 +138,28 @@ module Collaborator =
                 LocalNugetServer = config.LocalNugetServer |> Option.map LocalNugetServer.ping
                 |> Option.flatten }
 
-        let fetchVersionController (forkerVersionController: Task<Forker.VersionController>) solution (config: Config) = 
-            task {
-                let workspace = Workspace config.WorkingDir 
-                let forkerVersionController = forkerVersionController.Result
+        let fetchVersionController (forkerVersionController: Lazy<Forker.VersionController>) solution (config: Config) = 
+            lazy
+                task {
+                    let workspace = Workspace config.WorkingDir 
+                    let forkerVersionController = forkerVersionController.Value
 
-                let versionFromLocalNugetServer = 
-                    match config.LocalNugetServer with
-                    | Some localNugetServer -> 
+                    let versionFromLocalNugetServer = 
+                        match config.LocalNugetServer with
+                        | Some localNugetServer -> 
                             
-                        Forker.VersionController.versionFromLocalNugetServer solution localNugetServer forkerVersionController
-                        |> Async.RunSynchronously
-                    | None -> None
+                            Forker.VersionController.versionFromLocalNugetServer solution localNugetServer forkerVersionController
+                            |> Async.RunSynchronously
+                        | None -> None
 
-                let! githubData = GitHubData.fetch forkerVersionController.GitHubData workspace config.EnvironmentConfig
+                    let! githubData = GitHubData.fetch forkerVersionController.GitHubData workspace config.EnvironmentConfig
 
-                return 
-                    { GitHubData = githubData 
-                      Forker = forkerVersionController               
-                      VersionFromLocalNugetServer = versionFromLocalNugetServer }
-            }
+                    return 
+                        { GitHubData = githubData 
+                          Forker = forkerVersionController               
+                          VersionFromLocalNugetServer = versionFromLocalNugetServer }
+                }
+                |> Task.getResult
 
 
     [<RequireQualifiedAccess>]
@@ -184,7 +186,7 @@ module Collaborator =
           OfficalNugetServer: OfficalNugetServer
           TargetState: TargetState
           LocalNugetServer: LocalNugetServer option
-          VersionController: Task<VersionController> }
+          VersionController: Lazy<VersionController> }
     with 
 
         member x.NugetPacker = x.Forker.NugetPacker
@@ -195,14 +197,14 @@ module Collaborator =
         
         member x.Solution = x.Forker.Solution
 
-        member x.GitHubData = x.VersionController.Result.GitHubData
+        member x.GitHubData = x.VersionController.Value.GitHubData
 
         interface IRole<TargetState> 
 
     [<RequireQualifiedAccess>]
     module Role =
         let nextVersion (role: Role) =
-            let versionController = role.VersionController.Result
+            let versionController = role.VersionController.Value
 
             let currentVersion = VersionController.currentVersion versionController
 
@@ -231,7 +233,7 @@ module Collaborator =
 
 
         let nextReleaseNotes (role: Role) =
-            let versionController = role.VersionController.Result
+            let versionController = role.VersionController.Value
             
             let tbdReleaseNotes = versionController.TbdReleaseNotes
             
@@ -243,7 +245,7 @@ module Collaborator =
             |> ReleaseNotes.updateDateToToday   
 
         let internal writeReleaseNotesToNextVersionAndPushToRemoteRepository role =
-            let versionController = role.VersionController.Result
+            let versionController = role.VersionController.Value
 
             let nextVersion = nextVersion role
 
@@ -324,7 +326,7 @@ module Collaborator =
                 MapState (fun role ->
 
                     let currentVersion = 
-                        VersionController.currentVersion role.VersionController.Result
+                        VersionController.currentVersion role.VersionController.Value
                     logger.CurrentVersion currentVersion
 
                     let nextVersion = Role.nextVersion role

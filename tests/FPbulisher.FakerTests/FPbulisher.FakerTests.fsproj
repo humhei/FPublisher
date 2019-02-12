@@ -10,6 +10,7 @@
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\FPublisher.Expecto\FPublisher.Expecto.fsproj" />
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

@@ -39,7 +39,6 @@ module FakeHelper =
             dotnetWith dir command args            
             |> ProcessResult.ensureExitCode
 
-
         let exec tool dir args =
             let result =
                 args

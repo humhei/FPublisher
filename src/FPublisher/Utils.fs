@@ -5,8 +5,14 @@ open Fake.Core
 open Microsoft.FSharp.Quotations
 open System.Collections.Concurrent
 open Microsoft.FSharp.Reflection
+open System.Threading.Tasks
+
 module internal Utils = 
 
+    [<RequireQualifiedAccess>]
+    module Task =
+        let getResult (task: Task<_>) =
+            task.Result
 
     [<RequireQualifiedAccess>]
     module internal UnionCase =

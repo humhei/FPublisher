@@ -4,6 +4,9 @@ open Expecto
 open Expecto.Logging
 open System
 open Tests.MyTests
+open System.Reflection
+open System.IO
+open FPublisher
 let testConfig =  
     { Expecto.Tests.defaultConfig with 
          parallelWorkers = 1
@@ -14,5 +17,7 @@ let allTests =
         MyTests
     ]
 
+
 [<EntryPoint>]
-let main argv = runTests testConfig allTests
+let main argv = 
+    runTests (ExpectoConfig.appendSummaryHandler argv testConfig) allTests

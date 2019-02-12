@@ -147,7 +147,7 @@ module Nuget =
                 |> dtntSmpl      
             
 
-            solution.Projects 
+            solution.LibraryProjects 
             |> List.iter (fun proj -> 
                 let packageId = proj.Name + packageIdSuffix
                 DotNet.pack (buildingPackOptions packageId) proj.ProjPath
