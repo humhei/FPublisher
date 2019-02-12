@@ -91,6 +91,8 @@ module BuildServer =
                 |> Some
 
     let create (config: Config) =
+        logger.Important "Begin create buildServer"
+
         BuildServer.install [
             AppVeyor.Installer
             Travis.Installer

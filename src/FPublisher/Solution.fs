@@ -44,10 +44,8 @@ module Solution =
         checkValidSlnPath slnPath
         let workingDir = Path.getDirectory slnPath
         logger.Important "Begin read sln"
-        logger.Important "Begin restore sln"
 
         dotnet workingDir "restore" [slnPath]
-        logger.Important "End restore sln"
 
         { Path = slnPath
           Projects = 
