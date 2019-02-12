@@ -1,7 +1,7 @@
 language: csharp
 dist: xenial
 dotnet: 2.2
-mono: none
+mono: latest
 
 script:
   - ./fake.sh build
