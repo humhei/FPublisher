@@ -103,7 +103,7 @@ module Forker =
 
                 let tbdReleaseNotes,lastReleaseNotes = 
                     let releaseNotesFile = workspace.WorkingDir </> "RELEASE_NOTES.md"
-                    ReleaseNotes.loadTbd releaseNotesFile,ReleaseNotes.loadLast releaseNotesFile
+                    ReleaseNotes.loadTbd releaseNotesFile, ReleaseNotes.loadLast releaseNotesFile
 
                 logger.Infots "Begin fetch version from nuget server"
                 let! versionFromOfficalNugetServer = Solution.lastVersionFromOfficalNugetServer solution

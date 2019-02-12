@@ -206,13 +206,9 @@ module Collaborator =
 
             let currentVersion = VersionController.currentVersion versionController
 
-            let tbdReleaseNotes = versionController.TbdReleaseNotes
 
             let versionFromTbdReleaseNotes = versionController.VersionFromTbdReleaseNotes
             
-                    
-            if tbdReleaseNotes.Notes.IsEmpty
-            then failwith "Please write release notes of new version first"
 
             match currentVersion with 
             | None ->
@@ -236,7 +232,13 @@ module Collaborator =
 
         let nextReleaseNotes (role: Role) =
             let versionController = role.VersionController.Result
-            versionController.TbdReleaseNotes
+            
+            let tbdReleaseNotes = versionController.TbdReleaseNotes
+            
+            if tbdReleaseNotes.Notes.IsEmpty
+            then failwith "Please write release notes of new version first"
+
+            tbdReleaseNotes
             |> ReleaseNotes.updateWithSemVerInfo (nextVersion role)
             |> ReleaseNotes.updateDateToToday   
 

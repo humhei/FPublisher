@@ -56,6 +56,10 @@ module BuildServer =
     with 
         member x.Workspace = x.Collaborator.Workspace
 
+        member x.VersionController = x.Collaborator.VersionController
+
+        member x.ReleaseNotesFile = x.Collaborator.ReleaseNotesFile
+
         member x.ArtifactsDirPath = 
             x.Workspace.WorkingDir </> "build_output"
             |> Directory.ensureReturn
@@ -120,8 +124,18 @@ module BuildServer =
                 let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
 
                 let nextReleaseNotes = 
-                    if isAfterDraftedNewRelease then ReleaseNotes.loadLast role.Collaborator.ReleaseNotesFile
-                    else Some (Collaborator.Role.nextReleaseNotes role.Collaborator)
+                    if isAfterDraftedNewRelease then ReleaseNotes.loadLast role.ReleaseNotesFile
+                    else 
+                        let nextVersion = 
+                            let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
+                            let mainVersionText = SemVerInfo.mainVersionText forkerNextVersionIgnoreLocalNugetServer
+                            (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
+                            |> SemVerInfo.parse
+
+                        ReleaseNotes.loadTbd role.ReleaseNotesFile
+                        |> ReleaseNotes.updateWithSemVerInfo nextVersion
+                        |> ReleaseNotes.updateDateToToday 
+                        |> Some
 
                 match nextReleaseNotes with 
                 | Some nextReleaseNotes ->
