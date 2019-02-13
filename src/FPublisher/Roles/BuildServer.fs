@@ -10,6 +10,7 @@ open Fake.IO.FileSystemOperators
 open System.IO
 open FPublisher.FakeHelper
 open FPublisher
+open FPublisher.FakeHelper.CommandHelper
 
 #nowarn "0064"
 
@@ -143,7 +144,8 @@ module BuildServer =
             match BuildServer.buildServer with
             | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
-
+                let appveyor = platformTool "appveyor"
+                exec appveyor "./" ["-Version"; "{Build}"]
                 let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
 
                 match Role.nextReleaseNotes role with
