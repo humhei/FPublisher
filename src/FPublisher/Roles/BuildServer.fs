@@ -130,6 +130,7 @@ module BuildServer =
 
 
     let private isCircleCI = Environment.environVarAsBool "CIRCLE_BUILD_NUM"
+    let env = Environment.environVar "CIRCLE_BUILD_NUM"
 
     let private roleAction role = function
         | Msg.Collaborator collaboratorMsg ->
@@ -139,6 +140,9 @@ module BuildServer =
                 )
             }
         | Msg.RunCI ->
+            logger.Important "%s" env
+            logger.Important "%b" isCircleCI
+
             match BuildServer.buildServer with
             | BuildServer.LocalBuild when not isCircleCI -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
