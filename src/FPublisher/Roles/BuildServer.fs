@@ -140,11 +140,8 @@ module BuildServer =
                 )
             }
         | Msg.RunCI ->
-            logger.Important "Hello%s" env
-            logger.Important "Hello%b" isCircleCI
-            failwith "HElEO "
             match BuildServer.buildServer with
-            | BuildServer.LocalBuild when not isCircleCI -> failwith "Expect"
+            | BuildServer.LocalBuild when not isCircleCI -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
 
                 let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
