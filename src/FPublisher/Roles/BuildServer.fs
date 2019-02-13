@@ -140,6 +140,9 @@ module BuildServer =
                 )
             }
         | Msg.RunCI ->
+            logger.Important "Env: %s" env
+            logger.Important "IsCircleCI: %s" env
+
             match BuildServer.buildServer with
             | BuildServer.LocalBuild when not isCircleCI -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
