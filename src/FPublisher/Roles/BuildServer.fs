@@ -129,8 +129,7 @@ module BuildServer =
         ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
 
 
-    let private isCircleCI = Environment.environVarAsBool "CIRCLE_BUILD_NUM"
-    let env = Environment.environVar "CIRCLE_BUILD_NUM"
+    let private circleCIBuildNumber = Environment.environVar "CIRCLE_BUILD_NUM"
 
     let private roleAction role = function
         | Msg.Collaborator collaboratorMsg ->
@@ -140,11 +139,9 @@ module BuildServer =
                 )
             }
         | Msg.RunCI ->
-            logger.Important "Env: %s" env
-            logger.Important "IsCircleCI: %s" env
 
             match BuildServer.buildServer with
-            | BuildServer.LocalBuild when not isCircleCI -> failwith "Expect buildServer context, but currently run in local context"
+            | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
 
                 let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
