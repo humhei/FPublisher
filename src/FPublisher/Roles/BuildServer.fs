@@ -164,6 +164,8 @@ module BuildServer =
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
 
             | _ ->
+                exec "ls" role.Workspace.WorkingDir []
+
                 /// run tests only
                 { PreviousMsgs = [ !^ NonGit.Msg.Test ]
                   Action = MapState ignore }
