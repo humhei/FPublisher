@@ -144,12 +144,15 @@ module BuildServer =
             match BuildServer.buildServer with
             | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
-                let appveyor = platformTool "appveyor"
-                exec appveyor "./" ["-Version"; "{Build}"]
-                let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
+
 
                 match Role.nextReleaseNotes role with
                 | Some nextReleaseNotes ->
+                    let appveyor = platformTool "appveyor"
+                    exec appveyor "./" ["-Version"; nextReleaseNotes.AssemblyVersion + ".{Build}"]
+
+                    let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
+
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
                       Action = MapState (fun role ->
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
