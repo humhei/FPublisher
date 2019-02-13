@@ -17,7 +17,8 @@ let buildServer =
     BuildServer.create
         { BuildServer.Config.DefaultValue
             with
-                LocalNugetServer = Some LocalNugetServer.DefaultValue }
+                LocalNugetServer = Some LocalNugetServer.DefaultValue
+                LoggerLevel = Logger.Level.Normal }
 
 
 Target.create "Workspace.CreateDefaultSln" <| fun _ ->

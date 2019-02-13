@@ -34,7 +34,6 @@ module NonGit =
     let create loggerLevel (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
         let slnPath =
-
             let workingDir = workspace.WorkingDir
             !! (workingDir + "./*.sln")
             |> Seq.tryFind (fun sln -> sln.EndsWith ".FPublisher.sln")
