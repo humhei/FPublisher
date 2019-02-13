@@ -7,7 +7,7 @@ general:
 jobs:
   build:
     docker:
-      - image: mono:5.8.0.127
+      - image: aparker/circleci-dotnet-mono:latest
     steps:
       - checkout
       - run:
