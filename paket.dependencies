@@ -1,8 +1,8 @@
 source https://api.nuget.org/v3/index.json
 storage: none
 nuget Fake.Core.Target
-// source https://ci.appveyor.com/nuget/fpublisher
-nuget FPublisher prerelease
+source https://ci.appveyor.com/nuget/fpublisher
+nuget FPublisher build
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease
 
