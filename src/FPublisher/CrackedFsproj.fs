@@ -67,7 +67,7 @@ module CrackedFsproj =
 
     with
 
-            
+
 
         member x.Value =
             let (CrackedFsproj value) = x
