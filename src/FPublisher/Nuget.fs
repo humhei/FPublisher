@@ -119,7 +119,6 @@ module Nuget =
             Environment.setEnvironVar "Authors" (NugetAuthors.authorsText repository nugetPacker.Authors)
             Environment.setEnvironVar "Description"(repository.Description)
             Environment.setEnvironVar "PackageReleaseNotes" (packageReleaseNotes.Notes |> String.toLines)
-            Environment.setEnvironVar "SourceLinkCreate" (string nugetPacker.SourceLinkCreate)
             Environment.setEnvironVar "PackageTags" topics.AsString
             match nugetPacker.PackageIconUrl with
             | Some icon -> Environment.setEnvironVar "PackageIconUrl" icon
@@ -133,7 +132,9 @@ module Nuget =
                         [ yield "/p:PackageId=" + packageID
                           yield "/p:Version=" + packageReleaseNotes.NugetVersion
                           if noRestore then
-                            yield "--no-restore" ]
+                            yield "--no-restore" 
+                          if nugetPacker.SourceLinkCreate then 
+                            yield "/p:SourceLinkCreate=true"]
                         |> Args.toWindowsCommandLine
 
                     { options with
