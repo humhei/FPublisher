@@ -42,6 +42,8 @@ module NonGit =
                 | Some slnPath -> slnPath
                 | None -> workingDir </> ( workspace.DefaultSlnName + ".FPublisher" + ".sln")
 
+        logger.Info "detected prject %s" slnPath
+
         Workspace.createSlnWith slnPath false workspace
 
         { Solution = Solution.read slnPath

@@ -42,10 +42,10 @@ module Primitives =
         let update stateName action (state: BoxedState) =
             match state with
             | State.Init ->
-                logger.Important "FPUBLISHER: Start target %s" stateName
+                logger.Important "FPUBLISH: Start target %s" stateName
                 let stopWatch = Stopwatch.StartNew()
                 let result = action()
-                logger.Important "FPUBLISHER: Finished target %s in %O" stateName stopWatch.Elapsed
+                logger.Important "FPUBLISH: Finished target %s in %O" stateName stopWatch.Elapsed
                 State.Result result
             | State.Result _ -> state
 
