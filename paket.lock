@@ -934,7 +934,7 @@ NUGET
       NETStandard.Library (>= 1.6.1) - restriction: && (< net45) (>= netstandard1.6)
       System.ValueTuple (>= 4.4) - restriction: || (&& (>= net45) (< net46) (< netstandard1.6)) (&& (< net45) (>= netstandard1.6)) (&& (>= net46) (< netstandard1.6)) (>= net47)
   remote: https://ci.appveyor.com/nuget/fpublisher
-    FPublisher (0.1.4-build.56)
+    FPublisher (0.1.4-build.67)
       Dotnet.ProjInfo (>= 0.31) - restriction: >= netstandard2.0
       Fake.Api.GitHub (>= 5.12) - restriction: >= netstandard2.0
       Fake.BuildServer.AppVeyor (>= 5.12) - restriction: >= netstandard2.0
