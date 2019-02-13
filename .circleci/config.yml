@@ -7,11 +7,11 @@ general:
 jobs:
   build:
     docker:
-      - image: aparker/circleci-dotnet-mono:latest
+      - image: 2.2-sdk
     steps:
       - checkout
       - run:
           name: run-tests
           command: |
             export TERM=xterm-256color
-            ./fake.sh build -t RunCI -v
+            ./fake.sh build -t RunCI
