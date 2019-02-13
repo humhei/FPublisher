@@ -44,10 +44,9 @@ module NonGit =
 
         let slns = (!! (workspace.WorkingDir + "./*.*")) |> List.ofSeq
 
-        let ls = platformTool "ls"
-        exec ls workspace.WorkingDir []
         logger.Info "detected prjects %A" slns
         logger.Info "working dir is %s" workspace.WorkingDir
+        exec "ls" workspace.WorkingDir []
 
         Workspace.createSlnWith slnPath false workspace
 

@@ -134,7 +134,8 @@ module Nuget =
                           if noRestore then
                             yield "--no-restore" 
                           if nugetPacker.SourceLinkCreate then 
-                            yield "/p:SourceLinkCreate=true"]
+                            yield "/p:SourceLinkCreate=true"
+                            ]
                         |> Args.toWindowsCommandLine
 
                     { options with
@@ -159,7 +160,6 @@ module Nuget =
                 |> List.ofSeq
 
             packages
-
             //if nugetPacker.SourceLinkCreate then 
                 
             //    let sourceLink = dotnetGlobalTool "sourceLink"
