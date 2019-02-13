@@ -41,7 +41,7 @@ module NonGit =
                 | Some slnPath -> slnPath
                 | None -> workingDir </> ( workspace.DefaultSlnName + ".FPublisher" + ".sln")
 
-        let slns = (!! (workspace.WorkingDir + "./*.sln")) |> List.ofSeq
+        let slns = (!! (workspace.WorkingDir + "./*.*")) |> List.ofSeq
         logger.Info "detected prjects %A" slns
         logger.Info "detected prject %A" slnPath
 
