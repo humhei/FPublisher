@@ -135,6 +135,8 @@ module Nuget =
                             yield "--no-restore" 
                           if nugetPacker.SourceLinkCreate then 
                             yield "/p:SourceLinkCreate=true"
+                            //yield "/p:$AllowedOutputExtensionsInPackageBuildOutputFolder = \".dll; .exe; .winmd; .json; .pri; .xml; ;.pdb\""
+
                             ]
                         |> Args.toWindowsCommandLine
 
