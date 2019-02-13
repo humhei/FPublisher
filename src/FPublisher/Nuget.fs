@@ -154,6 +154,9 @@ module Nuget =
                 DotNet.pack (buildingPackOptions packageId) proj.ProjPath
             )
 
+            if nugetPacker.SourceLinkCreate then 
+                dotnet "./" "tool" ["install"; "-g"; "global"] 
+
             !! (targetDirectory + "./*.nupkg")
             |> List.ofSeq
 
