@@ -33,7 +33,6 @@ module NonGit =
 
     let create loggerLevel (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
-
         let slnPath =
 
             let workingDir = workspace.WorkingDir
