@@ -149,7 +149,7 @@ module BuildServer =
                 match Role.nextReleaseNotes role with
                 | Some nextReleaseNotes ->
                     let appveyor = platformTool "appveyor"
-                    exec appveyor "./" ["-Version"; nextReleaseNotes.AssemblyVersion + ".{Build}"]
+                    exec appveyor "./" ["UpdateBuild"; "-Version"; nextReleaseNotes.AssemblyVersion + ".{Build}"]
 
                     let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
 
