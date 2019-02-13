@@ -46,7 +46,6 @@ module NonGit =
 
         logger.Info "detected prjects %A" slns
         logger.Info "working dir is %s" workspace.WorkingDir
-        exec "ls" workspace.WorkingDir []
 
         Workspace.createSlnWith slnPath false workspace
 
