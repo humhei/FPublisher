@@ -1,0 +1,17 @@
+version: 2
+general:
+  branches:
+    ignore:
+      - gh-pages # list of branches to ignore
+
+jobs:
+  build:
+    docker:
+      - image: mono:5.8.0.127
+    steps:
+      - checkout
+      - run:
+          name: build-project
+          command: |
+            export TERM=xterm-256color
+            ./fake.sh build -t RunCI
