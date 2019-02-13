@@ -66,9 +66,6 @@ module CrackedFsproj =
     type CrackedFsproj = private CrackedFsproj of CrackedFsprojSingleTarget list
 
     with
-
-
-
         member x.Value =
             let (CrackedFsproj value) = x
             value

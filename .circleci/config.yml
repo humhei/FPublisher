@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: build-project
+          name: run-tests
           command: |
             export TERM=xterm-256color
             ./fake.sh build -t RunCI

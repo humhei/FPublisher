@@ -15,17 +15,17 @@ open FPublisher
 
 [<RequireQualifiedAccess>]
 module BuildServer =
-    type Config = 
+    type Config =
         { ArtifactsName: string
           NugetPacker: NugetPacker
           EnvironmentConfig: EnvironmentConfig
           WorkingDir: string
           LoggerLevel: Logger.Level
           LocalNugetServer: LocalNugetServer option }
-    with 
-        static member DefaultValue = 
+    with
+        static member DefaultValue =
             let collaborator = Collaborator.Config.DefaultValue
-            { ArtifactsName = "build_output" 
+            { ArtifactsName = "build_output"
               NugetPacker = collaborator.NugetPacker
               EnvironmentConfig = collaborator.EnvironmentConfig
               WorkingDir = collaborator.WorkingDir
@@ -53,14 +53,14 @@ module BuildServer =
           TargetState: TargetState
           ArtifactsName: string
           MajorCI: BuildServer }
-    with 
+    with
         member x.Workspace = x.Collaborator.Workspace
 
         member x.VersionController = x.Collaborator.VersionController
 
         member x.ReleaseNotesFile = x.Collaborator.ReleaseNotesFile
 
-        member x.ArtifactsDirPath = 
+        member x.ArtifactsDirPath =
             x.Workspace.WorkingDir </> "build_output"
             |> Directory.ensureReturn
 
@@ -69,17 +69,17 @@ module BuildServer =
     [<RequireQualifiedAccess>]
     module Role =
         let afterDraftedNewRelease role =
-            match role.MajorCI with 
-            | BuildServer.AppVeyor -> 
+            match role.MajorCI with
+            | BuildServer.AppVeyor ->
                 let prHeadRepoName = AppVeyor.Environment.PullRequestRepoName
                 role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty prHeadRepoName
-            | _ -> 
+            | _ ->
                 failwith "not implemted"
-            
-        let nextReleaseNotes role = 
+
+        let nextReleaseNotes role =
             if afterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
-            else 
-                let nextVersion = 
+            else
+                let nextVersion =
                     let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
                     let mainVersionText = SemVerInfo.mainVersionText forkerNextVersionIgnoreLocalNugetServer
                     (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
@@ -87,7 +87,7 @@ module BuildServer =
 
                 ReleaseNotes.loadTbd role.ReleaseNotesFile
                 |> ReleaseNotes.updateWithSemVerInfo nextVersion
-                |> ReleaseNotes.updateDateToToday 
+                |> ReleaseNotes.updateDateToToday
                 |> Some
 
     let create (config: Config) =
@@ -98,37 +98,40 @@ module BuildServer =
 
 
         { Collaborator = Collaborator.create config.AsCollaborator
-          TargetState = 
+          TargetState =
             { Collaborator = Collaborator.TargetState.init
               RunCI = State.Init }
           MajorCI = BuildServer.AppVeyor
           ArtifactsName = config.ArtifactsName
         }
-        
+
     [<AutoOpen>]
     module SRTPMsgs =
 
         type Ext = Ext
             with
-                static member Bar (ext : Ext, nonGit : NonGit.Msg) = 
+                static member Bar (ext : Ext, nonGit : NonGit.Msg) =
                     Collaborator.upcastMsg nonGit
                     |> Msg.Collaborator
 
-                static member Bar (ext : Ext, forker : Forker.Msg) = 
+                static member Bar (ext : Ext, forker : Forker.Msg) =
                     Collaborator.upcastMsg forker
                     |> Msg.Collaborator
+
                 static member Bar (ext : Ext, collaborator : Collaborator.Msg) =
                     collaborator
                     |> Msg.Collaborator
 
     let inline upcastMsg msg =
         ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
-        
+
     let inline private (!^) msg =
         ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
 
 
-    let private roleAction role = function 
+    let private isCircleCI = Environment.environVarAsBool "CIRCLE_BUILD_NUM"
+
+    let private roleAction role = function
         | Msg.Collaborator collaboratorMsg ->
             { PreviousMsgs = []
               Action = MapChild (fun role ->
@@ -136,28 +139,28 @@ module BuildServer =
                 )
             }
         | Msg.RunCI ->
-            match BuildServer.buildServer with 
-            | BuildServer.LocalBuild -> failwith "Expect buildServer context, but currently run in local context"
+            match BuildServer.buildServer with
+            | BuildServer.LocalBuild when not isCircleCI -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
 
                 let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
 
-                match Role.nextReleaseNotes role with 
+                match Role.nextReleaseNotes role with
                 | Some nextReleaseNotes ->
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
                       Action = MapState (fun role ->
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
-                        if isAfterDraftedNewRelease then 
+                        if isAfterDraftedNewRelease then
                             OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
                             |> Async.RunSynchronously
                     )}
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
-            
-            | _ -> 
+
+            | _ ->
                 /// run tests only
-                { PreviousMsgs = [ !^ NonGit.Msg.Test ] 
+                { PreviousMsgs = [ !^ NonGit.Msg.Test ]
                   Action = MapState ignore }
 
-    let run = 
+    let run =
         Role.updateComplex roleAction
