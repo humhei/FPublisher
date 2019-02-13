@@ -25,6 +25,8 @@ module FakeHelper =
             |> ProcessUtils.tryFindFileOnPath
             |> function Some t -> t | _ -> failwithf "%s not found" tool
 
+
+
         let dotnetWith dir command args =
             DotNet.exec
                 (fun ops -> {ops with WorkingDirectory = dir})
@@ -34,6 +36,15 @@ module FakeHelper =
         let dotnet dir command args =
             dotnetWith dir command args
             |> ProcessResult.ensureExitCode
+
+        let dotnetGlobalTool tool =
+            tool
+            |> ProcessUtils.tryFindFileOnPath
+            |> function 
+                | Some t -> t 
+                | None -> 
+                    dotnet "./" "tool" ["install"; "-g"; tool] 
+                    platformTool tool
 
         let exec tool dir args =
             let result =

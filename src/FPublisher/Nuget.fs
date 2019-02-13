@@ -154,11 +154,23 @@ module Nuget =
                 DotNet.pack (buildingPackOptions packageId) proj.ProjPath
             )
 
-            if nugetPacker.SourceLinkCreate then 
-                dotnet "./" "tool" ["install"; "-g"; "global"] 
+            let packages = 
+                !! (targetDirectory + "./*.nupkg")
+                |> List.ofSeq
 
-            !! (targetDirectory + "./*.nupkg")
-            |> List.ofSeq
+            packages
+
+            //if nugetPacker.SourceLinkCreate then 
+                
+            //    let sourceLink = dotnetGlobalTool "sourceLink"
+
+            //    packages |> List.map (fun package ->
+            //        exec sourceLink "./" ["test" ;package]
+            //        package
+            //    )
+
+            //else packages
+
 
     type NugetServer =
         { ApiEnvironmentName: string option

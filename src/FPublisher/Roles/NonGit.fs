@@ -5,6 +5,7 @@ open Fake.IO.FileSystemOperators
 open FPublisher.Git
 open Primitives
 open Fake.IO.Globbing.Operators
+open FPublisher.FakeHelper.CommandHelper
 
 [<RequireQualifiedAccess>]
 module NonGit =
@@ -42,6 +43,9 @@ module NonGit =
                 | None -> workingDir </> ( workspace.DefaultSlnName + ".FPublisher" + ".sln")
 
         let slns = (!! (workspace.WorkingDir + "./*.*")) |> List.ofSeq
+
+        let ls = platformTool "ls"
+        exec ls workspace.WorkingDir []
         logger.Info "detected prjects %A" slns
         logger.Info "working dir is %s" workspace.WorkingDir
 
