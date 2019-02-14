@@ -110,8 +110,6 @@ csx
 # Windows Store app package directory
 AppPackages/
 
-# VSCode
-.vscode/
 
 # Others
 sql/
@@ -172,7 +170,7 @@ packages/
 # Test results produced by build
 TestResults.xml
 
-# Nuget outputs 
+# Nuget outputs
 nuget/*.nupkg
 release.cmd
 release.sh
