@@ -7,7 +7,7 @@ general:
 jobs:
   build:
     docker:
-      - image: microsoft/dotnet:2.2-sdk
+      - image: andrewlock/dotnet-mono
     steps:
       - checkout
       - run:
