@@ -170,7 +170,7 @@ NUGET
     FSharp.Control.Reactive (4.1) - restriction: || (>= net46) (>= netstandard2.0)
       FSharp.Core (>= 4.2.3) - restriction: || (>= net46) (>= netstandard2.0)
       System.Reactive (>= 4.0) - restriction: || (>= net46) (>= netstandard2.0)
-    FSharp.Core (4.6.1) - restriction: || (>= net45) (>= netstandard1.6)
+    FSharp.Core (4.6.2) - restriction: || (>= net45) (>= netstandard1.6)
     FSharp.Data (3.0)
       FSharp.Core (>= 4.0.0.1) - restriction: >= net45
       FSharp.Core (>= 4.3.4) - restriction: && (< net45) (>= netstandard2.0)
@@ -934,7 +934,7 @@ NUGET
       NETStandard.Library (>= 1.6.1) - restriction: && (< net45) (>= netstandard1.6)
       System.ValueTuple (>= 4.4) - restriction: || (&& (>= net45) (< net46) (< netstandard1.6)) (&& (< net45) (>= netstandard1.6)) (&& (>= net46) (< netstandard1.6)) (>= net47)
   remote: https://ci.appveyor.com/nuget/fpublisher
-    FPublisher (0.1.4-build.80)
+    FPublisher (0.1.4-build.86)
       Dotnet.ProjInfo (>= 0.31) - restriction: >= netstandard2.0
       Fake.Api.GitHub (>= 5.12) - restriction: >= netstandard2.0
       Fake.BuildServer.AppVeyor (>= 5.12) - restriction: >= netstandard2.0
@@ -967,7 +967,7 @@ NUGET
     Expecto.TestResults (8.8)
       Expecto (>= 8.8) - restriction: || (>= net461) (>= netstandard2.0)
       FSharp.Core (>= 4.3.4) - restriction: || (>= net461) (>= netstandard2.0)
-    FSharp.Core (4.6.1) - restriction: || (>= net461) (>= netstandard2.0)
+    FSharp.Core (4.6.2) - restriction: || (>= net461) (>= netstandard2.0)
     Microsoft.NETCore.Platforms (2.2) - restriction: || (&& (>= dnxcore50) (>= net461)) (&& (>= dnxcore50) (>= netstandard2.0)) (&& (< monoandroid) (< net45) (< netstandard1.2) (>= netstandard2.0) (< win8)) (&& (< monoandroid) (< net45) (< netstandard1.3) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.5) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (>= netstandard2.0) (< win8) (< wpa81) (< xamarinios)) (&& (< monoandroid) (< net46) (>= netstandard2.0) (< xamarinios)) (&& (< net35) (>= net461) (>= netstandard1.6)) (&& (< net35) (>= netstandard2.0) (< xamarinios)) (>= netcoreapp2.0)
     Microsoft.NETCore.Targets (2.1) - restriction: || (&& (>= dnxcore50) (>= netstandard2.0)) (&& (< monoandroid) (< net45) (< netstandard1.2) (>= netstandard2.0) (< win8)) (&& (< monoandroid) (< net45) (< netstandard1.3) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.5) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (>= netstandard2.0) (< win8) (< wpa81) (< xamarinios)) (&& (< monoandroid) (< net46) (>= netstandard2.0) (< xamarinios))
     Mono.Cecil (0.10.3) - restriction: || (>= net461) (>= netstandard2.0)
