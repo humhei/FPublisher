@@ -44,12 +44,12 @@ module Workspace =
 
     /// include paket-files
     let allfsprojses (workspace: Workspace) =
-        !! (workspace.WorkingDir + "./**/*.fsproj")
+        !! (workspace.WorkingDir </> "./**/*.fsproj")
 
     /// exclude paket-files
     let fsprojses (workspace: Workspace) =
         allfsprojses workspace
-        -- (workspace.WorkingDir + "./paket-files/**/*.fsproj")
+        -- (workspace.WorkingDir </> "./paket-files/**/*.fsproj")
 
 
     let cleanBinAndObj (workspace: Workspace) =

@@ -16,13 +16,14 @@ open Octokit
 open FakeHelper
 open FakeHelper.Build
 
+
 module Nuget =
 
     [<RequireQualifiedAccess>]
     module Workspace =
         let workaroundPaketNuSpecBug (workspace: Workspace) =
             let root = workspace.WorkingDir
-            !! (root + "./*/obj/**/*.nuspec")
+            !! (root </> "./*/obj/**/*.nuspec")
             |> File.deleteAll
 
 
@@ -49,7 +50,7 @@ module Nuget =
             solution.Projects
             |> Seq.collect (fun proj ->
                 let dir = Path.getDirectory proj.ProjPath
-                !! (dir + "./obj/**/*.nuspec")
+                !! (dir </> "./obj/**/*.nuspec")
             )
             |> File.deleteAll
 
@@ -132,8 +133,8 @@ module Nuget =
                         [ yield "/p:PackageId=" + packageID
                           yield "/p:Version=" + packageReleaseNotes.NugetVersion
                           if noRestore then
-                            yield "--no-restore" 
-                          if nugetPacker.SourceLinkCreate then 
+                            yield "--no-restore"
+                          if nugetPacker.SourceLinkCreate then
                             yield "/p:SourceLinkCreate=true"
                             //yield "/p:$AllowedOutputExtensionsInPackageBuildOutputFolder = \".dll; .exe; .winmd; .json; .pri; .xml; ;.pdb\""
 
@@ -157,13 +158,13 @@ module Nuget =
                 DotNet.pack (buildingPackOptions packageId) proj.ProjPath
             )
 
-            let packages = 
-                !! (targetDirectory + "./*.nupkg")
+            let packages =
+                !! (targetDirectory </> "./*.nupkg")
                 |> List.ofSeq
 
             packages
-            //if nugetPacker.SourceLinkCreate then 
-                
+            //if nugetPacker.SourceLinkCreate then
+
             //    let sourceLink = dotnetGlobalTool "sourceLink"
 
             //    packages |> List.map (fun package ->
@@ -188,7 +189,7 @@ module Nuget =
             Directory.ensure targetDirName
 
             packages |> Shell.copyFiles targetDirName
-            !! (targetDirName + "./*.nupkg")
+            !! (targetDirName </> "./*.nupkg")
             |> Seq.map (fun nupkg -> async {
                 dotnet targetDirName
                     "nuget"

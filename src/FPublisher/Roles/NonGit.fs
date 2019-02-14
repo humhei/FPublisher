@@ -36,16 +36,17 @@ module NonGit =
         logger <- Logger.create(loggerLevel)
         let slnPath =
             let workingDir = workspace.WorkingDir
-            !! (workingDir + "./*.sln")
+            !! (workingDir </> "./*.sln")
             |> Seq.tryFind (fun sln -> sln.EndsWith ".FPublisher.sln")
             |> function
                 | Some slnPath -> slnPath
                 | None -> workingDir </> ( workspace.DefaultSlnName + ".FPublisher" + ".sln")
 
-        let slns = (!! (workspace.WorkingDir + "./*.*")) |> List.ofSeq
+        let slns = (!! (workspace.WorkingDir </> "./*.*")) |> List.ofSeq
 
         logger.Info "detected prjects %A" slns
         logger.Info "working dir is %s" workspace.WorkingDir
+        exec "ls" workspace.WorkingDir []
 
         Workspace.createSlnWith slnPath false workspace
 
