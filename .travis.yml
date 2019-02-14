@@ -4,10 +4,9 @@ services:
   - docker
 
 before_install:
-  - docker pull microsoft/dotnet:2.2-sdk
-  - chmod 755 ./*.sh
+  - docker pull andrewlock/dotnet-mono
 
 jobs:
   include:
     - stage: "RunCI"
-      script: docker run  microsoft/dotnet:2.2-sdk  bash -c "./fake.sh build -t RunCI"
+      script: "./fake.sh build -t RunCI"
