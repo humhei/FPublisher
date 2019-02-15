@@ -1,4 +1,7 @@
-# Role-based composable typed building targets
+# Role-based,composable,stateful and typed building targets
 
 ## Usage:
-Please directly  contribute to this repository instead of writing you own targets
+See build.fsx
+
+## More features
+Contribute to this repository(src/FPublisher/Roles)

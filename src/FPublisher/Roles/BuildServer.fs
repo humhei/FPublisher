@@ -1,13 +1,11 @@
 ﻿namespace FPublisher.Roles
 open Primitives
-open Microsoft.Build.Logging.StructuredLogger
 open Fake.Core
 open Fake.BuildServer
 open FPublisher.FakeHelper.Build
 open FPublisher.Nuget
 open Fake.IO
 open Fake.IO.FileSystemOperators
-open System.IO
 open FPublisher.FakeHelper
 open FPublisher
 open FPublisher.FakeHelper.CommandHelper
@@ -69,16 +67,12 @@ module BuildServer =
 
     [<RequireQualifiedAccess>]
     module Role =
-        let afterDraftedNewRelease role =
-            match role.MajorCI with
-            | BuildServer.AppVeyor ->
-                let prHeadRepoName = AppVeyor.Environment.PullRequestRepoName
-                role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty prHeadRepoName
-            | _ ->
-                failwith "not implemted"
+        let isAfterDraftedNewRelease role =
+            let prHeadRepoName = AppVeyor.Environment.PullRequestRepoName
+            role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty prHeadRepoName
 
         let nextReleaseNotes role =
-            if afterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
+            if isAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
             else
                 let nextVersion =
                     let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
@@ -151,7 +145,7 @@ module BuildServer =
                     let appveyor = platformTool "appveyor"
                     exec appveyor "./" ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ]
 
-                    let isAfterDraftedNewRelease = Role.afterDraftedNewRelease role
+                    let isAfterDraftedNewRelease = Role.isAfterDraftedNewRelease role
 
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
                       Action = MapState (fun role ->

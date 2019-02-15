@@ -5,7 +5,6 @@ open Fake.IO.FileSystemOperators
 open FPublisher.Git
 open Primitives
 open Fake.IO.Globbing.Operators
-open FPublisher.FakeHelper.CommandHelper
 
 [<RequireQualifiedAccess>]
 module NonGit =
@@ -35,14 +34,11 @@ module NonGit =
     let create loggerLevel (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
         let slnPath =
-            let workingDir = workspace.WorkingDir
-            !! (workingDir </> "./*.sln")
-            |> Seq.tryFind (fun sln -> sln.EndsWith ".FPublisher.sln")
-            |> function
-                | Some slnPath -> slnPath
-                | None -> workingDir </> ( workspace.DefaultSlnName + ".FPublisher" + ".sln")
-
-        let slns = (!! (workspace.WorkingDir </> "./*.*")) |> List.ofSeq
+            let slnName =
+                match Workspace.tryRepoName workspace with
+                | Some repoName -> repoName
+                | None -> workspace.DefaultSlnName
+            workspace.WorkingDir </> (slnName  + ".sln")
 
         Workspace.createSlnWith slnPath false workspace
 

@@ -52,8 +52,6 @@ module Logger =
         member x.Importantts format =
             Printf.ksprintf (withTimeStamp _important) format   
 
-        
-
         member x.Warn message =
             Trace.traceImportant message  
               
@@ -63,6 +61,3 @@ module Logger =
     let create level = Logger(level)
 
 
-[<AutoOpen>]
-module internal Global =
-    let mutable logger = Logger.create (Logger.Level.Minimal)

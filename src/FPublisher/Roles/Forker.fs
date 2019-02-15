@@ -6,16 +6,10 @@ open Primitives
 open Fake.Core
 open FPublisher.GitHub
 open FPublisher.FakeHelper.Build
-open System.Threading.Tasks
 open Octokit
 open FSharp.Control.Tasks.V2.ContextInsensitive
-open Fake.Api
 open FPublisher.Git
-open System.Net.Http
 open System
-open Octokit.Internal
-open System.Reflection
-open System.Threading
 open FPublisher.Utils
 
  

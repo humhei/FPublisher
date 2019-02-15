@@ -25,7 +25,7 @@ let workspace = (Workspace root)
 
 
 let workspaceTests() =
-  testList "Fake tests" [
+  ptestList "Fake tests" [
     testCase "add default solution" <| fun _ ->
       Workspace.createDefaultSln false workspace
   ]
@@ -40,7 +40,7 @@ let role =
 
 
 let nonGitTests() =
-  testList "NonGit tests" [
+  ptestList "NonGit tests" [
     testCase "build project" <| fun _ ->
       BuildServer.run (!^ NonGit.Msg.Build) role
       |> ignore
@@ -52,7 +52,7 @@ let nonGitTests() =
 
 
 let forkerTests() =
-  testList "forker tests" [
+  ptestList "forker tests" [
     ftestCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) role
       |> ignore
@@ -60,9 +60,8 @@ let forkerTests() =
 
 
 let collaboratorTests() =
-  testList "Collaborator Tests" [
+  ptestList "Collaborator Tests" [
     testCase "next release" <| fun _ ->
       BuildServer.run (!^ Collaborator.Msg.NextRelease) role
       |> ignore
   ]
-
