@@ -40,7 +40,7 @@ let role =
 
 
 let nonGitTests() =
-  testList "NonGit tests" [
+  ptestList "NonGit tests" [
     testCase "build project" <| fun _ ->
       BuildServer.run (!^ NonGit.Msg.Build) role
       |> ignore
@@ -52,7 +52,7 @@ let nonGitTests() =
 
 
 let forkerTests() =
-  ptestList "forker tests" [
+  testList "forker tests" [
     testCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) role
       |> ignore

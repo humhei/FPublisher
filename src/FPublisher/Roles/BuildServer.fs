@@ -9,6 +9,7 @@ open Fake.IO.FileSystemOperators
 open FPublisher.FakeHelper
 open FPublisher
 open FPublisher.FakeHelper.CommandHelper
+open Fake.SystemHelper
 
 #nowarn "0064"
 
@@ -65,25 +66,6 @@ module BuildServer =
 
         interface IRole<TargetState>
 
-    [<RequireQualifiedAccess>]
-    module Role =
-        let isAfterDraftedNewRelease role =
-            let prHeadRepoName = AppVeyor.Environment.PullRequestRepoName
-            role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty prHeadRepoName
-
-        let nextReleaseNotes role =
-            if isAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
-            else
-                let nextVersion =
-                    let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
-                    let mainVersionText = SemVerInfo.mainVersionText forkerNextVersionIgnoreLocalNugetServer
-                    (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
-                    |> SemVerInfo.parse
-
-                ReleaseNotes.loadTbd role.ReleaseNotesFile
-                |> ReleaseNotes.updateWithSemVerInfo nextVersion
-                |> ReleaseNotes.updateDateToToday
-                |> Some
 
     let create (config: Config) =
         BuildServer.install [
@@ -139,13 +121,33 @@ module BuildServer =
             | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
 
+                let isAfterDraftedNewRelease role =
+                    Environment.environVars()
+                    |> logger.Important "%A"
+                    let prHeadRepoName = AppVeyor.Environment.PullRequestRepoName
+                    role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty prHeadRepoName
 
-                match Role.nextReleaseNotes role with
+                let nextReleaseNotes role =
+                    if isAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
+                    else
+                        let nextVersion =
+                            let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
+                            let mainVersionText = SemVerInfo.mainVersionText forkerNextVersionIgnoreLocalNugetServer
+                            (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
+                            |> SemVerInfo.parse
+
+                        ReleaseNotes.loadTbd role.ReleaseNotesFile
+                        |> ReleaseNotes.updateWithSemVerInfo nextVersion
+                        |> ReleaseNotes.updateDateToToday
+                        |> Some
+
+
+                match nextReleaseNotes role with
                 | Some nextReleaseNotes ->
                     let appveyor = platformTool "appveyor"
                     exec appveyor "./" ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ]
 
-                    let isAfterDraftedNewRelease = Role.isAfterDraftedNewRelease role
+                    let isAfterDraftedNewRelease = isAfterDraftedNewRelease role
 
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
                       Action = MapState (fun role ->

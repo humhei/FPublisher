@@ -76,8 +76,9 @@ module Primitives =
                         then makeValue value
                         else value
                     )
-                FSharpValue.MakeRecord(recordType,values)
+                FSharpValue.MakeRecord(recordType, values)
                 |> unbox
+
 
         [<RequireQualifiedAccess>]
         module TargetState =
@@ -91,23 +92,20 @@ module Primitives =
                 let stateName = Expr.nameof expr
                 updateByStateName stateName action targetState
 
-        type RoleActionType<'role,'stateResult,'childTargetState> =
+        type RoleActionType<'role,'stateResult,'childRole> =
             | MapState of ('role -> 'stateResult)
-            | MapChild of ('role -> 'childTargetState)
+            | MapChild of ('role -> 'childRole)
 
-        type RoleAction<'role,'msg,'stateResult,'childTargetState> =
+        type RoleAction<'role,'msg,'stateResult,'childRole> =
             { PreviousMsgs: 'msg list
-              Action: RoleActionType<'role,'stateResult,'childTargetState> }
+              Action: RoleActionType<'role,'stateResult,'childRole> }
 
         [<RequireQualifiedAccess>]
         module Role =
 
-            let rec updateComplex (makeRoleAction: 'role -> 'msg -> RoleAction<'role,'msg,'stateResult,'childTargetState>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
+            let rec updateComplex (makeRoleAction: 'role -> 'msg -> RoleAction<'role,'msg,'stateResult,'childRole>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
 
-                let targetState: 'TargetState =
-                    let tp = typeof<'role>
-                    tp.GetProperty("TargetState").GetValue(role)
-                    |> unbox
+
 
                 let roleAction = makeRoleAction role msg
 
@@ -115,6 +113,11 @@ module Primitives =
                     roleAction.PreviousMsgs |> List.fold (fun role msg ->
                         updateComplex makeRoleAction msg role
                     ) role
+
+                let targetState: 'TargetState =
+                    let tp = typeof<'role>
+                    tp.GetProperty("TargetState").GetValue(role)
+                    |> unbox
 
                 let stateName = UnionCase.getName msg
                 match roleAction.Action with
@@ -126,9 +129,17 @@ module Primitives =
                     Record.setProperty "TargetState" (fun _ -> box newTargetState) role
 
                 | MapChild mapping ->
-                    Record.setProperty stateName (fun _ -> box (mapping role)) role
+                    let newChildRole = mapping role
+                    let newChildTargetState = newChildRole.GetType().GetProperty("TargetState").GetValue(newChildRole)
+
+                    let setChildRole role = Record.setProperty stateName (fun _ -> box newChildRole) role
+                    let setChildTargetState role =
+                        let newTargetState = Record.setProperty stateName (fun _ -> box newChildTargetState ) targetState
+                        Record.setProperty "TargetState" (fun _ -> box newTargetState) role
+
+                    role |> setChildRole |> setChildTargetState
 
 
 
-            let update (makeRoleAction: 'msg -> RoleAction<'role, 'msg,'stateResult,'childTargetState>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
+            let update (makeRoleAction: 'msg -> RoleAction<'role, 'msg,'stateResult,'childRole>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
                 updateComplex (fun _ msg -> makeRoleAction msg) msg role
