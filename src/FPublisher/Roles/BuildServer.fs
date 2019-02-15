@@ -165,14 +165,15 @@ module BuildServer =
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
                         if isJustAfterDraftedNewRelease then
                             let githubData = role.GitHubData
-                            githubData.CheckInDefaultBranch()
+                            if githubData.BranchName = "HEAD" then
 
-                            if Collaborator.GitHubData.isInDefaultRepo role.Workspace  githubData
-                            then
-                                logger.Importantts "Begin publish nuget packages to offical nuget server"
-                                OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
-                                |> Async.RunSynchronously
-                                logger.Importantts "End publish nuget packages to offical nuget server"
+                                if Collaborator.GitHubData.isInDefaultRepo role.Workspace  githubData
+                                then
+                                    logger.Importantts "Begin publish nuget packages to offical nuget server"
+                                    OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
+                                    |> Async.RunSynchronously
+                                    logger.Importantts "End publish nuget packages to offical nuget server"
+                            else failwith "Branch name should be HEAD when trigger from tag"
 
                     )}
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
