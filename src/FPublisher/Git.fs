@@ -21,21 +21,29 @@ module Git =
 
 
 
-        let tryRepoName workspace =
+        let tryGitUrl workspace =
             let _, lines, _ = Workspace.git (sprintf "config --get remote.origin.url") workspace
             if lines.Length = 1
-            then Some (Path.GetFileNameWithoutExtension(lines.[0]))
+            then Some lines.[0]
             elif lines.Length = 0
             then None
             else failwithf "repo name should only contain one line, current lines is %A" lines
+
+        let tryRepoName workspace =
+            tryGitUrl workspace |> Option.map Path.GetFileNameWithoutExtension
 
         let repoName workspace =
             match tryRepoName workspace with
             | Some repoName -> repoName
             | None -> failwith "is not a valid git repo"
 
+        let gitUrl workspace =
+            match tryGitUrl workspace with
+            | Some gitUrl -> gitUrl
+            | None -> failwith "is not a valid git repo"
+
         let isRepo workspace =
-            match tryRepoName workspace with
+            match tryGitUrl workspace with
             | Some _ -> true
             | None -> false
 

@@ -54,6 +54,10 @@ module Collaborator =
 
         member x.IsInDefaultBranch = x.DefaultBranch = x.BranchName
 
+        member x.CheckInDefaultBranch() =
+            if not x.IsInDefaultBranch
+            then failwithf "Should in default branch %s, but currrent in branch %s" x.DefaultBranch x.BranchName
+
         member x.Owner = x.Repository.Owner
 
         member x.LoginName = x.Owner.Login
@@ -85,8 +89,9 @@ module Collaborator =
         }
 
         let isInDefaultRepo workspace (githubData: GitHubData) =
-            githubData.Repository.CloneUrl = Workspace.repoName workspace
-
+            let gitUrl = Workspace.gitUrl workspace
+            githubData.Repository.CloneUrl = gitUrl
+            || githubData.Repository.GitUrl = gitUrl
 
     type VersionController =
         { Forker: Forker.VersionController

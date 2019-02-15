@@ -164,17 +164,16 @@ module BuildServer =
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
                         if isJustAfterDraftedNewRelease then
-                            if role.Collaborator.GitHubData.IsInDefaultBranch
+                            let githubData = role.GitHubData
+                            githubData.CheckInDefaultBranch()
 
+                            if Collaborator.GitHubData.isInDefaultRepo role.Workspace  githubData
                             then
-                                if Collaborator.GitHubData.isInDefaultRepo role.Workspace role.GitHubData
-                                then
-                                    logger.Importantts "Begin publish nuget packages to offical nuget server"
-                                    OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
-                                    |> Async.RunSynchronously
-                                    logger.Importantts "End publish nuget packages to offical nuget server"
+                                logger.Importantts "Begin publish nuget packages to offical nuget server"
+                                OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
+                                |> Async.RunSynchronously
+                                logger.Importantts "End publish nuget packages to offical nuget server"
 
-                            else failwith "Should in default branch"
                     )}
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
 
