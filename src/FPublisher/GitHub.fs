@@ -6,7 +6,6 @@ open FSharp.Data
 open FSharp.Data.HttpRequestHeaders
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open Utils
-open Git
 open FakeHelper.Build
 open System.Net.Http
 open System
@@ -14,25 +13,25 @@ open Octokit.Internal
 open System.Reflection
 open System.Threading
 open Octokit
-module GitHub = 
+module GitHub =
     type Topics =
         { names: string list }
-    with 
-        member x.AsString = String.separated ";" x.names            
+    with
+        member x.AsString = String.separated ";" x.names
 
     [<RequireQualifiedAccess>]
     module Repository =
-        let topicsAsync (repository: Repository)  = async { 
+        let topicsAsync (repository: Repository)  = async {
             return
                 Http.RequestString
-                  ( sprintf "https://api.github.com/repos/%s/%s/topics" repository.Owner.Login repository.Name, httpMethod = "GET", headers = 
+                  ( sprintf "https://api.github.com/repos/%s/%s/topics" repository.Owner.Login repository.Name, httpMethod = "GET", headers =
                         [ Accept "application/vnd.github.mercy-preview+json"
                           UserAgent "userAgent" ] )
-                |> JsonConvert.DeserializeObject<Topics> 
+                |> JsonConvert.DeserializeObject<Topics>
 
         }
 
-        let topics (repository: Repository)  = 
+        let topics (repository: Repository)  =
             topicsAsync repository
             |> Async.RunSynchronously
 
@@ -67,19 +66,17 @@ module GitHub =
         }
 
         let repository repoName (client: GitHubClient) = task {
-            let! searchedRepositoryResult =  
+            let! searchedRepositoryResult =
                 let request = SearchRepositoriesRequest(repoName)
                 client.Search.SearchRepo(request)
 
-            return 
-                searchedRepositoryResult.Items 
+            return
+                searchedRepositoryResult.Items
                 |> Seq.find ( fun result -> String.equalIgnoreCaseAndEdgeSpace result.Name repoName )
 
-        }        
-        
+        }
+
         let draftAndPublishWithNewRelease user repoName (release: ReleaseNotes.ReleaseNotes) (client: Async<GitHubClient>) =
             client
             |> GitHub.draftNewRelease user repoName (SemVerInfo.normalize release.SemVer) (release.SemVer.PreRelease <> None) release.Notes
             |> GitHub.publishDraft
-
-        
