@@ -191,12 +191,15 @@ module Nuget =
             packages |> Shell.copyFiles targetDirName
             !! (targetDirName </> "./*.nupkg")
             |> Seq.map (fun nupkg -> async {
+
                 dotnet targetDirName
                     "nuget"
                     [
                         yield! [ "push"; nupkg; "-s"; nugetServer.Serviceable ]
                         match nugetServer.ApiEnvironmentName with
                         | Some envName ->
+                            let nuget_api_key = Environment.environVarOrFail envName
+                            TraceSecrets.register nuget_api_key "nuget_api_key"
                             yield! [ "-k"; Environment.environVarOrFail envName ]
                         | None -> ()
                     ]
