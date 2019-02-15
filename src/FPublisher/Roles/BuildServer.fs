@@ -10,6 +10,7 @@ open FPublisher.FakeHelper
 open FPublisher
 open FPublisher.FakeHelper.CommandHelper
 open Fake.SystemHelper
+open FPublisher.GitHub
 
 #nowarn "0064"
 
@@ -60,6 +61,8 @@ module BuildServer =
 
         member x.ReleaseNotesFile = x.Collaborator.ReleaseNotesFile
 
+        member x.GitHubData = x.Collaborator.GitHubData
+
         member x.ArtifactsDirPath =
             x.Workspace.WorkingDir </> "build_output"
             |> Directory.ensureReturn
@@ -107,7 +110,7 @@ module BuildServer =
 
     let private circleCIBuildNumber = Environment.environVar "CIRCLE_BUILD_NUM"
 
-    let private roleAction role = function
+    let private roleAction (role: Role) = function
         | Msg.Collaborator collaboratorMsg ->
             { PreviousMsgs = []
               Action = MapChild (fun role ->
@@ -120,19 +123,22 @@ module BuildServer =
             | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
 
-                let isAfterDraftedNewRelease role =
+                let isJustAfterDraftedNewRelease (role: Role) =
                     let repoTagName = AppVeyor.Environment.RepoTagName
-                    if role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty repoTagName
-                    then
+                    if String.isNullOrEmpty repoTagName
+                    then false
+                    else
                         let lastReleaseNotes = ReleaseNotes.loadLast role.ReleaseNotesFile
+
                         match lastReleaseNotes with
                         | Some lastReleaseNotes ->
                             lastReleaseNotes.NugetVersion = repoTagName
                         | None -> false
-                    else false
+
+
 
                 let nextReleaseNotes role =
-                    if isAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
+                    if isJustAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
                     else
                         let nextVersion =
                             let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
@@ -151,15 +157,24 @@ module BuildServer =
                     let appveyor = platformTool "appveyor"
                     exec appveyor "./" ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ]
 
-                    let isAfterDraftedNewRelease = isAfterDraftedNewRelease role
+                    let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
                       Action = MapState (fun role ->
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
-                        if isAfterDraftedNewRelease then
-                            OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
-                            |> Async.RunSynchronously
+                        if isJustAfterDraftedNewRelease then
+                            if role.Collaborator.GitHubData.IsInDefaultBranch
+
+                            then
+                                if Collaborator.GitHubData.isInDefaultRepo role.Workspace role.GitHubData
+                                then
+                                    logger.Importantts "Begin publish nuget packages to offical nuget server"
+                                    OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
+                                    |> Async.RunSynchronously
+                                    logger.Importantts "End publish nuget packages to offical nuget server"
+
+                            else failwith "Should in default branch"
                     )}
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
 

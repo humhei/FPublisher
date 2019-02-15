@@ -6,14 +6,9 @@ open Expecto
 open System.IO
 open Fake.IO
 open FPublisher
-open System.Text.RegularExpressions
 open FPublisher.Roles
-open FPublisher
 open FPublisher.Git
-open System
 open FPublisher.Nuget
-open FPublisher.Roles
-open FPublisher.Roles.Primitives
 open Fake.Core
 
 let pass() = Expect.isTrue true "passed"
@@ -52,7 +47,7 @@ let nonGitTests() =
 
 
 let forkerTests() =
-  testList "forker tests" [
+  ptestList "forker tests" [
     testCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) role
       |> ignore
@@ -60,7 +55,7 @@ let forkerTests() =
 
 
 let collaboratorTests() =
-  ptestList "Collaborator Tests" [
+  testList "Collaborator Tests" [
     testCase "next release" <| fun _ ->
       BuildServer.run (!^ Collaborator.Msg.NextRelease) role
       |> ignore

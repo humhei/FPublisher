@@ -61,6 +61,7 @@ module Collaborator =
         member x.RepoName = x.Repository.Name
 
 
+
     [<RequireQualifiedAccess>]
     module GitHubData =
         let githubToken githubData =
@@ -82,6 +83,10 @@ module Collaborator =
                   CommitHashLocal = Workspace.commitHashLocal branchName workspace
                   CommitHashRemote = Workspace.commitHashRemote branchName workspace }
         }
+
+        let isInDefaultRepo workspace (githubData: GitHubData) =
+            githubData.Repository.CloneUrl = Workspace.repoName workspace
+
 
     type VersionController =
         { Forker: Forker.VersionController
@@ -124,6 +129,7 @@ module Collaborator =
 
     with
         member x.Workspace = Workspace x.WorkingDir
+
         static member DefaultValue =
             { NugetPacker = NugetPacker.DefaultValue
               EnvironmentConfig = EnvironmentConfig.DefaultValue
@@ -302,25 +308,25 @@ module Collaborator =
             { PreviousMsgs = []
               Action =
                 MapState (fun role ->
-                    let githubData = role.GitHubData
-                    //match githubData.IsInDefaultBranch with
-                    //| true ->
-                    let diffFilter diffs =
-                        let execludes =
-                            [ "RELEASE_NOTES.md"
-                              "Paket.Restore.targets" ]
-                        diffs |> List.filter (fun diff ->
-                            let name = Path.GetFileName diff
-                            execludes |> List.exists (fun execlude ->
-                                String.equalIgnoreCaseAndEdgeSpace execlude name
-                            ) |> not
-                        )
+                    if role.GitHubData.IsInDefaultBranch
+                    then
+                        let diffFilter diffs =
+                            let execludes =
+                                [ "RELEASE_NOTES.md"
+                                  "Paket.Restore.targets" ]
+                            diffs |> List.filter (fun diff ->
+                                let name = Path.GetFileName diff
+                                execludes |> List.exists (fun execlude ->
+                                    String.equalIgnoreCaseAndEdgeSpace execlude name
+                                ) |> not
+                            )
 
-                    match (Workspace.repoStateWith diffFilter role.Workspace) with
-                    | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
-                    | RepoState.None -> none
-                    //| false ->
-                        //failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch
+                        match (Workspace.repoStateWith diffFilter role.Workspace) with
+                        | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
+                        | RepoState.None -> none
+                    else
+                        let githubData = role.GitHubData
+                        failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch
                 )
             }
 
