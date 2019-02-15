@@ -29,21 +29,6 @@ NUGET
       System.Xml.XPath (>= 4.3) - restriction: || (>= net46) (>= netstandard2.0)
       System.Xml.XPath.XDocument (>= 4.3) - restriction: || (>= net46) (>= netstandard2.0)
       System.Xml.XPath.XmlDocument (>= 4.3) - restriction: || (>= net46) (>= netstandard2.0)
-    Fake.BuildServer.Travis (5.12) - restriction: >= netstandard2.0
-      Fake.Core.Environment (>= 5.12) - restriction: || (>= net46) (>= netstandard1.6)
-      Fake.Core.Trace (>= 5.12) - restriction: || (>= net46) (>= netstandard1.6)
-      Fake.IO.FileSystem (>= 5.12) - restriction: || (>= net46) (>= netstandard1.6)
-      FSharp.Core (>= 4.3.4) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Diagnostics.FileVersionInfo (>= 4.3) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Diagnostics.Process (>= 4.3) - restriction: || (>= net46) (>= netstandard1.6)
-      System.IO.FileSystem.Watcher (>= 4.3) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Net.Http (>= 4.3.4) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Xml.ReaderWriter (>= 4.3.1) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Xml.XDocument (>= 4.3) - restriction: || (&& (< net46) (>= netstandard1.6) (< netstandard2.0)) (&& (< net46) (>= netstandard2.0))
-      System.Xml.XmlDocument (>= 4.3) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Xml.XPath (>= 4.3) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Xml.XPath.XDocument (>= 4.3) - restriction: || (>= net46) (>= netstandard1.6)
-      System.Xml.XPath.XmlDocument (>= 4.3) - restriction: || (>= net46) (>= netstandard1.6)
     Fake.Core.CommandLineParsing (5.12) - restriction: || (>= net46) (>= netstandard2.0)
       FParsec (>= 1.0.3) - restriction: || (>= net46) (>= netstandard1.6)
       FSharp.Core (>= 4.3.4) - restriction: || (>= net46) (>= netstandard1.6)
@@ -911,11 +896,10 @@ NUGET
       NETStandard.Library (>= 1.6.1) - restriction: && (< net45) (>= netstandard1.6)
       System.ValueTuple (>= 4.4) - restriction: || (&& (>= net45) (< net46) (< netstandard1.6)) (&& (< net45) (>= netstandard1.6)) (&& (>= net46) (< netstandard1.6)) (>= net47)
   remote: https://ci.appveyor.com/nuget/fpublisher
-    FPublisher (0.1.4-build.107)
+    FPublisher (0.1.4-build.113)
       Dotnet.ProjInfo (>= 0.31) - restriction: >= netstandard2.0
       Fake.Api.GitHub (>= 5.12) - restriction: >= netstandard2.0
       Fake.BuildServer.AppVeyor (>= 5.12) - restriction: >= netstandard2.0
-      Fake.BuildServer.Travis (>= 5.12) - restriction: >= netstandard2.0
       Fake.Core.ReleaseNotes (>= 5.12) - restriction: >= netstandard2.0
       Fake.DotNet.Cli (>= 5.12) - restriction: >= netstandard2.0
       Fake.DotNet.NuGet (>= 5.12) - restriction: >= netstandard2.0

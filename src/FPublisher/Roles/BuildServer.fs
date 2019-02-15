@@ -121,10 +121,15 @@ module BuildServer =
             | buildServer when buildServer = role.MajorCI  ->
 
                 let isAfterDraftedNewRelease role =
-                    Environment.environVars()
-                    |> logger.Important "%A"
-                    let prHeadRepoName = AppVeyor.Environment.PullRequestRepoName
-                    role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty prHeadRepoName
+                    let repoTagName = AppVeyor.Environment.RepoTagName
+                    if role.Collaborator.GitHubData.IsInDefaultBranch && String.isNullOrEmpty repoTagName
+                    then
+                        let lastReleaseNotes = ReleaseNotes.loadLast role.ReleaseNotesFile
+                        match lastReleaseNotes with
+                        | Some lastReleaseNotes ->
+                            lastReleaseNotes.NugetVersion = repoTagName
+                        | None -> false
+                    else false
 
                 let nextReleaseNotes role =
                     if isAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
