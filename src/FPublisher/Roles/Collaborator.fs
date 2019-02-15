@@ -80,6 +80,7 @@ module Collaborator =
 
         let fetch forkerGitHubData workspace (environmentConfig: EnvironmentConfig) = task {
             let branchName = Workspace.branchName workspace
+
             return
                 { Forker = forkerGitHubData
                   EnvironmentConfig =  environmentConfig

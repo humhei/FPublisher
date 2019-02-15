@@ -18,7 +18,7 @@ type internal Result<'Ok,'Err> = Choice<'Ok,'Err>
 module internal Result =
   let map f inp = match inp with Error e -> Error e | Ok x -> Ok (f x)
   let mapError f inp = match inp with Error e -> Error (f e) | Ok x -> Ok x
-  let bind f inp = match inp with Error e -> Error e | Ok x -> f x        
+  let bind f inp = match inp with Error e -> Error e | Ok x -> f x
 #endif
 
 open Microsoft.FSharp.Compiler.SourceCodeServices
@@ -171,7 +171,7 @@ let rec private projInfo additionalMSBuildProps (file: string) =
       projOptions, projRefs, props
 
 [<RequireQualifiedAccess>]
-type private FrameWork = 
+type private FrameWork =
     | MultipleTarget of string []
     | SingleTarget of string
 
@@ -179,9 +179,9 @@ let private getFrameWork (projectFile: string) =
     let projectFile = projectFile.Replace('\\','/')
     let doc = new XmlDocument()
     doc.Load(projectFile)
-    match doc.GetElementsByTagName "TargetFramework" with 
-    | frameWorkNodes when frameWorkNodes.Count = 0 -> 
-        let frameWorksNodes = doc.GetElementsByTagName "TargetFrameworks" 
+    match doc.GetElementsByTagName "TargetFramework" with
+    | frameWorkNodes when frameWorkNodes.Count = 0 ->
+        let frameWorksNodes = doc.GetElementsByTagName "TargetFrameworks"
         let frameWorksNode = [ for node in frameWorksNodes do yield node ] |> List.exactlyOne
         frameWorksNode.InnerText.Split(';')
         |> Array.map (fun text -> text.Trim())
@@ -192,14 +192,14 @@ let private getFrameWork (projectFile: string) =
         FrameWork.SingleTarget frameWorkNode.InnerText
 
 let getProjectOptionsFromProjectFile (file : string) = async {
-    match getFrameWork file with 
-    | FrameWork.SingleTarget target ->  
+    match getFrameWork file with
+    | FrameWork.SingleTarget target ->
         return projInfo ["TargetFramework",target] file |> Array.singleton
-    | FrameWork.MultipleTarget targets -> 
-        let! result =  
+    | FrameWork.MultipleTarget targets ->
+        let! result =
             targets |> Array.map (fun target -> async {
                 return projInfo ["TargetFramework",target] file
             })
             |> Async.Parallel
-        return result                
+        return result
 }
