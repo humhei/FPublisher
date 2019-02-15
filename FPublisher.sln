@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0A68DDFF
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPbulisher.FakerTests", "tests\FPbulisher.FakerTests\FPbulisher.FakerTests.fsproj", "{BBB01BF6-B913-4585-AFEE-798173F15245}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher.Tests", "tests\FPublisher.Tests\FPublisher.Tests.fsproj", "{9F2D6FC0-B97B-4BF1-ADA8-FFCA7FCC5D5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
