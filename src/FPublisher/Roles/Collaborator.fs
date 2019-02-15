@@ -25,14 +25,14 @@ type EnvironmentConfig =
       GitHubToken: string
       GitHubReleaseUser: string }
 
-with 
+with
     static member DefaultValue =
         { NugetApiKey = "nuget_api_key"
           GitHubToken = "github_token"
           GitHubReleaseUser = "github_release_user" }
 
 [<RequireQualifiedAccess>]
-type PublishTarget = 
+type PublishTarget =
     | Build
     | Release
 
@@ -45,7 +45,7 @@ module Collaborator =
           BranchName: string
           CommitHashRemote: string
           CommitHashLocal: string }
-    with 
+    with
         member x.Permissions = x.Forker.Repository.Permissions
 
         member x.Repository = x.Forker.Repository
@@ -58,15 +58,15 @@ module Collaborator =
 
         member x.LoginName = x.Owner.Login
 
-        member x.RepoName = x.Repository.Name 
+        member x.RepoName = x.Repository.Name
 
 
-    [<RequireQualifiedAccess>]              
+    [<RequireQualifiedAccess>]
     module GitHubData =
         let githubToken githubData =
             Environment.environVarOrFail githubData.EnvironmentConfig.GitHubToken
 
-        let releaseUserName githubData = 
+        let releaseUserName githubData =
             Environment.environVarOrFail githubData.EnvironmentConfig.GitHubReleaseUser
 
         let draftAndPublishWithNewRelease (releaseNotes: ReleaseNotes.ReleaseNotes) (githubData: GitHubData) =
@@ -75,7 +75,7 @@ module Collaborator =
 
         let fetch forkerGitHubData workspace (environmentConfig: EnvironmentConfig) = task {
             let branchName = Workspace.branchName workspace
-            return 
+            return
                 { Forker = forkerGitHubData
                   EnvironmentConfig =  environmentConfig
                   BranchName = branchName
@@ -88,7 +88,7 @@ module Collaborator =
           VersionFromLocalNugetServer: SemVerInfo option
           GitHubData: GitHubData }
 
-    with   
+    with
 
         member x.Workspace = x.Forker.Workspace
 
@@ -101,19 +101,19 @@ module Collaborator =
         member x.VersionFromLastReleaseNotes = x.Forker.VersionFromLastReleaseNotes
 
         member x.VersionFromTbdReleaseNotes = x.Forker.VersionFromTbdReleaseNotes
-   
+
         member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
 
-        member x.WorkingDir = x.Workspace.WorkingDir      
+        member x.WorkingDir = x.Workspace.WorkingDir
 
 
 
     [<RequireQualifiedAccess>]
     module VersionController =
 
-        let currentVersion (versionController: VersionController) = 
+        let currentVersion (versionController: VersionController) =
             Forker.VersionController.currentVersion versionController.VersionFromLocalNugetServer versionController.Forker
- 
+
 
     type Config =
         { NugetPacker: NugetPacker
@@ -122,7 +122,7 @@ module Collaborator =
           LoggerLevel: Logger.Level
           LocalNugetServer: LocalNugetServer option }
 
-    with 
+    with
         member x.Workspace = Workspace x.WorkingDir
         static member DefaultValue =
             { NugetPacker = NugetPacker.DefaultValue
@@ -134,29 +134,29 @@ module Collaborator =
     [<RequireQualifiedAccess>]
     module Config =
         let tweak (config: Config) =
-            { config with 
+            { config with
                 LocalNugetServer = config.LocalNugetServer |> Option.map LocalNugetServer.ping
                 |> Option.flatten }
 
-        let fetchVersionController (forkerVersionController: Lazy<Forker.VersionController>) solution (config: Config) = 
+        let fetchVersionController (forkerVersionController: Lazy<Forker.VersionController>) solution (config: Config) =
             lazy
                 task {
-                    let workspace = Workspace config.WorkingDir 
+                    let workspace = Workspace config.WorkingDir
                     let forkerVersionController = forkerVersionController.Value
 
-                    let versionFromLocalNugetServer = 
+                    let versionFromLocalNugetServer =
                         match config.LocalNugetServer with
-                        | Some localNugetServer -> 
-                            
+                        | Some localNugetServer ->
+
                             Forker.VersionController.versionFromLocalNugetServer solution localNugetServer forkerVersionController
                             |> Async.RunSynchronously
                         | None -> None
 
                     let! githubData = GitHubData.fetch forkerVersionController.GitHubData workspace config.EnvironmentConfig
 
-                    return 
-                        { GitHubData = githubData 
-                          Forker = forkerVersionController               
+                    return
+                        { GitHubData = githubData
+                          Forker = forkerVersionController
                           VersionFromLocalNugetServer = versionFromLocalNugetServer }
                 }
                 |> Task.getResult
@@ -175,7 +175,7 @@ module Collaborator =
 
     [<RequireQualifiedAccess>]
     module TargetState =
-        let init = 
+        let init =
             { ForkerTargetState = Forker.TargetState.init
               EnsureGitChangesAllPushedAndInDefaultBranch = State.Init
               NextRelease = State.Init }
@@ -187,19 +187,19 @@ module Collaborator =
           TargetState: TargetState
           LocalNugetServer: LocalNugetServer option
           VersionController: Lazy<VersionController> }
-    with 
+    with
 
         member x.NugetPacker = x.Forker.NugetPacker
 
         member x.Workspace = x.Forker.Workspace
 
         member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
-        
+
         member x.Solution = x.Forker.Solution
 
         member x.GitHubData = x.VersionController.Value.GitHubData
 
-        interface IRole<TargetState> 
+        interface IRole<TargetState>
 
     [<RequireQualifiedAccess>]
     module Role =
@@ -210,39 +210,39 @@ module Collaborator =
 
 
             let versionFromTbdReleaseNotes = versionController.VersionFromTbdReleaseNotes
-            
 
-            match currentVersion with 
+
+            match currentVersion with
             | None ->
                 match versionFromTbdReleaseNotes.PreRelease with
-                | Some prerelease -> 
+                | Some prerelease ->
                     SemVerInfo.normalizeAlpha versionFromTbdReleaseNotes
                     |> SemVerInfo.nextBetaVersion
                 | None -> versionFromTbdReleaseNotes
-                        
+
             | Some currentVersion ->
-                if versionFromTbdReleaseNotes < currentVersion 
-                then SemVerInfo.nextBetaVersion currentVersion                       
-                else 
-                    match versionFromTbdReleaseNotes.PreRelease with 
-                    | Some _ -> 
+                if versionFromTbdReleaseNotes < currentVersion
+                then SemVerInfo.nextBetaVersion currentVersion
+                else
+                    match versionFromTbdReleaseNotes.PreRelease with
+                    | Some _ ->
                         SemVerInfo.normalizeAlpha versionFromTbdReleaseNotes
                         |> SemVerInfo.nextBetaVersion
 
-                    | None -> versionFromTbdReleaseNotes  
+                    | None -> versionFromTbdReleaseNotes
 
 
         let nextReleaseNotes (role: Role) =
             let versionController = role.VersionController.Value
-            
+
             let tbdReleaseNotes = versionController.TbdReleaseNotes
-            
+
             if tbdReleaseNotes.Notes.IsEmpty
             then failwith "Please write release notes of new version first"
 
             tbdReleaseNotes
             |> ReleaseNotes.updateWithSemVerInfo (nextVersion role)
-            |> ReleaseNotes.updateDateToToday   
+            |> ReleaseNotes.updateDateToToday
 
         let internal writeReleaseNotesToNextVersionAndPushToRemoteRepository role =
             let versionController = role.VersionController.Value
@@ -259,7 +259,7 @@ module Collaborator =
 
             Commit.exec versionController.WorkingDir (sprintf "Bump version to %s" (SemVerInfo.normalize nextVersion))
 
-            Branches.push versionController.WorkingDir 
+            Branches.push versionController.WorkingDir
 
 
     let create (config: Config) =
@@ -267,7 +267,7 @@ module Collaborator =
         let forker = Forker.create config.LoggerLevel config.Workspace config.NugetPacker
 
         let versionController = Config.fetchVersionController forker.VersionController forker.Solution config
-        { OfficalNugetServer = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }                
+        { OfficalNugetServer = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }
           TargetState = TargetState.init
           VersionController = versionController
           Forker = forker
@@ -278,54 +278,65 @@ module Collaborator =
 
         type Ext = Ext
             with
-                static member Bar (ext : Ext, nonGit : NonGit.Msg) = 
+                static member Bar (ext : Ext, nonGit : NonGit.Msg) =
                     Forker.upcastMsg nonGit
                     |> Msg.Forker
 
-                static member Bar (ext : Ext, forker : Forker.Msg) = 
+                static member Bar (ext : Ext, forker : Forker.Msg) =
                     Msg.Forker forker
 
     let inline upcastMsg msg =
         ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
-        
+
     let inline private (!^) msg =
         ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
 
 
 
-    let private roleAction role = function 
-        | Msg.Forker forkerMsg -> 
+    let private roleAction role = function
+        | Msg.Forker forkerMsg ->
             { PreviousMsgs = []
               Action = MapChild (fun role -> Forker.run forkerMsg role.Forker)}
 
         | Msg.EnsureGitChangesAllPushedAndInDefaultBranch ->
             { PreviousMsgs = []
-              Action = 
+              Action =
                 MapState (fun role ->
                     let githubData = role.GitHubData
-                    //match githubData.IsInDefaultBranch with 
+                    //match githubData.IsInDefaultBranch with
                     //| true ->
-                    match (Workspace.repoStateWith (List.filter (String.equalIgnoreCaseAndEdgeSpace "RELEASE_NOTES.md" >> not)) role.Workspace) with 
+                    let diffFilter diffs =
+                        let execludes =
+                            [ "RELEASE_NOTES.md"
+                              "Paket.Restore.targets" ]
+                        diffs |> List.filter (fun diff ->
+                            let name = Path.GetFileName diff
+                            execludes |> List.exists (fun execlude ->
+                                String.equalIgnoreCaseAndEdgeSpace execlude name
+                            ) |> not
+                        )
+
+                    match (Workspace.repoStateWith diffFilter role.Workspace) with
                     | RepoState.Changed -> failwith "Please push all changes to git server before you draft new a release"
                     | RepoState.None -> none
                     //| false ->
-                        //failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch 
+                        //failwithf "Please checkout %s to default branch %s first" githubData.BranchName githubData.DefaultBranch
                 )
             }
-                
+
         | Msg.NextRelease ->
             let nextReleaseNotes = Role.nextReleaseNotes role
 
-            { PreviousMsgs = 
+            { PreviousMsgs =
                 let baseMsgs = [ !^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
-                match role.LocalNugetServer with 
+                match role.LocalNugetServer with
                 | Some localNugetServer -> !^(Forker.Msg.Pack (nextReleaseNotes, "") ) :: baseMsgs
                 | None -> baseMsgs
 
-              Action = 
+              Action =
                 MapState (fun role ->
 
-                    let currentVersion = 
+                    let currentVersion =
                         VersionController.currentVersion role.VersionController.Value
                     logger.CurrentVersion currentVersion
 
@@ -336,21 +347,18 @@ module Collaborator =
                     Role.writeReleaseNotesToNextVersionAndPushToRemoteRepository role
 
                     [ yield GitHubData.draftAndPublishWithNewRelease nextReleaseNotes role.GitHubData
-                      match role.LocalNugetServer with 
-                      | Some localNugetServer -> 
+                      match role.LocalNugetServer with
+                      | Some localNugetServer ->
                             let newPackages = role.Forker.TargetState.Pack |> State.getResult
-                            yield LocalNugetServer.publish newPackages localNugetServer 
+                            yield LocalNugetServer.publish newPackages localNugetServer
                       | None -> () ]
                     |> Async.Parallel
                     |> Async.RunSynchronously
                     |> ignore
 
-                    none 
+                    none
                 )
             }
 
     let run =
         Role.updateComplex roleAction
-
-                                                                                   
-            
