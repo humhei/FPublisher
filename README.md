@@ -1,4 +1,7 @@
-# Fullly typed and resuable fake target (always use message and state type)
+# Role-based,composable,stateful and typed building targets
 
-## Usage: 
-Please directly contribute to this repository instead of writing you own targets
+## Usage:
+See build.fsx
+
+## More features
+Please Directly contribute to this repository(src/FPublisher/Roles)

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Logger.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="FakeHelper.fs" />
+    <Compile Include="ProjectCoreCraker.fs" />
+    <Compile Include="CrackedFsproj.fs" />
+    <Compile Include="Solution.fs" />
+    <Compile Include="Workspace.fs" />
+    <Compile Include="Git.fs" />
+    <Compile Include="GitHub.fs" />
+    <Compile Include="Nuget.fs" />
+    <Compile Include="Roles\Primitives.fs" />
+    <Compile Include="Roles\NonGit.fs" />
+    <Compile Include="Roles\Forker.fs" />
+    <Compile Include="Roles\Collaborator.fs" />
+    <Compile Include="Roles\BuildServer.fs" />
+    <Compile Include="Roles\SRTPMsgs.fs" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>

@@ -2,47 +2,50 @@
 #r "paket: groupref Main //"
 #endif
 #if !FAKE
-#r "netstandard" // windows
-
+#r "Facades/netstandard"
+#r "netstandard"
 #endif
 #load "./.fake/build.fsx/intellisense.fsx"
 
-open Fake.DotNet.NuGet
 open Fake.Core
-open FParsec
-open Fake.IO
-open System.Text
-open FParsec.CharParsers
-open Fake.Core.SemVerActivePattern
-open System.Text.RegularExpressions
-open FSharp.Literate
-open FSharp.Data
+open FPublisher.Roles
+open FPublisher
+open FPublisher.Nuget
+open FPublisher.Git
 
-let s1 = SemVer.parse "0.1.0-beta.0.0"
-let s2 = SemVer.parse "0.1.0-beta.0"
-
-s1 > s2
-
-let md = """# Markdown is cool
-especially with *FSharp.Formatting* ! """
-            |> FSharp.Markdown.Markdown.TransformHtml
-
-type ReleaseModel = double
-type InitModel = int
-
-[<RequireQualifiedAccess>]
-type PublishStatus =
-    | None
-    | Init of InitModel
-    | Build of InitModel
-    | RunTest of InitModel
-    | EnsureGitChangesAllPushedAndInDefaultBranchBeforeRelease of InitModel
-    | WriteReleaseNotesToNextVersionAndPushToRemoteRepositoryWhenRelease of ReleaseModel
-    | Packed of ReleaseModel
-
-let keyValuePair =
-    let tp =typeof<PublishStatus>
-    tp.GetProperties() |> Array.map (fun prop -> prop.Name )
+let buildServer =
+    BuildServer.create
+        { BuildServer.Config.DefaultValue
+            with
+                LocalNugetServer = Some LocalNugetServer.DefaultValue
+                LoggerLevel = Logger.Level.Normal }
 
 
-let pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w.]+)\",[ ]+\"(?<relativePath>[\w\\\.]+)\""
+Target.create "Workspace.CreateDefaultSln" <| fun _ ->
+    Workspace.createDefaultSln false buildServer.Collaborator.Workspace
+    |> ignore
+
+Target.create "NonGit.Build" <| fun _ ->
+    BuildServer.run (!^ NonGit.Msg.Build) buildServer
+    |> ignore
+
+Target.create "NonGit.Test" <| fun _ ->
+    BuildServer.run (!^ NonGit.Msg.Test) buildServer
+    |> ignore
+
+Target.create "Forker.PublishToLocalNugetServer" <| fun _ ->
+    BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer LocalNugetServer.DefaultValue)) buildServer
+    |> ignore
+
+
+Target.create "Collaborator.NextRelease" <| fun _ ->
+    BuildServer.run (!^ Collaborator.Msg.NextRelease) buildServer
+    |> ignore
+
+Target.create "RunCI" <| fun _ ->
+    BuildServer.run (BuildServer.Msg.RunCI) buildServer
+    |> ignore
+
+Target.create "Default" ignore
+
+Target.runOrDefault "Default"

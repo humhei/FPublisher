@@ -6,10 +6,10 @@
             "name": "Debug Tests",
             "request": "launch",
             "preLaunchTask": "Build Tests",
-            "type": "coreclr",            
-            "program": "${workspaceRoot}/FPublisher.Tests/bin/Debug/netcoreapp3.0/FPublisher.Tests.dll",
+            "type": "coreclr",
+            "program": "${workspaceRoot}/tests/FPublisher.Tests/bin/Debug/netcoreapp2.1/FPublisher.Tests.dll",
             "args": [],
-            "cwd": "${workspaceRoot}/FPublisher.Tests",
+            "cwd": "${workspaceRoot}",
             "stopAtEntry": false,
             "console": "internalConsole"
         }

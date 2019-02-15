@@ -1,17 +1,24 @@
 source https://api.nuget.org/v3/index.json
-nuget Expecto
+storage: none
 nuget Fake.Core.ReleaseNotes
 nuget Fake.Api.GitHub
-nuget TaskBuilder.fs    
+nuget TaskBuilder.fs
 nuget Fake.DotNet.Cli
 nuget Fake.Tools.Git
 nuget FSharp.Data
 nuget Fake.DotNet.NuGet
-nuget FSharp.Core < 4.6
-nuget FSharp.Compiler.Service
 nuget Dotnet.ProjInfo
 nuget Fake.Core.Target
+nuget Fake.BuildServer.AppVeyor
 
+source https://ci.appveyor.com/nuget/fpublisher
+nuget FPublisher build
+
+nuget Fake.BuildServer.Travis
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease
 
+group tests
+    storage: none
+    source https://api.nuget.org/v3/index.json
+    nuget Expecto.TestResults
