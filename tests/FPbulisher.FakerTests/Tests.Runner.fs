@@ -7,19 +7,17 @@ open Tests.MyTests
 open System.Reflection
 open System.IO
 open FPublisher
-let testConfig =  
-    { Expecto.Tests.defaultConfig with 
+let testConfig =
+    { Expecto.Tests.defaultConfig with
          parallelWorkers = 1
          verbosity = LogLevel.Debug }
 
-let allTests = 
-    testList "All tests" [  
-        forkerTests()
-        //workspaceTests()
-        collaboratorTests()
+let allTests =
+    testList "All tests" [
+        MyTests
     ]
 
 
 [<EntryPoint>]
-let main argv = 
+let main argv =
     runTests (ExpectoConfig.appendSummaryHandler argv testConfig) allTests
