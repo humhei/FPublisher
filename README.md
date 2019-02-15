@@ -4,4 +4,4 @@
 See build.fsx
 
 ## More features
-Contribute to this repository(src/FPublisher/Roles)
+Please Directly contribute to this repository(src/FPublisher/Roles)
