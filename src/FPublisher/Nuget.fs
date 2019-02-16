@@ -199,8 +199,8 @@ module Nuget =
                         match nugetServer.ApiEnvironmentName with
                         | Some envName ->
                             let nuget_api_key = Environment.environVarOrFail envName
-                            TraceSecrets.register nuget_api_key "nuget_api_key"
-                            yield! [ "-k"; Environment.environVarOrFail envName ]
+                            TraceSecrets.register "nuget_api_key" nuget_api_key
+                            yield! [ "-k"; nuget_api_key ]
                         | None -> ()
                     ]
                 }
