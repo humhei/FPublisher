@@ -2,11 +2,8 @@
 
 MacOS/Linux | Windows
 --- | ---
-[![CircleCI](https://circleci.com/gh/humhei/FPublisher.svg?style=svg)](https://circleci.com/gh/humhei/FPublisher) |
-[![Build status](https://ci.appveyor.com/api/projects/status/0qnls95ohaytucsi?svg=true)](https://ci.appveyor.com/project/ts2fable-imports/fpublisher)
-
- [![Build History](https://buildstats.info/circleci/chart/humhei/FPublisher)](https://circleci.com/gh/humhei/FPublisher)
- [![Build History](https://buildstats.info/appveyor/chart/ts2fable-imports/fpublisher)](https://ci.appveyor.com/project/ts2fable-imports/fpublisher)
+[![CircleCI](https://circleci.com/gh/humhei/FPublisher.svg?style=svg)](https://circleci.com/gh/humhei/FPublisher) | [![Build status](https://ci.appveyor.com/api/projects/status/0qnls95ohaytucsi?svg=true)](https://ci.appveyor.com/project/ts2fable-imports/fpublisher)
+[![Build History](https://buildstats.info/circleci/chart/humhei/FPublisher)](https://circleci.com/gh/humhei/FPublisher) | [![Build History](https://buildstats.info/appveyor/chart/ts2fable-imports/fpublisher)](https://ci.appveyor.com/project/ts2fable-imports/fpublisher)
 
 ## Nuget 
 
