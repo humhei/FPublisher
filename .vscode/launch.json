@@ -12,6 +12,16 @@
             "cwd": "${workspaceRoot}",
             "stopAtEntry": false,
             "console": "internalConsole"
-        }
+        },
+        {
+            "name": "Debug My Build Script",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceRoot}/../fake-dotnetcore-portable/fake.dll",
+            "args": ["run", "--fsiargs", "--debug:portable --optimize-", "build.fsx", "-t", "Collaborator.NextRelease"],
+            "cwd": "${workspaceRoot}",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
     ]
 }

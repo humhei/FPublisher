@@ -22,7 +22,7 @@ module BuildServer =
           EnvironmentConfig: EnvironmentConfig
           WorkingDir: string
           LoggerLevel: Logger.Level
-          LocalNugetServer: LocalNugetServer option }
+          LocalNugetServer: NugetServer option }
     with
         static member DefaultValue =
             let collaborator = Collaborator.Config.DefaultValue
@@ -159,7 +159,7 @@ module BuildServer =
 
                     let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
-                    { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack (nextReleaseNotes, "")); ]
+                    { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack nextReleaseNotes)]
                       Action = MapState (fun role ->
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
@@ -184,5 +184,7 @@ module BuildServer =
                 { PreviousMsgs = [ !^ NonGit.Msg.Test ]
                   Action = MapState ignore }
 
-    let run =
-        Role.updateComplex roleAction
+    let runWith = Role.updateComplex roleAction
+        
+
+    let run msg role = runWith msg role |> ignore

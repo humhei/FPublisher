@@ -5,13 +5,15 @@ open Fake.IO.FileSystemOperators
 open FPublisher.Git
 open Primitives
 open Fake.IO.Globbing.Operators
+open Fake.Core
+open Fake.DotNet
 
 [<RequireQualifiedAccess>]
 module NonGit =
 
     [<RequireQualifiedAccess>]
     type Msg =
-        | Build
+        | Build of SemVerInfo option
         | Test
 
     type TargetState =
@@ -49,10 +51,12 @@ module NonGit =
 
     let run =
         Role.update (function
-            | Msg.Build ->
+
+            | Msg.Build semverInfoOp ->
                 { PreviousMsgs = []
-                  Action = MapState (fun role -> Solution.build role.Solution) }
+                  Action = MapState (fun role -> Solution.build semverInfoOp role.Solution) }
+
             | Msg.Test ->
-                { PreviousMsgs = [Msg.Build]
+                { PreviousMsgs = [ Msg.Build None ]
                   Action = MapState (fun role -> Solution.test role.Solution) }
         )

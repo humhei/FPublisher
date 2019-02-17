@@ -15,9 +15,10 @@ let fail() = Expect.isTrue false "failed"
 let MyTests =
   testList "faker tests" [
 
-    testCase "test1" <| fun _ -> 
-      pass()  
-
-    testCase "test2" <| fun _ -> 
+    testCase "test1" <| fun _ ->
       pass()
+
+    testCase "test2" <| fun _ ->
+      pass()
+
   ]

@@ -17,7 +17,7 @@ module Logger =
 
         let withTimeStamp (f: string -> unit) =
             fun message ->
-                let now = timeStamp DateTime.Now
+                let now = timeStamp DateTime.UtcNow
                 sprintf "%s %s" now message 
                 |> f
 

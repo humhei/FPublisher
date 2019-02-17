@@ -6,12 +6,14 @@
 #r "netstandard"
 #endif
 #load "./.fake/build.fsx/intellisense.fsx"
-
 open Fake.Core
 open FPublisher.Roles
 open FPublisher
 open FPublisher.Nuget
 open FPublisher.Git
+open Fake.DotNet
+open System.Reflection
+open System
 
 let buildServer =
     BuildServer.create

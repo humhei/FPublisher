@@ -4,7 +4,6 @@
         {
             "label": "Build Tests",
             "command": "dotnet",
-            "group": "build",
             "args": [
                 "build",
                 "tests/FPublisher.Tests/FPublisher.Tests.fsproj"

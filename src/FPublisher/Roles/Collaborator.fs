@@ -131,7 +131,7 @@ module Collaborator =
           EnvironmentConfig: EnvironmentConfig
           WorkingDir: string
           LoggerLevel: Logger.Level
-          LocalNugetServer: LocalNugetServer option }
+          LocalNugetServer: NugetServer option }
 
     with
         member x.Workspace = Workspace x.WorkingDir
@@ -147,7 +147,7 @@ module Collaborator =
     module Config =
         let tweak (config: Config) =
             { config with
-                LocalNugetServer = config.LocalNugetServer |> Option.map LocalNugetServer.ping
+                LocalNugetServer = config.LocalNugetServer |> Option.map NugetServer.ping
                 |> Option.flatten }
 
         let fetchVersionController (forkerVersionController: Lazy<Forker.VersionController>) solution (config: Config) =
@@ -197,7 +197,7 @@ module Collaborator =
         { Forker: Forker.Role
           OfficalNugetServer: OfficalNugetServer
           TargetState: TargetState
-          LocalNugetServer: LocalNugetServer option
+          LocalNugetServer: NugetServer option
           VersionController: Lazy<VersionController> }
     with
 
@@ -276,7 +276,7 @@ module Collaborator =
 
     let create (config: Config) =
         let config = Config.tweak config
-        let forker = Forker.create config.LoggerLevel config.Workspace config.NugetPacker
+        let forker = Forker.create config.LoggerLevel config.LocalNugetServer config.Workspace config.NugetPacker
 
         let versionController = Config.fetchVersionController forker.VersionController forker.Solution config
         { OfficalNugetServer = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }
@@ -342,7 +342,7 @@ module Collaborator =
             { PreviousMsgs =
                 let baseMsgs = [ !^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
                 match role.LocalNugetServer with
-                | Some localNugetServer -> !^(Forker.Msg.Pack (nextReleaseNotes, "") ) :: baseMsgs
+                | Some localNugetServer -> !^(Forker.Msg.Pack nextReleaseNotes) :: baseMsgs
                 | None -> baseMsgs
 
               Action =
@@ -350,6 +350,7 @@ module Collaborator =
 
                     let currentVersion =
                         VersionController.currentVersion role.VersionController.Value
+
                     logger.CurrentVersion currentVersion
 
                     let nextVersion = Role.nextVersion role
@@ -362,7 +363,7 @@ module Collaborator =
                       match role.LocalNugetServer with
                       | Some localNugetServer ->
                             let newPackages = role.Forker.TargetState.Pack |> State.getResult
-                            yield LocalNugetServer.publish newPackages localNugetServer
+                            yield NugetServer.publish newPackages localNugetServer
                       | None -> () ]
                     |> Async.Parallel
                     |> Async.RunSynchronously

@@ -107,7 +107,7 @@ module Nuget =
     [<RequireQualifiedAccess>]
     module NugetPacker =
 
-        let pack (solution: Solution) (packageIdSuffix: string) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
+        let pack (solution: Solution) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
 
             let targetDirectory =
                 let tmpDir = Path.GetTempPath()
@@ -127,11 +127,10 @@ module Nuget =
             Environment.setEnvironVar "PackageProjectUrl" repository.HtmlUrl
             Environment.setEnvironVar "PackageLicenseUrl" license.HtmlUrl
 
-            let buildingPackOptions packageID (options: DotNet.PackOptions) =
+            let buildingPackOptions (options: DotNet.PackOptions) =
                 let basicBuildingOptions (options: DotNet.PackOptions) =
                     let versionParam =
-                        [ yield "/p:PackageId=" + packageID
-                          yield "/p:Version=" + packageReleaseNotes.NugetVersion
+                        [ yield "/p:Version=" + packageReleaseNotes.NugetVersion
                           if noRestore then
                             yield "--no-restore"
                           if nugetPacker.SourceLinkCreate then
@@ -151,12 +150,10 @@ module Nuget =
                 |> basicBuildingOptions
                 |> dtntSmpl
 
-
-            solution.LibraryProjects
-            |> List.iter (fun proj ->
-                let packageId = proj.Name + packageIdSuffix
-                DotNet.pack (buildingPackOptions packageId) proj.ProjPath
+            solution.LibraryProjects |> List.iter (fun proj ->
+                DotNet.pack buildingPackOptions proj.ProjPath
             )
+
 
             let packages =
                 !! (targetDirectory </> "./*.nupkg")
@@ -179,10 +176,22 @@ module Nuget =
         { ApiEnvironmentName: string option
           Serviceable: string
           SearchQueryService: string }
-
+    with
+        static member DefaultBaGetLocal =
+            { ApiEnvironmentName = None
+              Serviceable ="http://localhost:5000/v3/index.json"
+              SearchQueryService = "http://localhost:5000/v3/search" }
 
     [<RequireQualifiedAccess>]
     module NugetServer =
+
+        let ping (nugetServer: NugetServer) =
+            try
+                Http.Request(nugetServer.Serviceable,silentHttpErrors = true) |> ignore
+                Some nugetServer
+            with _ ->
+                None
+
         let publish (packages: string list) (nugetServer: NugetServer) = async {
             let targetDirName = Path.GetTempPath() </> (Path.GetRandomFileName())
 
@@ -236,29 +245,3 @@ module Nuget =
         let getLastVersion (solution: Solution) (officalNugetServer: OfficalNugetServer) =
             let nugetServer = asNugetServer officalNugetServer
             NugetServer.getLastVersion solution nugetServer
-
-    [<RequireQualifiedAccess>]
-    type LocalNugetServer =
-        | BaGet of serviceable: string * searchQueryService: string
-    with
-        member x.AsNugetServer =
-            match x with
-            | LocalNugetServer.BaGet (serviceable, searchQueryService) ->
-                { ApiEnvironmentName = None; Serviceable = serviceable; SearchQueryService = searchQueryService}
-        member x.Serviceable = x.AsNugetServer.Serviceable
-
-        static member DefaultValue = LocalNugetServer.BaGet ("http://localhost:5000/v3/index.json","http://localhost:5000/v3/search")
-
-    [<RequireQualifiedAccess>]
-    module LocalNugetServer =
-
-        let publish packages (localNugetServer: LocalNugetServer) =
-            let nugetServer = localNugetServer.AsNugetServer
-            NugetServer.publish packages nugetServer
-
-        let ping (localNugetServer: LocalNugetServer) =
-            try
-                Http.Request(localNugetServer.Serviceable,silentHttpErrors = true) |> ignore
-                Some localNugetServer
-            with _ ->
-                None

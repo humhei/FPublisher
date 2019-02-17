@@ -111,6 +111,7 @@ module FakeHelper =
 
 
             /// 0.1.4-alpha.0.1 -> 0.1.4-alpha.0+1
+            /// before nextBuild
             let normalizeBuild (semVerInfo: SemVerInfo) =
                 match semVerInfo.PreRelease with
                 | Some prelease ->
@@ -130,7 +131,7 @@ module FakeHelper =
 
             let internal parse text =
                 SemVer.parse text
-                |> normalizeBuild
+                |> normalizeBuild 
 
             /// 0.1.4-alpha -> 0.1.4-alpha.0
             let normalizeAlpha (semverInfo: SemVerInfo) =
@@ -149,6 +150,13 @@ module FakeHelper =
                     | _ -> semverInfo
                 | None -> semverInfo
 
+            let nextPatchVersion (semverInfo: SemVerInfo) =
+                let semverInfo = normalizeAlpha semverInfo
+                
+                sprintf "%d.%d.%d" semverInfo.Major semverInfo.Minor (semverInfo.Patch + 1u)
+                |> parse
+
+
             let nextBuildVersion (semverInfo: SemVerInfo) =
                 let semverInfo = normalizeAlpha semverInfo
 
@@ -158,6 +166,7 @@ module FakeHelper =
                     |> normalize
                     |> parse
                 | None ->
+                    let semverInfo = nextPatchVersion semverInfo
                     let build = (semverInfo.Build + 1I).ToString("D")
                     sprintf "%s-alpha.0.%s" (mainVersionText semverInfo) build
                     |> parse
@@ -185,6 +194,16 @@ module FakeHelper =
 
         [<RequireQualifiedAccess>]
         module ReleaseNotes =
+
+            let createDefault(): ReleaseNotes.ReleaseNotes =
+                let version = "1.0.0"
+                { AssemblyVersion = version
+                  NugetVersion = version
+                  SemVer = SemVerInfo.parse version
+                  Date = None
+                  Notes = []
+                  }
+
             let private tbdHeaderLine (releaseNotes: ReleaseNotes.ReleaseNotes) =
                 match releaseNotes.SemVer.PreRelease with
                 | Some prelease -> sprintf "## %s-%s - tbd" (SemVerInfo.mainVersionText releaseNotes.SemVer) prelease.Name
@@ -193,7 +212,7 @@ module FakeHelper =
                     sprintf "## %s-alpha - tbd" (SemVerInfo.normalize newPatchVersion)
 
             let private todayHeaderLine (releaseNotes: ReleaseNotes.ReleaseNotes) =
-                sprintf "## %s - %s" (SemVerInfo.normalize releaseNotes.SemVer) (DateTime.Now.ToString("yyyy-MM-dd"))
+                sprintf "## %s - %s" (SemVerInfo.normalize releaseNotes.SemVer) (DateTime.UtcNow.ToString("yyyy-MM-dd"))
 
             let updateDateToToday (releaseNotes: ReleaseNotes.ReleaseNotes) =
                 { releaseNotes with Date = Some DateTime.Today }
