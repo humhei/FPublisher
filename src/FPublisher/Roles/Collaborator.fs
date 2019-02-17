@@ -340,10 +340,7 @@ module Collaborator =
             let nextReleaseNotes = Role.nextReleaseNotes role
 
             { PreviousMsgs =
-                let baseMsgs = [ !^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
-                match role.LocalNugetServer with
-                | Some localNugetServer -> !^(Forker.Msg.Pack nextReleaseNotes) :: baseMsgs
-                | None -> baseMsgs
+                [ !^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
 
               Action =
                 MapState (fun role ->
@@ -359,12 +356,7 @@ module Collaborator =
 
                     Role.writeReleaseNotesToNextVersionAndPushToRemoteRepository role
 
-                    [ yield GitHubData.draftAndPublishWithNewRelease nextReleaseNotes role.GitHubData
-                      match role.LocalNugetServer with
-                      | Some localNugetServer ->
-                            let newPackages = role.Forker.TargetState.Pack |> State.getResult
-                            yield NugetServer.publish newPackages localNugetServer
-                      | None -> () ]
+                    [ GitHubData.draftAndPublishWithNewRelease nextReleaseNotes role.GitHubData ]
                     |> Async.Parallel
                     |> Async.RunSynchronously
                     |> ignore
