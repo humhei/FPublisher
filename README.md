@@ -1,3 +1,5 @@
+# Notes: This repo is now in early stage..
+
 # Role-based,composable,stateful and typed building targets
 
 Stable | Prerelease
