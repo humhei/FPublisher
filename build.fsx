@@ -11,8 +11,6 @@ open FPublisher.Roles
 open FPublisher
 open FPublisher.Nuget
 open FPublisher.Git
-open System
-
 
 
 let buildServer =
@@ -43,5 +41,8 @@ Target.create "RunCI" <| fun _ ->
     BuildServer.run (BuildServer.Msg.RunCI) buildServer
 
 Target.create "Default" ignore
+
+"Default"
+    <= "NonGit.Test"
 
 Target.runOrDefault "Default"
