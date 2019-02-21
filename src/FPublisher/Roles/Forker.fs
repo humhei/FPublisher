@@ -159,12 +159,14 @@ module Forker =
 
     [<RequireQualifiedAccess>]
     module Role =
+        let currentVersion versionFromLocalNugetServer (role: Role) =
+            VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
 
         let nextVersion versionFromLocalNugetServer (role: Role) =
             let versionController = role.VersionController.Value
-            let currentVersion = VersionController.currentVersion versionFromLocalNugetServer versionController
+            let currentVersion = currentVersion versionFromLocalNugetServer role
 
-            match currentVersion with 
+            match currentVersion with
             | Some version -> SemVerInfo.nextBuildVersion version
             | None -> SemVerInfo.nextBuildVersion (versionController.VersionFromTbdReleaseNotes)
 
@@ -172,10 +174,10 @@ module Forker =
         let nextReleaseNotes versionFromLocalNugetServer role =
             let nextVersion = nextVersion versionFromLocalNugetServer role
             VersionController.nextReleaseNotes nextVersion role.VersionController.Value
-        
+
         let versionFromLocalNugetServer role = async {
-            let version =  
-                role.LocalNugetServer 
+            let version =
+                role.LocalNugetServer
                 |> Option.map (fun localNugetServer ->
                     VersionController.versionFromLocalNugetServer role.Solution localNugetServer role.VersionController.Value
                     |> Async.RunSynchronously
@@ -205,7 +207,7 @@ module Forker =
               Action = MapState (fun role ->
                 let githubData = role.GitHubData
 
-                let newPackages = 
+                let newPackages =
                     NugetPacker.pack
                         role.Solution
                         true
@@ -224,16 +226,16 @@ module Forker =
         | Msg.PublishToLocalNugetServer ->
 
             match role.LocalNugetServer with
-            | Some localNugetServer -> 
+            | Some localNugetServer ->
                 let versionFromLocalNugetServer = Role.versionFromLocalNugetServer role |> Async.RunSynchronously
                 let nextReleaseNotes = Role.nextReleaseNotes versionFromLocalNugetServer role
 
                 { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
                   Action = MapState (fun role ->
                     let (newPackages) = State.getResult role.TargetState.Pack
-                    
+
                     let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
-                    
+
                     logger.CurrentVersion currentVersion
 
                     let nextVersion = Role.nextVersion versionFromLocalNugetServer role

@@ -20,3 +20,7 @@ See [build.fsx](https://github.com/humhei/FPublisher/blob/master/build.fsx)
 
 ## More features
 Please Directly contribute to this repository [src/FPublisher/Roles](https://github.com/humhei/FPublisher/tree/master/src/FPublisher/Roles)
+
+
+## Who use FPublisher
+[FcsWatch](https://github.com/humhei/FCSWatch/): Run standard fsharp codes in watch mode

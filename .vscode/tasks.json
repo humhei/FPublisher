@@ -2,18 +2,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Tests",
-            "command": "dotnet",
-            "args": [
-                "build",
-                "tests/FPublisher.Tests/FPublisher.Tests.fsproj"
-            ],
-            "presentation": {
-                "reveal": "silent"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
             "command": "./fake.sh",
             "args": ["build", "-t", "Workspace.CreateDefaultSln"],
             "type": "shell",

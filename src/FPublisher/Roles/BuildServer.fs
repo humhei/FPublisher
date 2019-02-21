@@ -141,8 +141,12 @@ module BuildServer =
                     if isJustAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
                     else
                         let nextVersion =
-                            let forkerNextVersionIgnoreLocalNugetServer = (Forker.Role.nextVersion None role.Collaborator.Forker)
-                            let mainVersionText = SemVerInfo.mainVersionText forkerNextVersionIgnoreLocalNugetServer
+                            let baseVersion =
+                                match (Forker.Role.currentVersion None role.Collaborator.Forker) with
+                                | Some version -> version
+                                | None -> SemVerInfo.parse "1.0.0"
+
+                            let mainVersionText = SemVerInfo.mainVersionText baseVersion
                             (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
                             |> SemVerInfo.parse
 
@@ -185,6 +189,6 @@ module BuildServer =
                   Action = MapState ignore }
 
     let runWith = Role.updateComplex roleAction
-        
+
 
     let run msg role = runWith msg role |> ignore
