@@ -181,14 +181,14 @@ module Collaborator =
         | NextRelease
 
     type TargetState =
-        { ForkerTargetState: Forker.TargetState
+        { Forker: Forker.TargetState
           EnsureGitChangesAllPushedAndInDefaultBranch: BoxedState
           NextRelease: BoxedState }
 
     [<RequireQualifiedAccess>]
     module TargetState =
         let init =
-            { ForkerTargetState = Forker.TargetState.init
+            { Forker = Forker.TargetState.init
               EnsureGitChangesAllPushedAndInDefaultBranch = State.Init
               NextRelease = State.Init }
 
