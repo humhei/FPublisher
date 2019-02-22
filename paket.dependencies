@@ -12,7 +12,7 @@ nuget Fake.Core.Target
 nuget Fake.BuildServer.AppVeyor
 
 source https://ci.appveyor.com/nuget/fpublisher
-nuget FPublisher < 0.1.7 build
+nuget FPublisher build
 
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease
