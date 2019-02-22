@@ -40,17 +40,20 @@ See [build.fsx](https://github.com/humhei/FPublisher/blob/master/build.fsx)
 
 ### Composable
 [Forker.fsx](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/Forker.fs)
+
+`Forker` contains the `NonGit`
+Also for `state` and `targets`
 ```fsharp
 type Role =
     { NonGit: NonGit.Role
-        TargetState: TargetState
-        NugetPacker: NugetPacker
-        LocalNugetServer: NugetServer option
-        VersionController: Lazy<VersionController> }
+      TargetState: TargetState
+      NugetPacker: NugetPacker
+      LocalNugetServer: NugetServer option
+      VersionController: Lazy<VersionController> }
 ```
 
 ### Stateful
-/// stored newPackages in `Pack` and use it in `PublishToLocalNugetServer`
+stored newPackages in `Pack` and use it in `PublishToLocalNugetServer`
 
 [Forker.fsx](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/Forker.fs)
 
