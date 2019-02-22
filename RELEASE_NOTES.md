@@ -2,6 +2,10 @@
 
 ## 0.1.8-alpha - tbd
 
+## 0.1.8-alpha.1 - 2019-02-22
+* Refix Multiple target frameworks
+* Remove dotnet-proj-info
+
 ## 0.1.7 - 2019-02-22
 * Multiple target frameworks
 
