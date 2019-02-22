@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.7-alpha - tbd
+## 0.1.7 - tbd
+* Multiple target frameworks
 
 ## 0.1.6 - 2019-02-17
 * Test

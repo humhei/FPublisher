@@ -8,10 +8,6 @@ open System.Diagnostics
 open FPublisher.FakeHelper.Build
 open Fake.Core
 
-[<AutoOpen>]
-module internal Global =
-    let mutable logger = Logger.create (Logger.Level.Minimal)
-
 
 module Primitives =
 

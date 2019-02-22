@@ -66,20 +66,20 @@ module CrackedFsproj =
     type CrackedFsproj = private CrackedFsproj of CrackedFsprojSingleTarget list
 
     with
-        member x.Value =
+        member x.AsList =
             let (CrackedFsproj value) = x
             value
 
-        member x.ProjectTarget = x.Value.[0].ProjectTarget
+        member x.ProjectTarget = x.AsList.[0].ProjectTarget
 
-        member x.ProjRefs = x.Value.[0].ProjRefs
+        member x.ProjRefs = x.AsList.[0].ProjRefs
 
-        member x.ProjPath = x.Value.[0].ProjPath
+        member x.ProjPath = x.AsList.[0].ProjPath
 
         member x.Name = Path.GetFileNameWithoutExtension x.ProjPath
 
         member x.SourceFiles =
-            x.Value.[0].FSharpProjectOptions.OtherOptions
+            x.AsList.[0].FSharpProjectOptions.OtherOptions
             |> Array.filter(fun op -> op.EndsWith ".fs" && not <| op.EndsWith "AssemblyInfo.fs" )
             |> Array.map Path.getFullName
 
@@ -104,3 +104,46 @@ module CrackedFsproj =
                     |> List.ofSeq
                     |> CrackedFsproj
         }
+
+       ///async works may fail due to fetch proj options is not thread safe
+       /// retry many times will solve it
+        let private fetchUnsafeDataAsync maxRetryCount taskInterval task prediate taskResultToTaskArgMapping allTaskArgs = async {
+            let rec loop retryCount accum allTaskArgs =
+                printfn "try fetch unsafe thread datas at %d time" retryCount
+
+                if retryCount > maxRetryCount then failwith "exceed max retry times"
+
+                if Seq.isEmpty allTaskArgs then accum
+                else
+                    let allTaskResults =
+                        allTaskArgs
+                        |> Seq.mapi (fun i project -> async {
+                            /// Set time delay to reduce the mistake times
+                            do! Async.Sleep (taskInterval * i)
+                            return! task project
+                        }
+                        )
+                        |> Async.Parallel
+                        |> Async.RunSynchronously
+
+                    let success,unsuccess = allTaskResults |> Array.partition prediate
+
+                    loop (retryCount + 1) success (unsuccess |> Array.map taskResultToTaskArgMapping)
+
+            return loop 1 [||] allTaskArgs
+        }
+
+        let createFromProjects projPaths =
+
+            let prediate (crackedFsproj: CrackedFsproj) =
+                crackedFsproj.AsList
+                |> List.exists (fun crackedFsprojSingleTarget ->
+                    crackedFsprojSingleTarget.FSharpProjectOptions.OtherOptions.Length <> 0
+                )
+
+            fetchUnsafeDataAsync
+                3
+                50
+                create
+                prediate
+                (fun crackedFsproj -> crackedFsproj.ProjPath) (Array.ofSeq projPaths)

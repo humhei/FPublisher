@@ -7,7 +7,11 @@ open System.Collections.Concurrent
 open Microsoft.FSharp.Reflection
 open System.Threading.Tasks
 
-module internal Utils = 
+[<AutoOpen>]
+module internal Global =
+    let mutable logger = Logger.create (Logger.Level.Minimal)
+
+module internal Utils =
 
     [<RequireQualifiedAccess>]
     module Task =
@@ -23,28 +27,28 @@ module internal Utils =
 
         let createByIndexWith<'UnionCaseType> index values  : 'UnionCaseType =
             let unionCaseInfo =
-                getUnionCaseInfos typeof<'UnionCaseType> 
+                getUnionCaseInfos typeof<'UnionCaseType>
                 |> Array.item index
 
             FSharpValue.MakeUnion(unionCaseInfo,values)
             |> unbox
-        
+
         let createByIndex<'UnionCaseType> index : 'UnionCaseType =
             createByIndexWith index [||]
 
         let getName (unionCase: 'UnionCaseType) =
-            let uci = 
+            let uci =
                 FSharpValue.GetUnionFields(unionCase,typeof<'UnionCaseType>)
-                |> fst  
-            uci.Name            
-                      
+                |> fst
+            uci.Name
+
 
         let findIndex (unionCase: 'UnionCaseType) =
             let unionCases = getUnionCaseInfos typeof<'UnionCaseType>
 
-            let currentUnionCase = 
+            let currentUnionCase =
                 FSharpValue.GetUnionFields(unionCase,typeof<'UnionCaseType>)
-                |> fst        
+                |> fst
 
             unionCases
             |> Array.findIndex (fun unionCase -> unionCase.Name =  currentUnionCase.Name)
@@ -56,29 +60,29 @@ module internal Utils =
 
 
         let isFirst (unionCase: 'UnionCaseType) =
-            findIndex unionCase = 0              
+            findIndex unionCase = 0
 
     let inline dtntSmpl arg = DotNet.Options.lift id arg
-    
-                               
+
+
 
 
     [<RequireQualifiedAccess>]
     module Expr =
-        let nameof (q:Expr<_>) = 
-            match q with 
+        let nameof (q:Expr<_>) =
+            match q with
             | Patterns.Let(_, _, DerivedPatterns.Lambdas(_, Patterns.Call(_, mi, _))) -> mi.Name
             | Patterns.PropertyGet(_, mi, _) -> mi.Name
             | DerivedPatterns.Lambdas(_, Patterns.Call(_, mi, _)) -> mi.Name
             | DerivedPatterns.Lambdas(_, Patterns.NewUnionCase(uc,_)) -> uc.Name
-            | _ -> failwith "Unexpected format"    
+            | _ -> failwith "Unexpected format"
 
     [<RequireQualifiedAccess>]
     module String =
         open System
         let ofCharList chars = chars |> List.toArray |> String
-        
-        let equalIgnoreCaseAndEdgeSpace (text1: string) (text2: string) = 
+
+        let equalIgnoreCaseAndEdgeSpace (text1: string) (text2: string) =
             let trimedText1 = text1.Trim()
             let trimedText2 = text2.Trim()
 
@@ -88,9 +92,9 @@ module internal Utils =
     module Seq =
 
         let mapFindedFirst prediate mapping values =
-            let index = Seq.findIndex prediate values 
-            values 
-            |> Seq.indexed 
+            let index = Seq.findIndex prediate values
+            values
+            |> Seq.indexed
             |> Seq.collect (fun (i,value) -> if i = index then mapping value else [value])
 
 
@@ -101,5 +105,4 @@ module internal Utils =
         let replaceFindedFirstLine (finder: string -> bool) mapping (file: string) =
             let lines = File.readWithEncoding System.Text.Encoding.UTF8 file |> List.ofSeq
             lines |> Seq.mapFindedFirst finder mapping
-            |> File.writeWithEncoding System.Text.Encoding.UTF8 false file 
-        
+            |> File.writeWithEncoding System.Text.Encoding.UTF8 false file

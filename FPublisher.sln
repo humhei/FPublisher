@@ -1,17 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26124.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28606.126
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2DEE046F-2A30-4ABB-AA88-58100B59EEF4}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher", "src\FPublisher\FPublisher.fsproj", "{CC8B7611-98DD-4813-99A3-B22C67EB1489}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher", "src\FPublisher\FPublisher.fsproj", "{CC8B7611-98DD-4813-99A3-B22C67EB1489}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPublisher.Expecto", "src\FPublisher.Expecto\FPublisher.Expecto.fsproj", "{40AFB784-501D-49C6-9DE9-24E1755550CE}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Expecto", "src\FPublisher.Expecto\FPublisher.Expecto.fsproj", "{40AFB784-501D-49C6-9DE9-24E1755550CE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0A68DDFF-4616-409E-AA83-089DDA45E86C}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPbulisher.FakerTests", "tests\FPbulisher.FakerTests\FPbulisher.FakerTests.fsproj", "{BBB01BF6-B913-4585-AFEE-798173F15245}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPbulisher.FakerTests", "tests\FPbulisher.FakerTests\FPbulisher.FakerTests.fsproj", "{BBB01BF6-B913-4585-AFEE-798173F15245}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.ProjectCracker", "src\FPublisher.ProjectCracker\FPublisher.ProjectCracker.fsproj", "{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +23,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{CC8B7611-98DD-4813-99A3-B22C67EB1489}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -62,11 +61,29 @@ Global
 		{BBB01BF6-B913-4585-AFEE-798173F15245}.Release|x64.Build.0 = Release|Any CPU
 		{BBB01BF6-B913-4585-AFEE-798173F15245}.Release|x86.ActiveCfg = Release|Any CPU
 		{BBB01BF6-B913-4585-AFEE-798173F15245}.Release|x86.Build.0 = Release|Any CPU
-
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Debug|x64.Build.0 = Debug|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Debug|x86.Build.0 = Debug|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Release|x64.ActiveCfg = Release|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Release|x64.Build.0 = Release|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Release|x86.ActiveCfg = Release|Any CPU
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{CC8B7611-98DD-4813-99A3-B22C67EB1489} = {2DEE046F-2A30-4ABB-AA88-58100B59EEF4}
 		{40AFB784-501D-49C6-9DE9-24E1755550CE} = {2DEE046F-2A30-4ABB-AA88-58100B59EEF4}
 		{BBB01BF6-B913-4585-AFEE-798173F15245} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
+		{476EF01E-D13F-4557-8D63-BEDD9C5C9EFC} = {2DEE046F-2A30-4ABB-AA88-58100B59EEF4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6B19954F-497A-4E42-9EBB-280E76B139B8}
 	EndGlobalSection
 EndGlobal

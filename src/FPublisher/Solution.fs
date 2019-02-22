@@ -30,6 +30,8 @@ with
 [<RequireQualifiedAccess>]
 module Solution =
 
+
+
     let nugetPackageNames (solution: Solution) =
         solution.Projects
         |> List.map (fun fsproj ->
@@ -49,28 +51,31 @@ module Solution =
 
         { Path = slnPath
           Projects =
-            let input = File.readAsStringWithEncoding Encoding.UTF8 slnPath
-            [ for m in Regex.Matches(input,pattern) -> m ]
-            |> List.filter (fun m ->
-                let relativePath = m.Groups.[2].Value
-                let ext = Path.GetExtension relativePath
-                ext = ".csproj" || ext = ".fsproj"
-            )
-            |> List.map (fun m ->
-                let relativePath = m.Groups.[2].Value
-                let projPath = Path.getFullName (workingDir </> relativePath)
-                CrackedFsproj.create projPath
-            )
-            |> Async.Parallel
+            let projPaths =
+                let input = File.readAsStringWithEncoding Encoding.UTF8 slnPath
+                [ for m in Regex.Matches(input,pattern) -> m ]
+                |> List.filter (fun m ->
+                    let relativePath = m.Groups.[2].Value
+                    let ext = Path.GetExtension relativePath
+                    ext = ".csproj" || ext = ".fsproj"
+                )
+                |> List.map (fun m ->
+                    let relativePath = m.Groups.[2].Value
+                    let projPath = Path.getFullName (workingDir </> relativePath)
+                    (projPath.Replace('\\','/'))
+                )
+
+            CrackedFsproj.createFromProjects projPaths
             |> Async.RunSynchronously
-            |> List.ofSeq }
+            |> List.ofSeq
+        }
 
     let restore (solution: Solution) =
         dotnet solution.WorkingDir "restore" [solution.Path]
 
     let build versionOp (solution: Solution) =
-        match versionOp with 
-        | Some (version: SemVerInfo) -> 
+        match versionOp with
+        | Some (version: SemVerInfo) ->
             let versionText = SemVerInfo.normalize version
             dotnet solution.WorkingDir "build" [solution.Path; "-p:Version=" + versionText]
         | None -> dotnet solution.WorkingDir "build" [solution.Path]
@@ -78,7 +83,7 @@ module Solution =
     let test (solution: Solution) =
         solution.TestProjects
         |> List.collect (fun crackedFsproj ->
-            crackedFsproj.Value
+            crackedFsproj.AsList
         )
         |> List.map (fun crackedProjSingleTarget ->
             let targetPath = crackedProjSingleTarget.TargetPath

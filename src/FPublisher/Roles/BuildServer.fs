@@ -144,7 +144,7 @@ module BuildServer =
                             let baseVersion =
                                 match (Forker.Role.currentVersion None role.Collaborator.Forker) with
                                 | Some version -> version
-                                | None -> SemVerInfo.parse "1.0.0"
+                                | None -> SemVerInfo.parse "0.0.1"
 
                             let mainVersionText = SemVerInfo.mainVersionText baseVersion
                             (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)

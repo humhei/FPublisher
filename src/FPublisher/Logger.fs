@@ -36,9 +36,9 @@ module Logger =
         let _important message =
             match level with
             | Level.Quiet -> ()
-            | _ -> Trace.trace message
+            | _ -> printfn "%s" message
 
-        let _warn message = Trace.trace message
+        let _warn message = Trace.traceImportant message
 
         let _error message = Trace.traceError message
 
