@@ -18,6 +18,92 @@ MacOS/Linux | Windows
 ## Usage:
 See [build.fsx](https://github.com/humhei/FPublisher/blob/master/build.fsx)
 
+
+## Features
+
+### Typed
+[NonGit.fsx](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/NonGit.fs)
+```fsharp
+    let run =
+        Role.update (function
+
+            | Msg.Build semverInfoOp ->
+                { PreviousMsgs = []
+                  Action = MapState (fun role -> Solution.build semverInfoOp role.Solution) }
+
+            | Msg.Test ->
+                { PreviousMsgs = [ Msg.Build None ]
+                  Action = MapState (fun role -> Solution.test role.Solution) }
+        )
+
+```
+
+### Composable
+[Forker.fsx](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/Forker.fs)
+```fsharp
+type Role =
+    { NonGit: NonGit.Role
+        TargetState: TargetState
+        NugetPacker: NugetPacker
+        LocalNugetServer: NugetServer option
+        VersionController: Lazy<VersionController> }
+```
+
+### Stateful
+/// stored newPackages in `Pack` and use it in `PublishToLocalNugetServer`
+
+[Forker.fsx](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/Forker.fs)
+
+```fsharp
+
+| Msg.Pack releaseNotes ->
+    { PreviousMsgs = [!^ (NonGit.Msg.Build (Some releaseNotes.SemVer)); !^ NonGit.Msg.Test]
+        Action = MapState (fun role ->
+        let githubData = role.GitHubData
+
+        let newPackages =
+            NugetPacker.pack
+                role.Solution
+                true
+                true
+                githubData.Topics
+                githubData.License
+                githubData.Repository
+                releaseNotes
+                role.NugetPacker
+        newPackages
+        |> box
+        )
+    }
+
+
+| Msg.PublishToLocalNugetServer ->
+
+    match role.LocalNugetServer with
+    | Some localNugetServer ->
+        let versionFromLocalNugetServer = Role.versionFromLocalNugetServer role |> Async.RunSynchronously
+        let nextReleaseNotes = Role.nextReleaseNotes versionFromLocalNugetServer role
+
+        { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
+            Action = MapState (fun role ->
+            let (newPackages) = State.getResult role.TargetState.Pack
+
+            let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
+
+            logger.CurrentVersion currentVersion
+
+            let nextVersion = Role.nextVersion versionFromLocalNugetServer role
+
+            logger.Important "Next version is %s" (SemVerInfo.normalize nextVersion)
+
+            NugetServer.publish newPackages localNugetServer |> Async.RunSynchronously
+            none
+            )
+        }
+    | None -> failwithf "local nuget server is not defined"
+```
+
+
 ## More features
 Please Directly contribute to this repository [src/FPublisher/Roles](https://github.com/humhei/FPublisher/tree/master/src/FPublisher/Roles)
 

@@ -140,17 +140,13 @@ module BuildServer =
                 let nextReleaseNotes role =
                     if isJustAfterDraftedNewRelease role then ReleaseNotes.loadLast role.ReleaseNotesFile
                     else
-                        let nextVersion =
-                            let baseVersion =
-                                match (Forker.Role.currentVersion None role.Collaborator.Forker) with
-                                | Some version -> version
-                                | None -> SemVerInfo.parse "0.0.1"
+                        let tbdReleaseNotes = ReleaseNotes.loadTbd role.ReleaseNotesFile
 
-                            let mainVersionText = SemVerInfo.mainVersionText baseVersion
-                            (mainVersionText + "-build." + AppVeyor.Environment.BuildNumber)
+                        let nextVersion =
+                            (tbdReleaseNotes.AssemblyVersion + "-build." + AppVeyor.Environment.BuildNumber)
                             |> SemVerInfo.parse
 
-                        ReleaseNotes.loadTbd role.ReleaseNotesFile
+                        tbdReleaseNotes
                         |> ReleaseNotes.updateWithSemVerInfo nextVersion
                         |> ReleaseNotes.updateDateToToday
                         |> Some

@@ -5,6 +5,4 @@ Fake.DotNet.Cli
 Fake.Tools.Git
 FSharp.Data
 Fake.DotNet.NuGet
-FSharp.Compiler.Service
-Dotnet.ProjInfo
 Fake.BuildServer.AppVeyor

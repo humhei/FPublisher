@@ -10,6 +10,11 @@ open System
 open Fake.DotNet.NuGet
 module FakeHelper =
 
+    [<RequireQualifiedAccess>]
+    module Path =
+        let nomarlizeToUnixCompitiable path =
+            (Path.getFullName path).Replace('\\','/')
+
 
     [<RequireQualifiedAccess>]
     module ProcessResult =

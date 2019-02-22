@@ -43,7 +43,6 @@ module NonGit =
             workspace.WorkingDir </> (slnName  + ".sln")
 
         Workspace.createSlnWith slnPath false workspace
-
         { Solution = Solution.read slnPath
           Workspace = workspace
           TargetState = TargetState.init }

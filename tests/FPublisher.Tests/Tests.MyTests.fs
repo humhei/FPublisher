@@ -45,14 +45,14 @@ let nonGitTests() =
     testCase "build project" <| fun _ ->
       BuildServer.run (!^ (NonGit.Msg.Build None)) role
 
-    testCase "test project" <| fun _ ->
+    ftestCase "test project" <| fun _ ->
       BuildServer.run (!^ NonGit.Msg.Test) role
   ]
 
 
 
 let forkerTests() =
-  ftestList "forker tests" [
+  testList "forker tests" [
     testCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer)) role
   ]

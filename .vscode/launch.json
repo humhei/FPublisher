@@ -5,7 +5,6 @@
         {
             "name": "Debug Tests",
             "request": "launch",
-            "preLaunchTask": "Build Tests",
             "type": "coreclr",
             "program": "${workspaceRoot}/tests/FPublisher.Tests/bin/Debug/netcoreapp2.1/FPublisher.Tests.dll",
             "args": [],

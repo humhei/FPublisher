@@ -3,11 +3,6 @@
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FPublisher.ProjectCracker\FPublisher.ProjectCracker.fsproj">
-      <Name>FPublisher.ProjectCracker.fsproj</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Logger.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="FakeHelper.fs" />

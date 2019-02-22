@@ -7,7 +7,6 @@ nuget Fake.DotNet.Cli
 nuget Fake.Tools.Git
 nuget FSharp.Data
 nuget Fake.DotNet.NuGet
-nuget Dotnet.ProjInfo
 nuget Fake.Core.Target
 nuget Fake.BuildServer.AppVeyor
 
