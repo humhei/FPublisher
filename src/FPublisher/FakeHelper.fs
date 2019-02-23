@@ -16,13 +16,6 @@ module FakeHelper =
             (Path.getFullName path).Replace('\\','/')
 
 
-    [<RequireQualifiedAccess>]
-    module ProcessResult =
-        let ensureExitCode (processResult: ProcessResult) =
-            if processResult.ExitCode <> 0
-            then
-                failwithf "%A" processResult.Errors
-
     module CommandHelper =
 
         let platformTool tool =
@@ -32,23 +25,24 @@ module FakeHelper =
 
 
 
-        let dotnetWith dir command args =
+        let private dotnetWith dir command args =
             DotNet.exec
                 (fun ops -> {ops with WorkingDirectory = dir})
                 command
                 (Args.toWindowsCommandLine args)
 
         let dotnet dir command args =
-            dotnetWith dir command args
-            |> ProcessResult.ensureExitCode
+            let result = dotnetWith dir command args
+            if result.ExitCode <> 0
+            then failwithf "Error while running %s with args %A" command (List.ofSeq args)
 
         let dotnetGlobalTool tool =
             tool
             |> ProcessUtils.tryFindFileOnPath
-            |> function 
-                | Some t -> t 
-                | None -> 
-                    dotnet "./" "tool" ["install"; "-g"; tool] 
+            |> function
+                | Some t -> t
+                | None ->
+                    dotnet "./" "tool" ["install"; "-g"; tool]
                     platformTool tool
 
         let exec tool dir args =
@@ -136,7 +130,7 @@ module FakeHelper =
 
             let internal parse text =
                 SemVer.parse text
-                |> normalizeBuild 
+                |> normalizeBuild
 
             /// 0.1.4-alpha -> 0.1.4-alpha.0
             let normalizeAlpha (semverInfo: SemVerInfo) =
@@ -157,7 +151,7 @@ module FakeHelper =
 
             let nextPatchVersion (semverInfo: SemVerInfo) =
                 let semverInfo = normalizeAlpha semverInfo
-                
+
                 sprintf "%d.%d.%d" semverInfo.Major semverInfo.Minor (semverInfo.Patch + 1u)
                 |> parse
 

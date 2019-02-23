@@ -15,9 +15,9 @@ module Primitives =
         member x.CurrentVersion (currentVersionOp: SemVerInfo option) =
             match currentVersionOp with
             | Some currentVersion ->
-                logger.Important "Current version is %s" (SemVerInfo.normalize currentVersion)
+                logger.ImportantGreen "Current version is %s" (SemVerInfo.normalize currentVersion)
             | None ->
-                logger.Important "Current version is None"
+                logger.ImportantGreen "Current version is None"
 
     type IRole<'TargetState> = interface end
 
@@ -43,10 +43,10 @@ module Primitives =
         let update stateName action (state: BoxedState) =
             match state with
             | State.Init ->
-                logger.Important "FPUBLISH: Start target %s" stateName
+                logger.ImportantGreen "FPUBLISH: Start target %s" stateName
                 let stopWatch = Stopwatch.StartNew()
                 let result = action()
-                logger.Important "FPUBLISH: Finished target %s in %O" stateName stopWatch.Elapsed
+                logger.ImportantGreen "FPUBLISH: Finished target %s in %O" stateName stopWatch.Elapsed
                 State.Result result
             | State.Result _ -> state
 

@@ -94,7 +94,7 @@ type Role =
 
             let nextVersion = Role.nextVersion versionFromLocalNugetServer role
 
-            logger.Important "Next version is %s" (SemVerInfo.normalize nextVersion)
+            logger.ImportantGreen "Next version is %s" (SemVerInfo.normalize nextVersion)
 
             NugetServer.publish newPackages localNugetServer |> Async.RunSynchronously
             none
