@@ -25,10 +25,15 @@ Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake exe
 let workspace = (Workspace root)
 
 let workspaceTests() =
-  ptestList "Workspace tests" [
+  testList "Workspace tests" [
     testCase "add default solution" <| fun _ ->
       Workspace.createDefaultSln false workspace
+
+    ftestCase "clean bin and obj" <| fun _ ->
+      Workspace.cleanBinAndObj workspace
   ]
+
+
 
 
 let role =
@@ -45,7 +50,7 @@ let nonGitTests() =
     testCase "build project" <| fun _ ->
       BuildServer.run (!^ (NonGit.Msg.Build None)) role
 
-    ftestCase "test project" <| fun _ ->
+    testCase "test project" <| fun _ ->
       BuildServer.run (!^ NonGit.Msg.Test) role
   ]
 

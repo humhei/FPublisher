@@ -7,6 +7,7 @@ open Primitives
 open Fake.IO.Globbing.Operators
 open Fake.Core
 open Fake.DotNet
+open System.IO
 
 [<RequireQualifiedAccess>]
 module NonGit =
@@ -36,11 +37,21 @@ module NonGit =
     let create loggerLevel (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
         let slnPath =
-            let slnName =
+            let defaultSlnName =
                 match Workspace.tryRepoName workspace with
                 | Some repoName -> repoName
                 | None -> workspace.DefaultSlnName
-            workspace.WorkingDir </> (slnName  + ".sln")
+
+
+            let poiorSlnPath = 
+                let priorSlnName = defaultSlnName + ".FPublisher"
+
+                workspace.WorkingDir </> (priorSlnName  + ".sln")
+
+            if File.Exists poiorSlnPath 
+            then poiorSlnPath
+            else workspace.WorkingDir </> (defaultSlnName  + ".sln")
+
 
         Workspace.createSlnWith slnPath false workspace
         { Solution = Solution.read slnPath

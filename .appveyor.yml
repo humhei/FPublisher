@@ -7,6 +7,3 @@ build_script:
 environment:
   nuget_api_key:
     secure: uxeBhnDDyowaBY1oDNFPo9Yz9wbJUWwAw8BgagEbHtKLQR3uxOADA7dvO+pcANt0
-
-artifacts:
-  - path: build_output\*.nupkg

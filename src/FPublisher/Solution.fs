@@ -168,7 +168,7 @@ module Solution =
                 |> List.map (fun m ->
                     let relativePath = m.Groups.[2].Value
                     let projPath = Path.getFullName (workingDir </> relativePath)
-                    (projPath.Replace('\\','/'))
+                    Path.nomarlizeToUnixCompitiable projPath
                 )
 
             projPaths

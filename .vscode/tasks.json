@@ -2,6 +2,17 @@
     "version": "2.0.0",
     "tasks": [
         {
+          "command": "./fake.sh",
+          "args": ["build", "-t", "Workspace.CleanBinAndObj"],
+          "type": "shell",
+          "label": "Workspace.CleanBinAndObj",
+          "group": "build",
+          "windows": {
+            "command": "./fake.cmd"
+          },
+          "problemMatcher":[]
+        },
+        {
             "command": "./fake.sh",
             "args": ["build", "-t", "Workspace.CreateDefaultSln"],
             "type": "shell",
@@ -12,6 +23,7 @@
             },
             "problemMatcher":[]
         },
+
         {
             "command": "./fake.sh",
             "args": ["build", "-t", "NonGit.Build"],

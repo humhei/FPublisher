@@ -21,6 +21,9 @@ let buildServer =
                 LoggerLevel = Logger.Level.Normal }
 
 
+Target.create "Workspace.CleanBinAndObj" <| fun _ ->
+    Workspace.cleanBinAndObj buildServer.Collaborator.Workspace
+
 Target.create "Workspace.CreateDefaultSln" <| fun _ ->
     Workspace.createDefaultSln false buildServer.Collaborator.Workspace
 

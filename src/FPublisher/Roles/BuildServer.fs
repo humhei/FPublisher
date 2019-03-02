@@ -163,6 +163,11 @@ module BuildServer =
                       Action = MapState (fun role ->
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
+                        newPackages
+                        |> List.iter (fun package ->
+                            exec appveyor "./" ["PushArtifact"; package ]
+                        )
+
                         if isJustAfterDraftedNewRelease then
                             let githubData = role.GitHubData
                             if githubData.BranchName = "HEAD" then

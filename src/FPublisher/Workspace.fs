@@ -54,6 +54,7 @@ module Workspace =
 
     let cleanBinAndObj (workspace: Workspace) =
         allfsprojses workspace
+        |> Seq.map Path.getDirectory
         |> cleanBinAndObjForDirs
 
     let createSlnWith slnPath isForce (workspace: Workspace) =

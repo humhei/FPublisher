@@ -3,17 +3,33 @@ open Fake.Core
 open Fake.DotNet
 open Fake.Tools.Git.CommandHelper
 open Fake.Tools.Git
-open Microsoft.FSharp.Core.Operators
 open Fake.IO
 open Utils
 open System
+open System.IO
 open Fake.DotNet.NuGet
+open Fake.IO.FileSystemOperators
+
 module FakeHelper =
 
     [<RequireQualifiedAccess>]
     module Path =
         let nomarlizeToUnixCompitiable path =
-            (Path.getFullName path).Replace('\\','/')
+            let path = (Path.getFullName path).Replace('\\','/')
+
+            let dir = Path.getDirectory path
+
+            let segaments =
+                let fileName = Path.GetFileName path
+                fileName.Split([|'\\'; '/'|])
+
+            let folder dir segament =
+                dir </> segament
+                |> Path.getFullName
+
+            segaments
+            |> Array.fold folder dir
+
 
 
     module CommandHelper =
