@@ -29,7 +29,7 @@ let workspaceTests() =
     testCase "add default solution" <| fun _ ->
       Workspace.createDefaultSln false workspace
 
-    ftestCase "clean bin and obj" <| fun _ ->
+    testCase "clean bin and obj" <| fun _ ->
       Workspace.cleanBinAndObj workspace
   ]
 

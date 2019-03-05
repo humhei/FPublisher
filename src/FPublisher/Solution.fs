@@ -187,20 +187,37 @@ module Solution =
         | None -> dotnet solution.WorkingDir "build" [solution.Path]
 
     let test (solution: Solution) =
-        solution.TestProjects
-        |> List.map (fun testProject -> async {
-            Project.exec ["--summary"] testProject
-            testProject.OutputPaths |> List.iter (fun outputPath ->
-                let testResultXml =
-                    let name = testProject.Name + ".TestResults.xml"
-                    let outputDir = Path.getDirectory outputPath
-                    outputDir </> name
+        let runExpectoTest() = 
+            solution.TestProjects
+            |> List.map (fun testProject -> async {
+                Project.exec ["--summary"] testProject
+                testProject.OutputPaths |> List.iter (fun outputPath ->
+                    let testResultXml =
+                        let name = testProject.Name + ".TestResults.xml"
+                        let outputDir = Path.getDirectory outputPath
+                        outputDir </> name
 
-                if File.Exists testResultXml then
+                    if File.Exists testResultXml then
+                        Trace.publish (ImportData.Nunit NunitDataVersion.Nunit) testResultXml
+                )
+
+            })
+            |> Async.Parallel
+            |> Async.RunSynchronously
+            |> ignore
+
+        let runOtherTest() =
+            solution.TestProjects 
+            |> List.map (fun testProject -> async {
+                let testResultXml = testProject.Projdir </> "TestResults" </> testProject.Name + ".TestResults.xml"
+                dotnet testProject.Projdir "test" ["--no-build"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml]
+                if File.exists testResultXml then
                     Trace.publish (ImportData.Nunit NunitDataVersion.Nunit) testResultXml
-            )
 
-        })
-        |> Async.Parallel
-        |> Async.RunSynchronously
-        |> ignore
+            })
+            |> Async.Parallel
+            |> Async.RunSynchronously
+            |> ignore
+
+        runExpectoTest()
+        runOtherTest()
