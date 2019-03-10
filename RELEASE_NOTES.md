@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.12 - tbd
+## 0.1.13-alpha - tbd
+
+## 0.1.12 - 2019-03-10
 * `mono paket.exe install` first for unix system
 
 ## 0.1.11 - 2019-03-05
