@@ -8,23 +8,28 @@ open Fake.IO.Globbing.Operators
 open Fake.Core
 open Fake.DotNet
 open System.IO
+open Fake.IO
+open FPublisher.FakeHelper.CommandHelper
 
 [<RequireQualifiedAccess>]
 module NonGit =
 
     [<RequireQualifiedAccess>]
     type Msg =
+        | InstallPaketPackages
         | Build of SemVerInfo option
         | Test
 
     type TargetState =
-        { Build: BoxedState
+        { InstallPaketPackages: BoxedState
+          Build: BoxedState
           Test: BoxedState }
 
     [<RequireQualifiedAccess>]
     module TargetState =
         let init =
-            { Build = State.Init
+            { InstallPaketPackages = State.Init
+              Build = State.Init
               Test = State.Init }
 
     type Role =
@@ -61,7 +66,10 @@ module NonGit =
 
     let run =
         Role.update (function
-
+            | Msg.InstallPaketPackages ->
+                { PreviousMsgs = [] 
+                  Action = MapState (fun role -> Workspace.paket ["install"] role.Workspace )}
+            
             | Msg.Build semverInfoOp ->
                 { PreviousMsgs = []
                   Action = MapState (fun role -> Solution.build semverInfoOp role.Solution) }

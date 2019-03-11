@@ -5,6 +5,7 @@ open System.IO
 open FakeHelper
 open Fake.Tools.Git.CommandHelper
 open Fake.IO.Globbing.Operators
+open Fake.Core
 
 type Workspace = Workspace of string
 with
@@ -32,11 +33,26 @@ module Workspace =
             |> Seq.collect (fun dir -> [dir </> "obj"; dir </> "bin"])
             |> Shell.cleanDirs
 
-    let exec tool args (workspace: Workspace) = CommandHelper.exec tool workspace.WorkingDir args
+    let exec tool args (workspace: Workspace) = CommandHelper.exec tool args workspace.WorkingDir
 
-    let fake args (workspace: Workspace) = exec (CommandHelper.platformTool "fake") args workspace
+    let paketPath (workspace: Workspace) = 
+        workspace.WorkingDir </> ".paket/paket.exe"
+        |> Path.convertWindowsToCurrentPath
 
-    let paket args (workspace: Workspace) = exec (workspace.WorkingDir </> ".paket/paket.exe") args workspace
+    let paket args (workspace: Workspace) = 
+        let paketPath = paketPath workspace 
+
+        if not (File.exists paketPath) then failwithf "file %s is not exist" paketPath
+
+        if Environment.isUnix 
+        then
+            match Mono.monoPath with 
+            | Some mono -> 
+                exec mono [yield paketPath; yield! args] workspace
+
+            | None -> failwith "Cannot find mono path in environment varaibles"
+        else
+            exec paketPath args workspace
 
     let dotnet command args (workspace: Workspace) = CommandHelper.dotnet workspace.WorkingDir command args
 

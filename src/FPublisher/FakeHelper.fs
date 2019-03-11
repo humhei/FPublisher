@@ -61,7 +61,7 @@ module FakeHelper =
                     dotnet "./" "tool" ["install"; "-g"; tool]
                     platformTool tool
 
-        let exec tool dir args =
+        let exec tool args dir =
             let result =
                 args
                 |> CreateProcess.fromRawCommand tool
@@ -71,7 +71,6 @@ module FakeHelper =
             if result.ExitCode <> 0
             then failwithf "Error while running %s with args %A" tool (List.ofSeq args)
 
-        let git args dir = exec "git" dir args
         [<RequireQualifiedAccess>]
         module Git =
             let private msgs (ok,msgs,error) = msgs
@@ -96,7 +95,6 @@ module FakeHelper =
 
     module Build =
 
-
         /// Compatible SemVerInfo module for nuget
         [<RequireQualifiedAccess>]
         module internal SemVerInfo =
@@ -119,10 +117,8 @@ module FakeHelper =
 
 
 
-
             let mainVersionText (semverInfo: SemVerInfo) =
                 sprintf "%d.%d.%d" semverInfo.Major semverInfo.Minor semverInfo.Patch
-
 
 
             /// 0.1.4-alpha.0.1 -> 0.1.4-alpha.0+1

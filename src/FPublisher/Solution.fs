@@ -104,11 +104,11 @@ module Project =
                 dotnet outputDir outputDll args
 
             | Framework.FullFramework, false ->
-                exec outputDll outputDir args
+                exec outputDll args outputDir
             | Framework.FullFramework, true ->
                 match Mono.monoPath with
                 | Some mono ->
-                    exec mono outputDir ([outputDll; outputExe] @ List.ofSeq args)
+                    exec mono ([outputDll; outputExe] @ List.ofSeq args) outputDir
                 | None ->
                     failwith "cannot find mono"
 
@@ -212,7 +212,7 @@ module Solution =
                 let testResultXml = testProject.Projdir </> "TestResults" </> testProject.Name + ".TestResults.xml"
                 dotnet testProject.Projdir "test" ["--no-build"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml]
                 if File.exists testResultXml then
-                    Trace.publish (ImportData.Nunit NunitDataVersion.Nunit) testResultXml
+                    Trace.publish (ImportData.Nunit NunitDataVersion.Nunit3) testResultXml
 
             })
             |> Async.Parallel

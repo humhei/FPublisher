@@ -155,7 +155,7 @@ module BuildServer =
                 match nextReleaseNotes role with
                 | Some nextReleaseNotes ->
                     let appveyor = platformTool "appveyor"
-                    exec appveyor "./" ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ]
+                    Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
 
                     let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
@@ -165,7 +165,7 @@ module BuildServer =
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
                         newPackages
                         |> List.iter (fun package ->
-                            exec appveyor "./" ["PushArtifact"; package ]
+                            Workspace.exec appveyor ["PushArtifact"; package ] role.Workspace
                         )
 
                         if isJustAfterDraftedNewRelease then
@@ -184,9 +184,15 @@ module BuildServer =
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
 
             | _ ->
-
                 /// run tests only
-                { PreviousMsgs = [ !^ NonGit.Msg.Test ]
+                { PreviousMsgs = 
+                    let paketPath = Workspace.paketPath role.Workspace
+                    if Environment.isUnix && File.exists paketPath 
+                    then 
+                        [!^ NonGit.Msg.InstallPaketPackages; !^ NonGit.Msg.Test ]
+                    else
+                        [ !^ NonGit.Msg.Test ]
+
                   Action = MapState ignore }
 
     let runWith = Role.updateComplex roleAction
