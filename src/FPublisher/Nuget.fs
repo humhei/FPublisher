@@ -140,7 +140,7 @@ module Nuget =
                 )
             | SourceLinkCreate.Library ->
                 let sourceLink = dotnetGlobalTool "sourceLink"
-                packResult.CliPackages @ packResult.CliPackages |> List.iter (fun package ->
+                packResult.LibraryPackages |> List.iter (fun package ->
                     exec sourceLink ["test" ;package] "./"
                 )
             | SourceLinkCreate.None ->
