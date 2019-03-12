@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.13 - tbd
+## 0.1.14-alpha - tbd
+
+## 0.1.13 - 2019-03-12
 * Enable sourcelink by default
 
 ## 0.1.12 - 2019-03-10
