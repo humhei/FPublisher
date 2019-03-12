@@ -96,16 +96,22 @@ module Nuget =
         { LibraryPackages: string list
           CliPackages: string list}
 
+    [<RequireQualifiedAccess>]
+    type SourceLinkCreate =
+        | LibraryAndCli
+        | Library
+        | None
+
     type NugetPacker =
         { Authors: NugetAuthors
           GenerateDocumentationFile: bool
-          SourceLinkCreate: bool
+          SourceLinkCreate: SourceLinkCreate
           PackageIconUrl: string option }
     with
         static member DefaultValue =
             { Authors = NugetAuthors.GithubLoginName
               GenerateDocumentationFile = false
-              SourceLinkCreate = true
+              SourceLinkCreate = SourceLinkCreate.Library
               PackageIconUrl = None }
 
 
@@ -113,21 +119,31 @@ module Nuget =
     [<RequireQualifiedAccess>]
     module NugetPacker =
         let addSourceLinkPackages (solution: Solution) nugetPackager =
-            if nugetPackager.SourceLinkCreate then 
+            match nugetPackager.SourceLinkCreate with 
+            | SourceLinkCreate.LibraryAndCli ->
                 solution.LibraryProjects @ solution.CliProjects
                 |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
-            else 
+
+            | SourceLinkCreate.Library ->
+                solution.LibraryProjects
+                |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
+
+            | SourceLinkCreate.None ->
                 logger.Info "source link is disable, skip add sourcelink package"
 
-        let testSourceLink packages nugetPacker =
-            if nugetPacker.SourceLinkCreate then
-
+        let testSourceLink (packResult: PackResult) nugetPacker =
+            match nugetPacker.SourceLinkCreate with 
+            | SourceLinkCreate.LibraryAndCli ->
                 let sourceLink = dotnetGlobalTool "sourceLink"
-
-                packages |> List.iter (fun package ->
+                packResult.LibraryPackages @ packResult.CliPackages |> List.iter (fun package ->
                     exec sourceLink ["test" ;package] "./"
                 )
-            else 
+            | SourceLinkCreate.Library ->
+                let sourceLink = dotnetGlobalTool "sourceLink"
+                packResult.CliPackages @ packResult.CliPackages |> List.iter (fun package ->
+                    exec sourceLink ["test" ;package] "./"
+                )
+            | SourceLinkCreate.None ->
                 logger.Info "source link is disable, skip test source link"
 
 
@@ -173,13 +189,8 @@ module Nuget =
                 |> dtntSmpl
 
 
-            let addtionalCustomParams =
-                if nugetPacker.SourceLinkCreate then
-                    [ "/p:SourceLinkCreate=true"
-                      "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
-                else []
 
-            let packProjects projects =
+            let packProjects addtionalCustomParams projects =
                 let targetDirectory = tmpDir()
                 projects |> List.iter (fun proj ->
                     DotNet.pack (buildingPackOptions targetDirectory addtionalCustomParams)  proj.ProjPath
@@ -188,8 +199,21 @@ module Nuget =
                 !! (targetDirectory </> "./*.nupkg")
                 |> List.ofSeq
 
-            { LibraryPackages = packProjects solution.LibraryProjects
-              CliPackages = packProjects solution.CliProjects }
+            let sourceLinkParams =
+                [ "/p:SourceLinkCreate=true"
+                  "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
+
+            { LibraryPackages = 
+                match nugetPacker.SourceLinkCreate with 
+                | SourceLinkCreate.LibraryAndCli | SourceLinkCreate.Library ->
+                    packProjects sourceLinkParams solution.LibraryProjects
+                | SourceLinkCreate.None -> packProjects [] solution.LibraryProjects
+              CliPackages = 
+                match nugetPacker.SourceLinkCreate with 
+                | SourceLinkCreate.LibraryAndCli ->
+                    packProjects sourceLinkParams solution.CliProjects
+                | _ -> packProjects [] solution.CliProjects
+            }
 
 
 

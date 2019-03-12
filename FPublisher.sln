@@ -17,6 +17,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.FakeTests.NUnit"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPbulisher.FakerTests", "tests\FPbulisher.FakerTests.Expecto\FPbulisher.FakerTests.fsproj", "{14945C5B-2622-4979-8F0D-5CD5A46E4FDB}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Faker.Cli", "tests\FPublisher.Faker.Cli\FPublisher.Faker.Cli.fsproj", "{575D45B1-A5F1-4633-ADCC-741424FC3FF1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,18 @@ Global
 		{14945C5B-2622-4979-8F0D-5CD5A46E4FDB}.Release|x64.Build.0 = Release|Any CPU
 		{14945C5B-2622-4979-8F0D-5CD5A46E4FDB}.Release|x86.ActiveCfg = Release|Any CPU
 		{14945C5B-2622-4979-8F0D-5CD5A46E4FDB}.Release|x86.Build.0 = Release|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Debug|x64.Build.0 = Debug|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Debug|x86.Build.0 = Debug|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|x64.ActiveCfg = Release|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|x64.Build.0 = Release|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|x86.ActiveCfg = Release|Any CPU
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -97,6 +111,7 @@ Global
 		{EE5F7E81-97C5-4C78-8385-9A5F1D55BDC4} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{53FE0AD8-80C2-4E8A-8DB1-37158F18466D} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{14945C5B-2622-4979-8F0D-5CD5A46E4FDB} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
+		{575D45B1-A5F1-4633-ADCC-741424FC3FF1} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {58D701E1-F92A-4BA0-9CB0-D8447FDC447D}

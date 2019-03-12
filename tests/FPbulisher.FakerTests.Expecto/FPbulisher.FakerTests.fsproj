@@ -3,8 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-  </PropertyGroup>
+    <PackAsTool>True</PackAsTool>
+    <ToolCommandName>fpublisher_faker</ToolCommandName>
 
+  </PropertyGroup>
+  <PropertyGroup>
+    <Description>Test Only,Don't use it</Description>
+    <PackageTags>Tool;CLI</PackageTags>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Tests.MyTests.fs" />
     <Compile Include="Tests.Runner.fs" />

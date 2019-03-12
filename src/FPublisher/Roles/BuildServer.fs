@@ -169,7 +169,7 @@ module BuildServer =
                       Action = MapState (fun role ->
                         let (packResult: PackResult) = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         
-                        NugetPacker.testSourceLink packResult.LibraryPackages nugetPacker
+                        NugetPacker.testSourceLink packResult nugetPacker
 
                         let newPackages = packResult.LibraryPackages @ packResult.CliPackages
 
