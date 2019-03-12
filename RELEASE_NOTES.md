@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.14-alpha - tbd
+## 0.1.14 - tbd
+* Never sourcelink test cli package
 
 ## 0.1.13 - 2019-03-12
 * Enable sourcelink by default

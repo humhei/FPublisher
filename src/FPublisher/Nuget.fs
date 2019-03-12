@@ -114,7 +114,7 @@ module Nuget =
     module NugetPacker =
         let addSourceLinkPackages (solution: Solution) nugetPackager =
             if nugetPackager.SourceLinkCreate then 
-                solution.LibraryProjects
+                solution.LibraryProjects @ solution.CliProjects
                 |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
             else 
                 logger.Info "source link is disable, skip add sourcelink package"
@@ -173,7 +173,7 @@ module Nuget =
                 |> dtntSmpl
 
 
-            let libraryCustomParams =
+            let addtionalCustomParams =
                 if nugetPacker.SourceLinkCreate then
                     [ "/p:SourceLinkCreate=true"
                       "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
@@ -182,7 +182,7 @@ module Nuget =
             let packProjects projects =
                 let targetDirectory = tmpDir()
                 projects |> List.iter (fun proj ->
-                    DotNet.pack (buildingPackOptions targetDirectory libraryCustomParams)  proj.ProjPath
+                    DotNet.pack (buildingPackOptions targetDirectory addtionalCustomParams)  proj.ProjPath
                 )
 
                 !! (targetDirectory </> "./*.nupkg")
