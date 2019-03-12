@@ -10,6 +10,8 @@ open FPublisher.Roles
 open FPublisher.Git
 open FPublisher.Nuget
 open Fake.Core
+open FPublisher.FakeHelper.Build
+open Fake.IO.FileSystemOperators
 
 
 let pass() = Expect.isTrue true "passed"
@@ -58,6 +60,10 @@ let nonGitTests() =
 
 let forkerTests() =
   testList "forker tests" [
+    ftestCase "pack pagckages" <| fun _ ->
+      let lastReleaseNotes = ReleaseNotes.loadLast role.Workspace.ReleaseNotesFile
+      BuildServer.run (!^ (Forker.Msg.Pack lastReleaseNotes.Value)) role
+
     testCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer)) role
   ]
