@@ -167,9 +167,11 @@ module BuildServer =
 
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack nextReleaseNotes)]
                       Action = MapState (fun role ->
-                        let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
+                        let (packResult: PackResult) = role.Collaborator.Forker.TargetState.Pack |> State.getResult
                         
-                        NugetPacker.testSourceLink newPackages nugetPacker
+                        NugetPacker.testSourceLink packResult.LibraryPackages nugetPacker
+
+                        let newPackages = packResult.LibraryPackages @ packResult.CliPackages
 
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
                         newPackages

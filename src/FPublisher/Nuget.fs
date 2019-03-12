@@ -92,6 +92,10 @@ module Nuget =
             | NugetAuthors.GithubLoginName -> repository.Owner.Login
             | NugetAuthors.ManualInput authors -> String.separated ";" authors
 
+    type PackResult =
+        { LibraryPackages: string list
+          CliPackages: string list}
+
     type NugetPacker =
         { Authors: NugetAuthors
           GenerateDocumentationFile: bool
@@ -104,11 +108,13 @@ module Nuget =
               SourceLinkCreate = true
               PackageIconUrl = None }
 
+
+
     [<RequireQualifiedAccess>]
     module NugetPacker =
         let addSourceLinkPackages (solution: Solution) nugetPackager =
             if nugetPackager.SourceLinkCreate then 
-                solution.LibraryProjects @ solution.CliProjects
+                solution.LibraryProjects
                 |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
             else 
                 logger.Info "source link is disable, skip add sourcelink package"
@@ -127,7 +133,7 @@ module Nuget =
 
         let pack (solution: Solution) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
 
-            let targetDirectory =
+            let tmpDir() =
                 let tmpDir = Path.GetTempPath()
                 tmpDir </> Path.GetRandomFileName()
                 |> Directory.ensureReturn
@@ -145,15 +151,14 @@ module Nuget =
             Environment.setEnvironVar "PackageProjectUrl" repository.HtmlUrl
             Environment.setEnvironVar "PackageLicenseUrl" license.HtmlUrl
 
-            let buildingPackOptions (options: DotNet.PackOptions) =
+            let buildingPackOptions targetDirectory customParams (options: DotNet.PackOptions) =
                 let basicBuildingOptions (options: DotNet.PackOptions) =
-                    let versionParam =
+                    let param =
                         [ yield "/p:Version=" + packageReleaseNotes.NugetVersion
                           if noRestore then
                             yield "--no-restore"
-                          if nugetPacker.SourceLinkCreate then
-                            yield "/p:SourceLinkCreate=true"
-                            yield "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\""
+                          yield! customParams
+
                         ]
                         |> Args.toWindowsCommandLine
 
@@ -161,23 +166,32 @@ module Nuget =
                         NoBuild = nobuild
                         Configuration = DotNet.BuildConfiguration.Debug
                         OutputPath = Some targetDirectory
-                        Common = { options.Common with CustomParams = Some versionParam }}
+                        Common = { options.Common with CustomParams = Some param }}
 
                 options
                 |> basicBuildingOptions
                 |> dtntSmpl
 
-            solution.LibraryProjects @ solution.CliProjects |> List.iter (fun proj ->
-                DotNet.pack buildingPackOptions proj.ProjPath
-            )
 
+            let libraryCustomParams =
+                if nugetPacker.SourceLinkCreate then
+                    [ "/p:SourceLinkCreate=true"
+                      "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
+                else []
 
-            let packages =
+            let packProjects projects =
+                let targetDirectory = tmpDir()
+                projects |> List.iter (fun proj ->
+                    DotNet.pack (buildingPackOptions targetDirectory libraryCustomParams)  proj.ProjPath
+                )
+
                 !! (targetDirectory </> "./*.nupkg")
                 |> List.ofSeq
 
+            { LibraryPackages = packProjects solution.LibraryProjects
+              CliPackages = packProjects solution.CliProjects }
 
-            packages
+
 
 
 
