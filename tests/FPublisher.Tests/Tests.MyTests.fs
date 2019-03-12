@@ -20,7 +20,7 @@ let fail() = Expect.isTrue false "failed"
 let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
 #if !FAKE
-let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" [] 
+let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
 Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
 #endif
 
@@ -60,7 +60,7 @@ let nonGitTests() =
 
 let forkerTests() =
   testList "forker tests" [
-    ftestCase "pack pagckages" <| fun _ ->
+    testCase "pack pagckages" <| fun _ ->
       let lastReleaseNotes = ReleaseNotes.loadLast role.Workspace.ReleaseNotesFile
       BuildServer.run (!^ (Forker.Msg.Pack lastReleaseNotes.Value)) role
 
