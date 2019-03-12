@@ -159,9 +159,16 @@ module BuildServer =
 
                     let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
+                    let solution = role.Collaborator.Solution
+                    solution.LibraryProjects @ solution.CliProjects
+                    |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
+
                     { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack nextReleaseNotes)]
                       Action = MapState (fun role ->
                         let newPackages = role.Collaborator.Forker.TargetState.Pack |> State.getResult
+                        
+                        NugetPacker.testSourceLink newPackages role.Collaborator.NugetPacker
+
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
                         newPackages
                         |> List.iter (fun package ->

@@ -107,6 +107,15 @@ module Nuget =
     [<RequireQualifiedAccess>]
     module NugetPacker =
 
+        let testSourceLink packages nugetPacker =
+            if nugetPacker.SourceLinkCreate then
+
+                let sourceLink = dotnetGlobalTool "sourceLink"
+
+                packages |> List.iter (fun package ->
+                    exec sourceLink ["test" ;package] "./"
+                )
+
         let pack (solution: Solution) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
 
             let targetDirectory =
@@ -135,9 +144,8 @@ module Nuget =
                             yield "--no-restore"
                           if nugetPacker.SourceLinkCreate then
                             yield "/p:SourceLinkCreate=true"
-                            //yield "/p:$AllowedOutputExtensionsInPackageBuildOutputFolder = \".dll; .exe; .winmd; .json; .pri; .xml; ;.pdb\""
-
-                            ]
+                            yield "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\""
+                        ]
                         |> Args.toWindowsCommandLine
 
                     { options with
@@ -150,7 +158,7 @@ module Nuget =
                 |> basicBuildingOptions
                 |> dtntSmpl
 
-            solution.LibraryProjects |> List.iter (fun proj ->
+            solution.LibraryProjects @ solution.CliProjects |> List.iter (fun proj ->
                 DotNet.pack buildingPackOptions proj.ProjPath
             )
 
@@ -159,17 +167,9 @@ module Nuget =
                 !! (targetDirectory </> "./*.nupkg")
                 |> List.ofSeq
 
+
             packages
-            //if nugetPacker.SourceLinkCreate then
 
-            //    let sourceLink = dotnetGlobalTool "sourceLink"
-
-            //    packages |> List.map (fun package ->
-            //        exec sourceLink "./" ["test" ;package]
-            //        package
-            //    )
-
-            //else packages
 
 
     type NugetServer =
@@ -201,8 +201,7 @@ module Nuget =
             !! (targetDirName </> "./*.nupkg")
             |> Seq.map (fun nupkg -> async {
 
-                dotnet targetDirName
-                    "nuget"
+                dotnet "nuget"
                     [
                         yield! [ "push"; nupkg; "-s"; nugetServer.Serviceable ]
                         match nugetServer.ApiEnvironmentName with
@@ -211,7 +210,7 @@ module Nuget =
                             TraceSecrets.register "nuget_api_key" nuget_api_key
                             yield! [ "-k"; nuget_api_key ]
                         | None -> ()
-                    ]
+                    ] targetDirName
                 }
             )
             |> Async.Parallel

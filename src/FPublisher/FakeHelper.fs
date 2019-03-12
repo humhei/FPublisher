@@ -41,14 +41,14 @@ module FakeHelper =
 
 
 
-        let private dotnetWith dir command args =
+        let private dotnetWith command args dir =
             DotNet.exec
                 (fun ops -> {ops with WorkingDirectory = dir})
                 command
                 (Args.toWindowsCommandLine args)
 
-        let dotnet dir command args =
-            let result = dotnetWith dir command args
+        let dotnet command args dir =
+            let result = dotnetWith command args dir
             if result.ExitCode <> 0
             then failwithf "Error while running %s with args %A" command (List.ofSeq args)
 
@@ -58,7 +58,7 @@ module FakeHelper =
             |> function
                 | Some t -> t
                 | None ->
-                    dotnet "./" "tool" ["install"; "-g"; tool]
+                    dotnet "tool" ["install"; "-g"; tool] "./"
                     platformTool tool
 
         let exec tool args dir =

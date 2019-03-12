@@ -101,7 +101,7 @@ module Project =
 
             match framework, Environment.isUnix with
             | Framework.CoreApp, _ ->
-                dotnet outputDir outputDll args
+                dotnet outputDll args outputDir
 
             | Framework.FullFramework, false ->
                 exec outputDll args outputDir
@@ -114,11 +114,22 @@ module Project =
 
         )
 
+    let addPackage package version (project: Project) = 
+        dotnet "add" [project.ProjPath; "package"; package; "-v"; version] (project.Projdir)
+
+
 type Solution =
     { Path: string
       Projects: Project list }
 with
     member x.WorkingDir = Path.getDirectory x.Path
+
+    member x.CliProjects =
+        x.Projects |> List.filter (fun project ->
+            match project.OutputType with
+            | OutputType.Exe -> not (project.Name.Contains "test" || project.Name.Contains "Test")
+            | OutputType.Library -> false
+        )
 
     member x.TestProjects =
         x.Projects |> List.filter (fun project ->
@@ -176,15 +187,18 @@ module Solution =
             |> List.map Project.create
         }
 
+        
+
+
     let restore (solution: Solution) =
-        dotnet solution.WorkingDir "restore" [solution.Path]
+        dotnet "restore" [solution.Path] solution.WorkingDir
 
     let build versionOp (solution: Solution) =
         match versionOp with
         | Some (version: SemVerInfo) ->
             let versionText = SemVerInfo.normalize version
-            dotnet solution.WorkingDir "build" [solution.Path; "-p:Version=" + versionText]
-        | None -> dotnet solution.WorkingDir "build" [solution.Path]
+            dotnet "build" [solution.Path; "-p:Version=" + versionText] solution.WorkingDir
+        | None -> dotnet "build" [solution.Path] solution.WorkingDir
 
     let test (solution: Solution) =
         let runExpectoTest() = 
@@ -210,7 +224,7 @@ module Solution =
             solution.TestProjects 
             |> List.map (fun testProject -> async {
                 let testResultXml = testProject.Projdir </> "TestResults" </> testProject.Name + ".TestResults.xml"
-                dotnet testProject.Projdir "test" ["--no-build"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml]
+                dotnet "test" ["--no-build"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml] testProject.Projdir
                 if File.exists testResultXml then
                     Trace.publish (ImportData.Nunit NunitDataVersion.Nunit3) testResultXml
 

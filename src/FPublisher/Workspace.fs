@@ -23,6 +23,8 @@ with
 
     member x.DefaultSlnPath = x.WorkingDir </> (sprintf "%s.sln" x.DefaultSlnName)
 
+    member x.ReleaseNotesFile = x.WorkingDir </> "RELEASE_NOTES.md"
+
 [<RequireQualifiedAccess>]
 module Workspace =
 
@@ -54,7 +56,7 @@ module Workspace =
         else
             exec paketPath args workspace
 
-    let dotnet command args (workspace: Workspace) = CommandHelper.dotnet workspace.WorkingDir command args
+    let dotnet command args (workspace: Workspace) = CommandHelper.dotnet command args workspace.WorkingDir
 
     let git args (workspace: Workspace) = runGitCommand workspace.WorkingDir args
 
