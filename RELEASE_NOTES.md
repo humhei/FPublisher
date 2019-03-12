@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.15 - tbd
+## 0.1.16-alpha - tbd
+
+## 0.1.15 - 2019-03-12
 * Never sourcelink test cli package
 
 ## 0.1.14 - 2019-03-12
