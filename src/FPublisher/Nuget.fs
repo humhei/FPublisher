@@ -106,6 +106,12 @@ module Nuget =
 
     [<RequireQualifiedAccess>]
     module NugetPacker =
+        let addSourceLinkPackages (solution: Solution) nugetPackager =
+            if nugetPackager.SourceLinkCreate then 
+                solution.LibraryProjects @ solution.CliProjects
+                |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
+            else 
+                logger.Info "source link is disable, skip add sourcelink package"
 
         let testSourceLink packages nugetPacker =
             if nugetPacker.SourceLinkCreate then
@@ -115,6 +121,9 @@ module Nuget =
                 packages |> List.iter (fun package ->
                     exec sourceLink ["test" ;package] "./"
                 )
+            else 
+                logger.Info "source link is disable, skip test source link"
+
 
         let pack (solution: Solution) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
 
