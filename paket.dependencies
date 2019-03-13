@@ -9,6 +9,7 @@ nuget FSharp.Data
 nuget Fake.DotNet.NuGet
 nuget Fake.Core.Target = 5.12.0
 nuget Fake.BuildServer.AppVeyor
+nuget Argu
 
 source https://ci.appveyor.com/nuget/fpublisher
 nuget FPublisher build

@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <PackAsTool>True</PackAsTool>
+    <ToolCommandName>fpublisher</ToolCommandName>
+    <PackageId>fpublisher-cli</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\FPublisher\FPublisher.fsproj" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+
+
+</Project>

@@ -19,6 +19,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPbulisher.FakerTests", "te
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Faker.Cli", "tests\FPublisher.Faker.Cli\FPublisher.Faker.Cli.fsproj", "{575D45B1-A5F1-4633-ADCC-741424FC3FF1}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Cli", "src\FPublisher.Cli\FPublisher.Cli.fsproj", "{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,18 @@ Global
 		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|x64.Build.0 = Release|Any CPU
 		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|x86.ActiveCfg = Release|Any CPU
 		{575D45B1-A5F1-4633-ADCC-741424FC3FF1}.Release|x86.Build.0 = Release|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Debug|x64.Build.0 = Debug|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Debug|x86.Build.0 = Debug|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Release|x64.ActiveCfg = Release|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Release|x64.Build.0 = Release|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Release|x86.ActiveCfg = Release|Any CPU
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,6 +126,7 @@ Global
 		{53FE0AD8-80C2-4E8A-8DB1-37158F18466D} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{14945C5B-2622-4979-8F0D-5CD5A46E4FDB} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{575D45B1-A5F1-4633-ADCC-741424FC3FF1} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
+		{28AB24A4-7DED-4EA4-ADF1-4E26C6D9D783} = {2DEE046F-2A30-4ABB-AA88-58100B59EEF4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {58D701E1-F92A-4BA0-9CB0-D8447FDC447D}
