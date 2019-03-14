@@ -15,4 +15,4 @@ jobs:
           command: |
             export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.6.1-api/
             export TERM=xterm-256color
-            fpublisher RunCI
+            fpublisher --run-ci
