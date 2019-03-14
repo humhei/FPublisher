@@ -16,9 +16,19 @@ MacOS/Linux | Windows
 ---
 
 ## Usage:
-See [build.fsx](https://github.com/humhei/FPublisher/blob/master/build.fsx)
+dotnet tool install --global fpublisher-cli
+```
+USAGE: fpublisher.exe [--help] [--create-sln] [--clean] [--build] [--test] [--next-release] [--run-ci]
 
-
+OPTIONS:
+    --create-sln          create sln if not exists
+    --clean               clean bin and obj
+    --build               build solution
+    --test                test projects
+    --next-release        draft next release
+    --run-ci              only invoked by CI
+    --help                display this list of options.
+```
 ## Features
 
 ### Typed
@@ -61,9 +71,8 @@ stored newPackages in `Pack` and use it in `PublishToLocalNugetServer`
 
 | Msg.Pack releaseNotes ->
     { PreviousMsgs = [!^ (NonGit.Msg.Build (Some releaseNotes.SemVer)); !^ NonGit.Msg.Test]
-        Action = MapState (fun role ->
+      Action = MapState (fun role ->
         let githubData = role.GitHubData
-
         let newPackages =
             NugetPacker.pack
                 role.Solution
@@ -88,7 +97,7 @@ stored newPackages in `Pack` and use it in `PublishToLocalNugetServer`
         let nextReleaseNotes = Role.nextReleaseNotes versionFromLocalNugetServer role
 
         { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
-            Action = MapState (fun role ->
+          Action = MapState (fun role ->
             let (newPackages) = State.getResult role.TargetState.Pack
 
             let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
