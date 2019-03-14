@@ -16,4 +16,4 @@ jobs:
             chmod 755 ./*.sh
             export FrameworkPathOverride=$(dirname $(which mono))/../lib/mono/4.6.1-api/
             export TERM=xterm-256color
-            ./fake.sh build -t RunCI
+            fpublisher RunCI
