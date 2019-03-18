@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.17 - tbd
+## 0.1.18-alpha - tbd
+
+## 0.1.17 - 2019-03-18
 * Cli - publish to local baget nuget server
 
 ## 0.1.16 - 2019-03-13
