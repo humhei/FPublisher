@@ -4,6 +4,7 @@ open System
 open Argu
 open FPublisher.Roles
 open FPublisher
+open FPublisher.Nuget
 
 type Arguments =
     | Create_Sln
@@ -12,6 +13,7 @@ type Arguments =
     | Test
     | Next_Release
     | Run_CI
+    | Baget
 with
     interface IArgParserTemplate with
         member s.Usage =
@@ -22,6 +24,7 @@ with
             | Test _ -> "test projects"
             | Next_Release -> "draft next release"
             | Run_CI -> "only invoked by CI"
+            | Baget -> "publish packages to local baget nuget server"
 
 [<EntryPoint>]
 let main argv =
@@ -37,7 +40,8 @@ let main argv =
             BuildServer.create
                 { BuildServer.Config.DefaultValue
                     with
-                        LoggerLevel = Logger.Level.Normal }
+                        LoggerLevel = Logger.Level.Normal
+                        LocalNugetServer = Some NugetServer.DefaultBaGetLocal }
 
 
         match result with 
@@ -47,6 +51,7 @@ let main argv =
         | Test -> BuildServer.run (!^ NonGit.Msg.Test) buildServer
         | Next_Release -> BuildServer.run (!^ Collaborator.Msg.NextRelease) buildServer
         | Run_CI -> BuildServer.run (BuildServer.Msg.RunCI) buildServer
+        | Baget -> BuildServer.run (!^ Forker.Msg.PublishToLocalNugetServer) buildServer
     | _ -> 
         parser.PrintUsage()
         |> printfn "%s"
