@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.19 - tbd
+## 0.1.20-alpha - tbd
+
+## 0.1.19 - 2019-03-19
 * Always .paket/paket.exe install first
 * Fetch git repository by fullName
 
