@@ -154,20 +154,18 @@ module BuildServer =
 
                 match nextReleaseNotes role with
                 | Some nextReleaseNotes ->
+                    let nugetPacker = role.Collaborator.NugetPacker
 
-
-                    { PreviousMsgs = [!^ NonGit.Msg.InstallPaketPackages; !^ NonGit.Msg.Test; !^ (Forker.Msg.Pack nextReleaseNotes)]
+                    { PreviousMsgs = 
+                        [ !^ NonGit.Msg.InstallPaketPackages
+                          !^ (NonGit.Msg.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
+                          !^ NonGit.Msg.Test 
+                          !^ (Forker.Msg.Pack nextReleaseNotes) ]
                       Action = MapState (fun role ->
                         let appveyor = platformTool "appveyor"
                         Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
 
                         let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
-
-                        let nugetPacker = role.Collaborator.NugetPacker
-
-                        let solution = role.Collaborator.Solution
-
-                        NugetPacker.addSourceLinkPackages solution nugetPacker
 
                         let (packResult: PackResult) = role.Collaborator.Forker.TargetState.Pack |> State.getResult
 

@@ -18,17 +18,20 @@ module NonGit =
     type Msg =
         | InstallPaketPackages
         | Build of SemVerInfo option
+        | AddSourceLinkPackages of SourceLinkCreate
         | Test
 
     type TargetState =
         { InstallPaketPackages: BoxedState
           Build: BoxedState
+          AddSourceLinkPackages: BoxedState
           Test: BoxedState }
 
     [<RequireQualifiedAccess>]
     module TargetState =
         let init =
             { InstallPaketPackages = State.Init
+              AddSourceLinkPackages = State.Init
               Build = State.Init
               Test = State.Init }
 
@@ -70,6 +73,13 @@ module NonGit =
                 { PreviousMsgs = [] 
                   Action = MapState (fun role -> Workspace.paket ["install"] role.Workspace )}
             
+            | Msg.AddSourceLinkPackages sourceLinkCreate ->
+                { PreviousMsgs = [] 
+                  Action = MapState (fun role ->
+                    let solution = role.Solution
+                    SourceLinkCreate.addSourceLinkPackages solution sourceLinkCreate
+                  )}
+
             | Msg.Build semverInfoOp ->
                 { PreviousMsgs = []
                   Action = MapState (fun role -> Solution.build semverInfoOp role.Solution) }

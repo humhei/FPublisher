@@ -102,6 +102,20 @@ module Nuget =
         | Library
         | None
 
+    [<RequireQualifiedAccess>]
+    module SourceLinkCreate =
+        let addSourceLinkPackages (solution: Solution)  = function
+            | SourceLinkCreate.LibraryAndCli ->
+                solution.LibraryProjects @ solution.CliProjects
+                |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
+
+            | SourceLinkCreate.Library ->
+                solution.LibraryProjects
+                |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
+
+            | SourceLinkCreate.None ->
+                logger.Info "source link is disable, skip add sourcelink package"
+
     type NugetPacker =
         { Authors: NugetAuthors
           GenerateDocumentationFile: bool
@@ -119,17 +133,7 @@ module Nuget =
     [<RequireQualifiedAccess>]
     module NugetPacker =
         let addSourceLinkPackages (solution: Solution) nugetPackager =
-            match nugetPackager.SourceLinkCreate with 
-            | SourceLinkCreate.LibraryAndCli ->
-                solution.LibraryProjects @ solution.CliProjects
-                |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
-
-            | SourceLinkCreate.Library ->
-                solution.LibraryProjects
-                |> List.iter (Project.addPackage "Microsoft.SourceLink.GitHub" "1.0.0-beta2-18618-05")
-
-            | SourceLinkCreate.None ->
-                logger.Info "source link is disable, skip add sourcelink package"
+            SourceLinkCreate.addSourceLinkPackages solution nugetPackager.SourceLinkCreate
 
         let testSourceLink (packResult: PackResult) nugetPacker =
             match nugetPacker.SourceLinkCreate with 
