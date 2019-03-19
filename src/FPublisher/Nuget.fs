@@ -167,33 +167,24 @@ module Nuget =
             Environment.setEnvironVar "PackageProjectUrl" repository.HtmlUrl
             Environment.setEnvironVar "PackageLicenseUrl" license.HtmlUrl
 
-            let buildingPackOptions targetDirectory customParams (options: DotNet.PackOptions) =
-                let basicBuildingOptions (options: DotNet.PackOptions) =
-                    let param =
-                        [ yield "/p:Version=" + packageReleaseNotes.NugetVersion
-                          if noRestore then
-                            yield "--no-restore"
-                          yield! customParams
+            let buildingPackOptions targetDirectory customParams =
+                [ yield "/p:Version=" + packageReleaseNotes.NugetVersion
+                  if noRestore then yield "--no-restore"
+                  yield! customParams
+                  if nobuild then yield "--no-build"
+                  yield "--output" 
+                  yield targetDirectory
+                  yield "--configuration"
+                  yield "Debug"
+                ]
 
-                        ]
-                        |> Args.toWindowsCommandLine
-
-                    { options with
-                        NoBuild = nobuild
-                        Configuration = DotNet.BuildConfiguration.Debug
-                        OutputPath = Some targetDirectory
-                        Common = { options.Common with CustomParams = Some param }}
-
-                options
-                |> basicBuildingOptions
-                |> dtntSmpl
 
 
 
             let packProjects addtionalCustomParams projects =
                 let targetDirectory = tmpDir()
                 projects |> List.iter (fun proj ->
-                    DotNet.pack (buildingPackOptions targetDirectory addtionalCustomParams)  proj.ProjPath
+                    dotnet "pack" (proj.ProjPath :: buildingPackOptions targetDirectory addtionalCustomParams) proj.Projdir  
                 )
 
                 !! (targetDirectory </> "./*.nupkg")

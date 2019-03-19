@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.18-alpha - tbd
+## 0.1.18 - tbd
+* specific dotnet pack workingDir (project dir)
 
 ## 0.1.17 - 2019-03-18
 * Cli - publish to local baget nuget server
