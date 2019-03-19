@@ -31,8 +31,8 @@ module Forker =
             let! client = GitHubClient.createWithoutToken()
 
             let! repository =
-                let repoName = Workspace.repoName workspace
-                GitHubClient.repository repoName client
+                let repoFullName = Workspace.repoFullName workspace
+                GitHubClient.repository repoFullName client
 
             let! license =
                 let logger = repository.Owner.Login

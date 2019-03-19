@@ -65,14 +65,14 @@ module GitHub =
             return GitHubClient(connection)
         }
 
-        let repository repoName (client: GitHubClient) = task {
+        let repository repoFullName (client: GitHubClient) = task {
             let! searchedRepositoryResult =
-                let request = SearchRepositoriesRequest(repoName)
+                let request = SearchRepositoriesRequest(repoFullName)
                 client.Search.SearchRepo(request)
 
             return
                 searchedRepositoryResult.Items
-                |> Seq.find ( fun result -> String.equalIgnoreCaseAndEdgeSpace result.Name repoName )
+                |> Seq.find ( fun result -> String.equalIgnoreCaseAndEdgeSpace result.FullName repoFullName )
 
         }
 

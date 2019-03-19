@@ -3,7 +3,6 @@ open System
 open Fake.Tools.Git
 open FakeHelper.CommandHelper
 open System.IO
-open Utils
 module Git =
 
     [<RequireQualifiedAccess>]
@@ -29,11 +28,26 @@ module Git =
             then None
             else failwithf "repo name should only contain one line, current lines is %A" lines
 
+        let tryRepoFullName workspace =
+            tryGitUrl workspace |> Option.map (fun url ->
+                let parts = url.Split ([|'/'|])
+                parts.[parts.Length-2..]
+                |> function 
+                    | [|userName; repoUrl|] ->
+                        userName + "/" + Path.GetFileNameWithoutExtension repoUrl
+                    | _ -> failwith "Invalid token"
+            )
+
         let tryRepoName workspace =
             tryGitUrl workspace |> Option.map Path.GetFileNameWithoutExtension
 
         let repoName workspace =
             match tryRepoName workspace with
+            | Some repoName -> repoName
+            | None -> failwith "is not a valid git repo"
+
+        let repoFullName workspace =
+            match tryRepoFullName workspace with
             | Some repoName -> repoName
             | None -> failwith "is not a valid git repo"
 

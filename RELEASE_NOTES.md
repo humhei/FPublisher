@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.19-alpha - tbd
+## 0.1.19 - tbd
+* Always .paket/paket.exe install first
+* Fetch git repository by fullName
 
 ## 0.1.18 - 2019-03-19
 * Specific dotnet pack workingDir (project dir)

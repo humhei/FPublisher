@@ -154,21 +154,23 @@ module BuildServer =
 
                 match nextReleaseNotes role with
                 | Some nextReleaseNotes ->
-                    let appveyor = platformTool "appveyor"
-                    Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
 
-                    let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
-                    let nugetPacker = role.Collaborator.NugetPacker
-
-                    let solution = role.Collaborator.Solution
-                    
-                    NugetPacker.addSourceLinkPackages solution nugetPacker
-
-                    { PreviousMsgs = [!^ NonGit.Msg.Test; !^ (Forker.Msg.Pack nextReleaseNotes)]
+                    { PreviousMsgs = [!^ NonGit.Msg.InstallPaketPackages; !^ NonGit.Msg.Test; !^ (Forker.Msg.Pack nextReleaseNotes)]
                       Action = MapState (fun role ->
+                        let appveyor = platformTool "appveyor"
+                        Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
+
+                        let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
+
+                        let nugetPacker = role.Collaborator.NugetPacker
+
+                        let solution = role.Collaborator.Solution
+
+                        NugetPacker.addSourceLinkPackages solution nugetPacker
+
                         let (packResult: PackResult) = role.Collaborator.Forker.TargetState.Pack |> State.getResult
-                        
+
                         NugetPacker.testSourceLink packResult nugetPacker
 
                         let newPackages = packResult.LibraryPackages @ packResult.CliPackages
@@ -196,13 +198,8 @@ module BuildServer =
 
             | _ ->
                 /// run tests only
-                { PreviousMsgs = 
-                    let paketPath = Workspace.paketPath role.Workspace
-                    if Environment.isUnix && File.exists paketPath 
-                    then 
-                        [!^ NonGit.Msg.InstallPaketPackages; !^ NonGit.Msg.Test ]
-                    else
-                        [ !^ NonGit.Msg.Test ]
+                { PreviousMsgs =
+                    [!^ NonGit.Msg.InstallPaketPackages; !^ NonGit.Msg.Test ]
 
                   Action = MapState ignore }
 
