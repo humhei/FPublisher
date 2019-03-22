@@ -11,9 +11,6 @@ nuget Fake.Core.Target = 5.12.0
 nuget Fake.BuildServer.AppVeyor
 nuget Argu
 
-source https://ci.appveyor.com/nuget/fpublisher
-nuget FPublisher build
-
 source https://ci.appveyor.com/nuget/fsharp-formatting
 nuget FSharp.Formatting prerelease
 

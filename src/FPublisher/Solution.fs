@@ -20,7 +20,7 @@ module Framework =
     let (|CoreApp|FullFramework|NetStandard|) (framework: string) =
         if framework.StartsWith "netcoreapp" 
         then CoreApp 
-        elif framework.StartsWith "netstardard"
+        elif framework.StartsWith "netstandard"
         then NetStandard
         else FullFramework
 
