@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.23-alpha - tbd
+## 0.1.23 - tbd
+* Same as 0.1.22
 
 ## 0.1.22 - 2019-03-22
 * Typo
