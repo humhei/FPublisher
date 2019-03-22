@@ -52,7 +52,7 @@ module Primitives =
 
         let getResult = function
             | State.Init -> failwith "result have not been evaluated"
-            | State.Result result -> result
+            | State.Result result -> unbox result
 
 
     [<AutoOpen>]

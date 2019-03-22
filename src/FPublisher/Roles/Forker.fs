@@ -132,7 +132,7 @@ module Forker =
 
     type TargetState =
         { NonGit: NonGit.TargetState
-          Pack: State<PackResult>
+          Pack: BoxedState
           PublishToLocalNugetServer: BoxedState }
 
     [<RequireQualifiedAccess>]

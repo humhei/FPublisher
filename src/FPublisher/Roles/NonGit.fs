@@ -27,7 +27,7 @@ module NonGit =
           Build: BoxedState
           AddSourceLinkPackages: BoxedState
           Test: BoxedState
-          Zip: State<string list> }
+          Zip: BoxedState }
 
     [<RequireQualifiedAccess>]
     module TargetState =
