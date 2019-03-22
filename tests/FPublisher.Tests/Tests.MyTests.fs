@@ -49,10 +49,13 @@ let role =
 
 let nonGitTests() =
   testList "NonGit tests" [
-    testCase "build project" <| fun _ ->
+    testCase "zip projects" <| fun _ ->
+      BuildServer.run (!^ (NonGit.Msg.Zip role.Solution.Projects)) role
+
+    testCase "build projects" <| fun _ ->
       BuildServer.run (!^ (NonGit.Msg.Build None)) role
 
-    testCase "test project" <| fun _ ->
+    testCase "test projects" <| fun _ ->
       BuildServer.run (!^ NonGit.Msg.Test) role
   ]
 

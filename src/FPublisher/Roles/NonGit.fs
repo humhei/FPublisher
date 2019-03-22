@@ -9,10 +9,13 @@ open Fake.Core
 open Fake.DotNet
 open System.IO
 open Fake.IO
-open FPublisher.FakeHelper.CommandHelper
+open FPublisher.FakeHelper
 
 [<RequireQualifiedAccess>]
 module NonGit =
+    open System
+    open Fake.IO
+    open System.IO.Compression
 
     [<RequireQualifiedAccess>]
     type Msg =
@@ -69,7 +72,6 @@ module NonGit =
           Workspace = workspace
           TargetState = TargetState.init }
 
-
     let run =
         Role.update (function
             | Msg.InstallPaketPackages ->
@@ -98,10 +100,17 @@ module NonGit =
                     projects |> List.collect (fun project ->
                         project.OutputPaths |> List.map (fun outputPath ->
                             let dir = Path.getDirectory outputPath
-                            let zipName = project.Name + ".zip"
+                            let zipPath = 
+                                let randomDir = 
+                                    Path.GetTempPath() </> Path.GetRandomFileName()
+                                    |> Directory.ensureReturn 
+
+                                randomDir </> project.Name + ".zip"
+
                             !! (dir </> "**")
-                            |> Zip.zip dir zipName
-                            dir </> zipName
+                            |> List.ofSeq
+                            |> Zip.zip dir zipPath
+                            zipPath
                         ) 
                     )
                     |> box ) }

@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.21-alpha - tbd
+## 0.1.21 - tbd
+* BUGFIX: ZIP with full paths
 
 ## 0.1.20 - 2019-03-22
 * BUGFIX: Solution.read regex error
