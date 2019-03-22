@@ -18,5 +18,8 @@
     <Compile Include="Roles/BuildServer.fs" />
     <Compile Include="Roles/SRTPMsgs.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fake.IO.Zip" Version="5.12.4" />
+  </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

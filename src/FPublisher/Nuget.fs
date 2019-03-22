@@ -206,7 +206,7 @@ module Nuget =
               CliPackages = 
                 match nugetPacker.SourceLinkCreate with 
                 | SourceLinkCreate.LibraryAndCli ->
-                    packProjects sourceLinkParams solution.CliProjects
+                    packProjects sourceLinkParams (List.filter (Project.existFullFramework >> not) solution.CliProjects)
                 | _ -> packProjects [] solution.CliProjects
             }
 

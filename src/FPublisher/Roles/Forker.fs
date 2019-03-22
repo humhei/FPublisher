@@ -132,7 +132,7 @@ module Forker =
 
     type TargetState =
         { NonGit: NonGit.TargetState
-          Pack: BoxedState
+          Pack: State<PackResult>
           PublishToLocalNugetServer: BoxedState }
 
     [<RequireQualifiedAccess>]
@@ -232,7 +232,7 @@ module Forker =
 
                 { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
                   Action = MapState (fun role ->
-                    let (packResult: PackResult) = State.getResult role.TargetState.Pack
+                    let packResult = State.getResult role.TargetState.Pack
 
                     let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
 

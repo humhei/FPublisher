@@ -70,7 +70,7 @@ let forkerTests() =
 
 let collaboratorTests() =
   testList "Collaborator Tests" [
-    ftestCase "next release" <| fun _ ->
+    testCase "next release" <| fun _ ->
       BuildServer.run (!^ Collaborator.Msg.NextRelease) role
   ]
 

@@ -20,12 +20,14 @@ module NonGit =
         | Build of SemVerInfo option
         | AddSourceLinkPackages of SourceLinkCreate
         | Test
+        | Zip of Project list
 
     type TargetState =
         { InstallPaketPackages: BoxedState
           Build: BoxedState
           AddSourceLinkPackages: BoxedState
-          Test: BoxedState }
+          Test: BoxedState
+          Zip: State<string list> }
 
     [<RequireQualifiedAccess>]
     module TargetState =
@@ -33,7 +35,8 @@ module NonGit =
             { InstallPaketPackages = State.Init
               AddSourceLinkPackages = State.Init
               Build = State.Init
-              Test = State.Init }
+              Test = State.Init
+              Zip = State.Init }
 
     type Role =
         { Solution: Solution
@@ -71,20 +74,35 @@ module NonGit =
         Role.update (function
             | Msg.InstallPaketPackages ->
                 { PreviousMsgs = [] 
-                  Action = MapState (fun role -> Workspace.paket ["install"] role.Workspace )}
+                  Action = MapState (fun role -> Workspace.paket ["install"] role.Workspace; none)}
             
             | Msg.AddSourceLinkPackages sourceLinkCreate ->
                 { PreviousMsgs = [] 
                   Action = MapState (fun role ->
                     let solution = role.Solution
                     SourceLinkCreate.addSourceLinkPackages solution sourceLinkCreate
+                    none
                   )}
 
             | Msg.Build semverInfoOp ->
                 { PreviousMsgs = []
-                  Action = MapState (fun role -> Solution.build semverInfoOp role.Solution) }
+                  Action = MapState (fun role -> Solution.build semverInfoOp role.Solution; none) }
 
             | Msg.Test ->
                 { PreviousMsgs = [ Msg.Build None ]
-                  Action = MapState (fun role -> Solution.test role.Solution) }
+                  Action = MapState (fun role -> Solution.test role.Solution; none) }
+
+            | Msg.Zip projects ->
+                { PreviousMsgs = [ Msg.Build None ]
+                  Action = MapState (fun role -> 
+                    projects |> List.collect (fun project ->
+                        project.OutputPaths |> List.map (fun outputPath ->
+                            let dir = Path.getDirectory outputPath
+                            let zipName = project.Name + ".zip"
+                            !! (dir </> "**")
+                            |> Zip.zip dir zipName
+                            dir </> zipName
+                        ) 
+                    )
+                    |> box ) }
         )

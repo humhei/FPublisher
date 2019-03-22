@@ -74,9 +74,9 @@ module Collaborator =
         let releaseUserName githubData =
             Environment.environVarOrFail githubData.EnvironmentConfig.GitHubReleaseUser
 
-        let draftAndPublishWithNewRelease (releaseNotes: ReleaseNotes.ReleaseNotes) (githubData: GitHubData) =
+        let draftAndPublishWithNewRelease files (releaseNotes: ReleaseNotes.ReleaseNotes) (githubData: GitHubData) =
             GitHub.createClientWithToken (githubToken githubData)
-            |> GitHubClient.draftAndPublishWithNewRelease (releaseUserName githubData) githubData.RepoName releaseNotes
+            |> GitHubClient.draftAndPublishWithNewRelease files (releaseUserName githubData) githubData.RepoName releaseNotes
 
         let fetch forkerGitHubData workspace (environmentConfig: EnvironmentConfig) = task {
             let branchName = Workspace.branchName workspace
@@ -211,6 +211,8 @@ module Collaborator =
 
         member x.GitHubData = x.VersionController.Value.GitHubData
 
+        member x.NonGit = x.Forker.NonGit
+
         interface IRole<TargetState>
 
     [<RequireQualifiedAccess>]
@@ -340,13 +342,17 @@ module Collaborator =
             let nextReleaseNotes = Role.nextReleaseNotes role
 
             { PreviousMsgs =
-                [ !^ NonGit.Msg.Test; Msg.EnsureGitChangesAllPushedAndInDefaultBranch ]
+                [ !^ NonGit.Msg.Test
+                  Msg.EnsureGitChangesAllPushedAndInDefaultBranch
+                  !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects )) ]
 
               Action =
                 MapState (fun role ->
 
                     let currentVersion =
                         VersionController.currentVersion role.VersionController.Value
+
+                    let zipOutputs = State.getResult role.NonGit.TargetState.Zip 
 
                     logger.CurrentVersion currentVersion
 
@@ -356,7 +362,7 @@ module Collaborator =
 
                     Role.writeReleaseNotesToNextVersionAndPushToRemoteRepository role
 
-                    [ GitHubData.draftAndPublishWithNewRelease nextReleaseNotes role.GitHubData ]
+                    [ GitHubData.draftAndPublishWithNewRelease zipOutputs nextReleaseNotes role.GitHubData ]
                     |> Async.Parallel
                     |> Async.RunSynchronously
                     |> ignore

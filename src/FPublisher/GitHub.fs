@@ -76,7 +76,8 @@ module GitHub =
 
         }
 
-        let draftAndPublishWithNewRelease user repoName (release: ReleaseNotes.ReleaseNotes) (client: Async<GitHubClient>) =
+        let draftAndPublishWithNewRelease files user repoName (release: ReleaseNotes.ReleaseNotes) (client: Async<GitHubClient>) =
             client
             |> GitHub.draftNewRelease user repoName (SemVerInfo.normalize release.SemVer) (release.SemVer.PreRelease <> None) release.Notes
+            |> GitHub.uploadFiles files
             |> GitHub.publishDraft

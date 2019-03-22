@@ -17,8 +17,12 @@ type Framework =
 
 [<RequireQualifiedAccess>]
 module Framework =
-    let (|CoreApp|FullFramework|) (framework: string) =
-        if framework.StartsWith "netcoreapp" then CoreApp else FullFramework
+    let (|CoreApp|FullFramework|NetStandard|) (framework: string) =
+        if framework.StartsWith "netcoreapp" 
+        then CoreApp 
+        elif framework.StartsWith "netstardard"
+        then NetStandard
+        else FullFramework
 
     let asList = function
         | Framework.MultipleTarget targets -> targets
@@ -87,6 +91,15 @@ module Project =
           ProjPath = projPath
           TargetFramework = Framework.ofProjPath projPath }
 
+    let existFullFramework (project: Project) = 
+        project.TargetFramework
+        |> Framework.asList
+        |> List.exists (fun framework ->
+            match framework with 
+            | Framework.FullFramework -> true
+            | _ -> false
+        )
+
     let exec (args: seq<string>) (project: Project) =
         project.TargetFramework
         |> Framework.asList
@@ -103,6 +116,8 @@ module Project =
             | Framework.CoreApp, _ ->
                 dotnet outputDll args outputDir
 
+            | Framework.NetStandard _,_ -> failwith "cannot exec class library"
+
             | Framework.FullFramework, false ->
                 exec outputDll args outputDir
             | Framework.FullFramework, true ->
@@ -111,7 +126,6 @@ module Project =
                     exec mono ([outputDll; outputExe] @ List.ofSeq args) outputDir
                 | None ->
                     failwith "cannot find mono"
-
         )
 
     let addPackage package version (project: Project) = 
@@ -155,7 +169,7 @@ module Solution =
             Path.GetFileNameWithoutExtension fsproj.ProjPath
         )
 
-    let private pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w.]+)\",[ ]+\"(?<relativePath>[\w\\\.]+)\""
+    let private pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w\-.]+)\",[ ]+\"(?<relativePath>[\w\\\.\-]+)\""
 
     let checkValidSlnPath path =
         if Path.GetExtension path <> ".sln" then failwithf "%s is a valid sln path" path
@@ -166,11 +180,11 @@ module Solution =
         checkValidSlnPath slnPath
         let workingDir = Path.getDirectory slnPath
 
-        { Path = slnPath
-          Projects =
+        let projects =
             let projPaths =
                 let input = File.readAsStringWithEncoding Encoding.UTF8 slnPath
                 [ for m in Regex.Matches(input,pattern) -> m ]
+
                 |> List.filter (fun m ->
                     let relativePath = m.Groups.[2].Value
                     let ext = Path.GetExtension relativePath
@@ -185,10 +199,11 @@ module Solution =
             projPaths
             |> List.filter File.exists
             |> List.map Project.create
-        }
+
+        { Path = slnPath
+          Projects = projects }
 
         
-
 
     let restore (solution: Solution) =
         dotnet "restore" [solution.Path] solution.WorkingDir

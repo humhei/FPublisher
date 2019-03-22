@@ -67,6 +67,10 @@ module BuildServer =
             x.Workspace.WorkingDir </> "build_output"
             |> Directory.ensureReturn
 
+        member x.Solution = x.Collaborator.Solution
+
+        member x.NonGit = x.Collaborator.Forker.NonGit
+
         interface IRole<TargetState>
 
 
@@ -154,16 +158,26 @@ module BuildServer =
 
                 match nextReleaseNotes role with
                 | Some nextReleaseNotes ->
+
+
                     let nugetPacker = role.Collaborator.NugetPacker
 
                     { PreviousMsgs = 
                         [ !^ NonGit.Msg.InstallPaketPackages
                           !^ (NonGit.Msg.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
-                          !^ NonGit.Msg.Test 
-                          !^ (Forker.Msg.Pack nextReleaseNotes) ]
+                          !^ (Forker.Msg.Pack nextReleaseNotes)
+                          !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects )) ]
                       Action = MapState (fun role ->
                         let appveyor = platformTool "appveyor"
+
+                        let artifact file =
+                            Workspace.exec appveyor ["PushArtifact"; file ] role.Workspace
+
                         Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
+                        
+                        let zipOutputs = State.getResult role.NonGit.TargetState.Zip
+
+                        zipOutputs |> List.iter artifact
 
                         let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
@@ -174,10 +188,7 @@ module BuildServer =
                         let newPackages = packResult.LibraryPackages @ packResult.CliPackages
 
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
-                        newPackages
-                        |> List.iter (fun package ->
-                            Workspace.exec appveyor ["PushArtifact"; package ] role.Workspace
-                        )
+                        newPackages |> List.iter artifact
 
                         if isJustAfterDraftedNewRelease then
                             let githubData = role.GitHubData

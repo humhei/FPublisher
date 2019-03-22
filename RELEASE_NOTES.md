@@ -1,6 +1,9 @@
 ﻿# Release Notes
 
-## 0.1.20-alpha - tbd
+## 0.1.20 - tbd
+* BUGFIX: Solution.read regex error
+* artifact FullNetFramework cli package
+* do not pack FullNetFramework cli package
 
 ## 0.1.19 - 2019-03-19
 * Always .paket/paket.exe install first
