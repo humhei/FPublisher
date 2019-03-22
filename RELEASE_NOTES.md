@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.22-alpha - tbd
+## 0.1.22 - tbd
+* Typo
 
 ## 0.1.21 - 2019-03-22
 * BUGFIX: ZIP with full paths
