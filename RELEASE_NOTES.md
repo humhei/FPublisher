@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
 ## 0.1.24-alpha - tbd
+* Refix do not pack FullNetFramework cli package
 
 ## 0.1.23 - 2019-03-22
 * Same as 0.1.22

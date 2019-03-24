@@ -17,9 +17,9 @@ open Fake.IO.FileSystemOperators
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
-let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
+//let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
-//let root = @"D:\VsCode\Github\FCSWatch"
+let root = @"D:\VsCode\Github\FCSWatch"
 #if !FAKE
 let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
 Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
@@ -63,7 +63,8 @@ let nonGitTests() =
 
 let forkerTests() =
   testList "forker tests" [
-    testCase "pack pagckages" <| fun _ ->
+    ftestCase "pack pagckages" <| fun _ ->
+      let solution = role.Solution
       let lastReleaseNotes = ReleaseNotes.loadLast role.Workspace.ReleaseNotesFile
       BuildServer.run (!^ (Forker.Msg.Pack lastReleaseNotes.Value)) role
 
