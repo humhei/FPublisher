@@ -185,7 +185,7 @@ module BuildServer =
 
                         NugetPacker.testSourceLink packResult nugetPacker
 
-                        let newPackages = packResult.LibraryPackages @ packResult.CliPackages
+                        let newPackages = packResult.LibraryPackagePaths @ packResult.CliPackagePaths
 
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
                         newPackages |> List.iter artifact

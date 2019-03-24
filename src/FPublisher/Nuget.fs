@@ -2,8 +2,6 @@ namespace FPublisher
 open Fake.Core
 open Fake.IO
 open System.IO
-open Fake.Core.SemVerActivePattern
-open Fake.DotNet
 open Fake.IO.FileSystemOperators
 open FakeHelper.CommandHelper
 open Utils
@@ -92,9 +90,22 @@ module Nuget =
             | NugetAuthors.GithubLoginName -> repository.Owner.Login
             | NugetAuthors.ManualInput authors -> String.separated ";" authors
 
+    type PackPackageResult =
+        { Path: string 
+          OriginProject: FPublisher.Project }
+
+
+    [<RequireQualifiedAccess>]
+    module PackPackageResult =
+        let testSourceLink = ()
+
     type PackResult =
-        { LibraryPackages: string list
-          CliPackages: string list}
+        { LibraryPackages: PackPackageResult list
+          CliPackages: PackPackageResult list }
+    with 
+        member x.LibraryPackagePaths = x.LibraryPackages |> List.map (fun package -> package.Path)
+
+        member x.CliPackagePaths = x.CliPackages |> List.map (fun package -> package.Path)
 
     [<RequireQualifiedAccess>]
     type SourceLinkCreate =
@@ -136,17 +147,21 @@ module Nuget =
             SourceLinkCreate.addSourceLinkPackages solution nugetPackager.SourceLinkCreate
 
         let testSourceLink (packResult: PackResult) nugetPacker =
+            let testSourceLinkForPackPackageResult (packPackageResult: PackPackageResult) =
+                let sourceLink = dotnetGlobalTool "sourceLink"
+                match Project.buildOutputInPackages packPackageResult.OriginProject.ProjPath with 
+                | [] ->
+                    exec sourceLink ["test" ;packPackageResult.Path] "./"
+                | _ ->
+                    try 
+                        exec sourceLink ["test" ;packPackageResult.Path] "./"
+                    with ex -> printf "%s" ex.Message 
+
             match nugetPacker.SourceLinkCreate with 
             | SourceLinkCreate.LibraryAndCli ->
-                let sourceLink = dotnetGlobalTool "sourceLink"
-                packResult.LibraryPackages @ packResult.CliPackages |> List.iter (fun package ->
-                    exec sourceLink ["test" ;package] "./"
-                )
+                packResult.LibraryPackages @ packResult.CliPackages |> List.iter testSourceLinkForPackPackageResult
             | SourceLinkCreate.Library ->
-                let sourceLink = dotnetGlobalTool "sourceLink"
-                packResult.LibraryPackages |> List.iter (fun package ->
-                    exec sourceLink ["test" ;package] "./"
-                )
+                packResult.LibraryPackages |> List.iter testSourceLinkForPackPackageResult
             | SourceLinkCreate.None ->
                 logger.Info "source link is disable, skip test source link"
 
@@ -186,13 +201,14 @@ module Nuget =
 
 
             let packProjects addtionalCustomParams projects =
-                let targetDirectory = tmpDir()
-                projects |> List.iter (fun proj ->
-                    dotnet "pack" (proj.ProjPath :: buildingPackOptions targetDirectory addtionalCustomParams) proj.Projdir  
+                
+                projects |> List.map (fun proj ->
+                    let targetDirectory = tmpDir()
+                    dotnet "pack" (proj.ProjPath :: buildingPackOptions targetDirectory addtionalCustomParams) proj.Projdir 
+                    { OriginProject = proj 
+                      Path = !! (targetDirectory </> "./*.nupkg") |> Seq.exactlyOne }
                 )
-
-                !! (targetDirectory </> "./*.nupkg")
-                |> List.ofSeq
+                
 
             let sourceLinkParams =
                 [ "/p:SourceLinkCreate=true"

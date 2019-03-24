@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28606.126
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2DEE046F-2A30-4ABB-AA88-58100B59EEF4}"
 EndProject
@@ -18,6 +18,10 @@ EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Faker.Cli", "tests\FPublisher.Faker.Cli\FPublisher.Faker.Cli.fsproj", "{7590C809-EE2E-46AF-B28A-3C5BAA9C7027}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Cli", "src\FPublisher.Cli\FPublisher.Cli.fsproj", "{06A922C0-0496-4273-BA80-90D77ACD319D}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Fake.BuildOutputInPackage", "tests\FPublisher.Fake.BuildOutputInPackage\FPublisher.Fake.BuildOutputInPackage.fsproj", "{32B512B3-A280-4A10-BC62-0C5A3A91C899}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Faker.FullFrameWorkCli", "tests\FPublisher.Faker.FullFrameWorkCli\FPublisher.Faker.FullFrameWorkCli.fsproj", "{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -101,6 +105,30 @@ Global
 		{06A922C0-0496-4273-BA80-90D77ACD319D}.Release|x64.Build.0 = Release|Any CPU
 		{06A922C0-0496-4273-BA80-90D77ACD319D}.Release|x86.ActiveCfg = Release|Any CPU
 		{06A922C0-0496-4273-BA80-90D77ACD319D}.Release|x86.Build.0 = Release|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Debug|x64.Build.0 = Debug|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Debug|x86.Build.0 = Debug|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Release|x64.ActiveCfg = Release|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Release|x64.Build.0 = Release|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Release|x86.ActiveCfg = Release|Any CPU
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899}.Release|x86.Build.0 = Release|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Debug|x64.Build.0 = Debug|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Debug|x86.Build.0 = Debug|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Release|x64.ActiveCfg = Release|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Release|x64.Build.0 = Release|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Release|x86.ActiveCfg = Release|Any CPU
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,6 +140,8 @@ Global
 		{14945C5B-2622-4979-8F0D-5CD5A46E4FDB} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{7590C809-EE2E-46AF-B28A-3C5BAA9C7027} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{06A922C0-0496-4273-BA80-90D77ACD319D} = {2DEE046F-2A30-4ABB-AA88-58100B59EEF4}
+		{32B512B3-A280-4A10-BC62-0C5A3A91C899} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
+		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {58D701E1-F92A-4BA0-9CB0-D8447FDC447D}

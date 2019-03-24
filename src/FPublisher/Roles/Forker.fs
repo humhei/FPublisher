@@ -232,7 +232,7 @@ module Forker =
 
                 { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
                   Action = MapState (fun role ->
-                    let packResult = State.getResult role.TargetState.Pack
+                    let packResult: PackResult = State.getResult role.TargetState.Pack
 
                     let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
 
@@ -242,7 +242,7 @@ module Forker =
 
                     logger.ImportantGreen "Next version is %s" (SemVerInfo.normalize nextVersion)
 
-                    NugetServer.publish (packResult.LibraryPackages @ packResult.CliPackages) localNugetServer |> Async.RunSynchronously
+                    NugetServer.publish (packResult.LibraryPackagePaths @ packResult.CliPackagePaths) localNugetServer |> Async.RunSynchronously
                     none
                     )
                 }

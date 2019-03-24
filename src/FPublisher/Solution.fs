@@ -59,10 +59,23 @@ module OutputType =
 
         match doc.GetElementsByTagName "OutputType" with
         | nodes when nodes.Count = 0 -> OutputType.Library
-        | _ -> OutputType.Exe
+        | nodes -> 
+            let nodes = 
+                [ for node in nodes -> node ]
+            nodes |> List.tryFind (fun node ->
+                node.InnerText = "Exe"
+            )
+            |> function 
+                | Some _ -> OutputType.Exe
+                | None -> OutputType.Library
+            
 
-    let outputExt = function
-        | OutputType.Exe -> ".exe"
+    let outputExt framework = function
+        | OutputType.Exe -> 
+            match framework with 
+            | Framework.FullFramework ->
+                ".exe"
+            | _ -> ".dll"
         | OutputType.Library -> ".dll"
 
 type Project =
@@ -77,7 +90,7 @@ with
     member x.OutputPaths =
         Framework.asList x.TargetFramework
         |> List.map (fun framework ->
-            x.Projdir </> "bin/Debug" </> framework </> x.Name + OutputType.outputExt x.OutputType
+            x.Projdir </> "bin/Debug" </> framework </> x.Name + OutputType.outputExt framework x.OutputType
             |> Path.nomarlizeToUnixCompitiable
         )
 
@@ -90,6 +103,18 @@ module Project =
         { OutputType = OutputType.ofProjPath projPath
           ProjPath = projPath
           TargetFramework = Framework.ofProjPath projPath }
+
+
+    let buildOutputInPackages (projPath: string) =
+        let doc = new XmlDocument()
+
+        doc.Load(projPath)
+
+        match doc.GetElementsByTagName "BuildOutputInPackage" with
+        | nodes when nodes.Count = 0 -> []
+        | nodes ->
+            [ for node in nodes do
+                yield node.InnerText ]
 
     let existFullFramework (project: Project) = 
         project.TargetFramework
