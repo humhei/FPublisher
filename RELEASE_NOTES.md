@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.26-alpha - tbd
+## 0.1.27-alpha - tbd
+
+## 0.1.26 - 2019-03-24
 * cancel dotnet pack --no-build
 
 ## 0.1.25 - 2019-03-24
