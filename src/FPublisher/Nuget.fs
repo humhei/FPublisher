@@ -190,7 +190,7 @@ module Nuget =
                 [ yield "/p:Version=" + packageReleaseNotes.NugetVersion
                   if noRestore then yield "--no-restore"
                   yield! customParams
-                  if nobuild then yield "--no-build"
+                  //if nobuild then yield "--no-build"
                   yield "--output" 
                   yield targetDirectory
                   yield "--configuration"

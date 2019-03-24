@@ -63,8 +63,7 @@ let nonGitTests() =
 
 let forkerTests() =
   testList "forker tests" [
-    ftestCase "pack pagckages" <| fun _ ->
-      let solution = role.Solution
+    testCase "pack pagckages" <| fun _ ->
       let lastReleaseNotes = ReleaseNotes.loadLast role.Workspace.ReleaseNotesFile
       BuildServer.run (!^ (Forker.Msg.Pack lastReleaseNotes.Value)) role
 

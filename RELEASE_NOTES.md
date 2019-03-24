@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
 ## 0.1.26-alpha - tbd
+* cancel dotnet pack --no-build
 
 ## 0.1.25 - 2019-03-24
 * test sourcelink to BuildOutputInPackage without exceptions
