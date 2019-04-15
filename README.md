@@ -29,6 +29,54 @@ OPTIONS:
     --run-ci              only invoked by CI
     --help                display this list of options.
 ```
+## Explaintion (See [sample](https://github.com/humhei/FPublisher) )
+### Solution file used by fpublisher
+FPublisher try to find a solution file in below sequence
+1. $GitRepoName.FPubliusher.sln
+2. $GitRepoName.sln
+3. $FolderName.FPubliusher.sln
+4. $FolderName.sln
+
+### Command using the finded solution
+#### `` --test`` 
+test projects in solution contain test
+#### `` --build`` 
+build all projects in solution
+#### `` --nextRelease`` 
+Only For repo [collaborators and repo owner](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/Collaborator.fs)
+
+Please ensure all the commits are pushed to git server and you are in default branch
+ReleaseNotes.MD must exists with a [TBD release_Note](https://github.com/humhei/FPublisher/blob/master/RELEASE_NOTES.md#0127-alpha---tbd) 
+    
+#### `` --run-ci`` 
+a list of composable FPublisher building targets
+
+**Major CI**: 
+    
+    Appveyor  (https://ci.appveyor.com/project/ts2fable-imports/fcswatch/builds/23846382)
+    
+        Targets: 
+            install paket packages
+            Add source link to projects
+            build
+            test
+            pack
+            publish to nuget server (Only trigger when an release is drafted)
+            Zip
+            Artifacts
+            
+**Other CI**
+    E.g (circleCI)[https://circleci.com/gh/humhei/FPublisher/265?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link]
+    
+        
+        Targets: 
+            install paket packages
+            build
+            test
+            
+            
+
+
 ## Features
 
 ### Typed
