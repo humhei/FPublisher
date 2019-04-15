@@ -1,6 +1,14 @@
 # Notes: This repo is now in early stage..
 
 # Role-based,composable,stateful and typed building targets
+**Built in Targets:**  [e.g. NonGit.Targets](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/NonGit.fs#L75)
+
+1. CI Tests 
+2. Version Controller
+3. Nuget package publish
+4. Github draft
+
+
 
 Stable | Prerelease
 --- | ---
