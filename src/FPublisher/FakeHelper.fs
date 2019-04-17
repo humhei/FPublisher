@@ -93,6 +93,11 @@ module FakeHelper =
             Directory.ensure directory
             directory
 
+        let randomDir() = 
+            let baseTmpDir = Path.GetTempPath()
+            baseTmpDir </> Path.GetRandomFileName()
+            |> ensureReturn
+
     module Build =
 
         /// Compatible SemVerInfo module for nuget

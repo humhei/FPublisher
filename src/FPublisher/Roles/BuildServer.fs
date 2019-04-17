@@ -165,6 +165,7 @@ module BuildServer =
                     { PreviousMsgs = 
                         [ !^ NonGit.Msg.InstallPaketPackages
                           !^ (NonGit.Msg.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
+                          !^ (NonGit.Msg.Publish (Some nextReleaseNotes.SemVer))
                           !^ (Forker.Msg.Pack nextReleaseNotes)
                           !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
                       Action = MapState (fun role ->

@@ -21,8 +21,11 @@ module NonGit =
     type Msg =
         | InstallPaketPackages
         | Build of SemVerInfo option
+
         | AddSourceLinkPackages of SourceLinkCreate
         | Test
+        /// dotnet publish
+        | Publish of SemVerInfo option
         | Zip of Project list
 
     type TargetState =
@@ -30,6 +33,7 @@ module NonGit =
           Build: BoxedState
           AddSourceLinkPackages: BoxedState
           Test: BoxedState
+          Publish: BoxedState
           Zip: BoxedState }
 
     [<RequireQualifiedAccess>]
@@ -39,6 +43,7 @@ module NonGit =
               AddSourceLinkPackages = State.Init
               Build = State.Init
               Test = State.Init
+              Publish = State.Init
               Zip = State.Init }
 
     type Role =
@@ -93,6 +98,12 @@ module NonGit =
             | Msg.Test ->
                 { PreviousMsgs = [ Msg.Build None ]
                   Action = MapState (fun role -> Solution.test role.Solution; none) }
+
+            | Msg.Publish semverInfoOp ->
+                { PreviousMsgs = [ Msg.Build semverInfoOp; Msg.Test ]
+                  Action = MapState (fun role -> 
+                    Solution.publish PublishNetCoreDependency.Keep semverInfoOp role.Solution; none
+                  ) }
 
             | Msg.Zip projects ->
                 { PreviousMsgs = [ Msg.Build None ]

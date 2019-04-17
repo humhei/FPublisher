@@ -168,11 +168,6 @@ module Nuget =
 
         let pack (solution: Solution) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
 
-            let tmpDir() =
-                let tmpDir = Path.GetTempPath()
-                tmpDir </> Path.GetRandomFileName()
-                |> Directory.ensureReturn
-
             Solution.workaroundPaketNuSpecBug solution
 
             Environment.setEnvironVar "GenerateDocumentationFile" (string nugetPacker.GenerateDocumentationFile)
@@ -203,7 +198,7 @@ module Nuget =
             let packProjects addtionalCustomParams projects =
                 
                 projects |> List.map (fun proj ->
-                    let targetDirectory = tmpDir()
+                    let targetDirectory = Directory.randomDir()
                     dotnet "pack" (proj.ProjPath :: buildingPackOptions targetDirectory addtionalCustomParams) proj.Projdir 
                     { OriginProject = proj 
                       Path = !! (targetDirectory </> "./*.nupkg") |> Seq.exactlyOne }

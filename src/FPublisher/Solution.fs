@@ -10,6 +10,9 @@ open FakeHelper.Build
 open System.Xml
 open FakeHelper
 
+
+
+
 [<RequireQualifiedAccess>]
 type Framework =
     | MultipleTarget of string list
@@ -126,6 +129,10 @@ with
             |> Path.nomarlizeToUnixCompitiable
         )
 
+    member x.OutputDirs =
+        x.OutputPaths 
+        |> List.map Path.getDirectory
+
 
 
 
@@ -190,6 +197,11 @@ module Project =
         dotnet "add" [project.ProjPath; "package"; package; "-v"; version] (project.Projdir)
 
 
+[<RequireQualifiedAccess>]
+type PublishNetCoreDependency =
+    | None
+    | Keep
+
 type Solution =
     { Path: string
       Projects: Project list }
@@ -199,7 +211,9 @@ with
     member x.CliProjects =
         x.Projects |> List.filter (fun project ->
             match project.OutputType with
-            | OutputType.Exe -> not (project.Name.Contains "test" || project.Name.Contains "Test")
+            | OutputType.Exe -> 
+                not (project.Name.Contains "test" || project.Name.Contains "Test") 
+                && project.SDK <> SDK.Microsoft_NET_Sdk_Web
             | OutputType.Library -> false
         )
 
@@ -220,7 +234,7 @@ with
             match project.OutputType with
             | OutputType.Exe -> 
                 match project.SDK with 
-                | SDK.Microsoft_NET_Sdk -> true
+                | SDK.Microsoft_NET_Sdk_Web -> true
                 | _ -> false
 
             | OutputType.Library -> false
@@ -283,6 +297,28 @@ module Solution =
             let versionText = SemVerInfo.normalize version
             dotnet "build" [solution.Path; "-p:Version=" + versionText] solution.WorkingDir
         | None -> dotnet "build" [solution.Path] solution.WorkingDir
+
+    let publish publishNetCoreDependency versionOp (solution: Solution) =
+
+        solution.AspNetCoreProjects
+        |> List.iter (fun project ->
+
+            match versionOp with
+            | Some (version: SemVerInfo) ->
+                let versionText = SemVerInfo.normalize version
+                dotnet "publish" ["--no-build"; project.ProjPath; "-p:Version=" + versionText;] project.Projdir
+            | None -> dotnet "publish" ["--no-build"; project.ProjPath;] project.Projdir
+            
+            match publishNetCoreDependency with 
+            | PublishNetCoreDependency.None ->
+                project.OutputDirs
+                |> List.iter (fun outputDir ->
+                    Directory.delete (outputDir </> "publish" </> "refs")
+                )
+            | _ -> ()
+        )
+
+
 
     let test (solution: Solution) =
         let runExpectoTest() = 

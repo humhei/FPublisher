@@ -1,10 +1,6 @@
 ﻿// Learn more about F# at http://fsharp.org
 
-open System
 open Argu
-open System.Management.Automation
-open Fake.Core
-open System.Diagnostics
 open System.IO
 open FPublisher.Utils.Cli
 
