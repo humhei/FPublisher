@@ -129,6 +129,10 @@ with
             |> Path.nomarlizeToUnixCompitiable
         )
 
+    member x.OutputDirs =
+        x.OutputPaths 
+        |> List.map Path.getDirectory
+
 
 
 
@@ -192,10 +196,6 @@ module Project =
     let addPackage package version (project: Project) = 
         dotnet "add" [project.ProjPath; "package"; package; "-v"; version] (project.Projdir)
 
-
-type PublishResult =
-    { OutputDir: string 
-      OriginProject: Project }
 
 [<RequireQualifiedAccess>]
 type PublishNetCoreDependency =
@@ -301,8 +301,7 @@ module Solution =
     let publish publishNetCoreDependency versionOp (solution: Solution) =
 
         solution.AspNetCoreProjects
-        |> List.map (fun project ->
-            let tmpDir = Directory.randomDir()
+        |> List.iter (fun project ->
 
             match versionOp with
             | Some (version: SemVerInfo) ->
@@ -312,10 +311,11 @@ module Solution =
             
             match publishNetCoreDependency with 
             | PublishNetCoreDependency.None ->
-                Directory.delete (tmpDir </> "publish" </> "refs")
+                project.OutputDirs
+                |> List.iter (fun outputDir ->
+                    Directory.delete (outputDir </> "publish" </> "refs")
+                )
             | _ -> ()
-            { OutputDir = tmpDir
-              OriginProject = project }
         )
 
 
