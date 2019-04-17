@@ -3,7 +3,7 @@
 # Role-based,composable,stateful and typed building targets
 **Built in Targets:**  [e.g. NonGit.Targets](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/NonGit.fs#L75)
 
-1. CI Tests 
+1. CI Tests
 2. Version Controller
 3. Nuget package publish
 4. Github draft
@@ -46,24 +46,29 @@ FPublisher try to find a solution file in below sequence
 4. $FolderName.sln
 
 ### Command using the finded solution
-#### `` --test`` 
+#### `` --test``
 test projects in solution contain test
-#### `` --build`` 
+#### `` --build``
 build all projects in solution
-#### `` --nextRelease`` 
-Only For repo [collaborators and repo owner](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/Collaborator.fs)
+#### `` --nextRelease``
+##### Environment Prerequisites
+* github_token
+* github_release_user
+
+Only for repo [collaborators and repo owner](https://github.com/humhei/FPublisher/blob/master/src/FPublisher/Roles/Collaborator.fs)
+
 
 Please ensure all the commits are pushed to git server and you are in default branch
-ReleaseNotes.MD must exists with a [TBD release_Note](https://github.com/humhei/FPublisher/blob/master/RELEASE_NOTES.md#0127-alpha---tbd) 
-    
-#### `` --run-ci`` 
+ReleaseNotes.MD must exists with a [TBD release_Note](https://github.com/humhei/FPublisher/blob/master/RELEASE_NOTES.md#0127-alpha---tbd)
+
+#### `` --run-ci``
 a list of composable FPublisher building targets
 
-**Major CI**: 
-    
+**Major CI**:
+
     Appveyor  (https://ci.appveyor.com/project/ts2fable-imports/fcswatch/builds/23846382)
-    
-        Targets: 
+
+        Targets:
             install paket packages
             Add source link to projects
             build
@@ -72,17 +77,17 @@ a list of composable FPublisher building targets
             publish to nuget server (Only trigger when an release is drafted)
             Zip
             Artifacts
-            
+
 **Other CI**
     E.g (circleCI)[https://circleci.com/gh/humhei/FPublisher/265?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link]
-    
-        
-        Targets: 
+
+
+        Targets:
             install paket packages
             build
             test
-            
-            
+
+
 
 
 ## Features
