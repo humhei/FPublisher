@@ -240,9 +240,10 @@ module Nuget =
 
         let ping (nugetServer: NugetServer) =
             try
-                Http.Request(nugetServer.Serviceable,silentHttpErrors = true) |> ignore
-                Some nugetServer
-            with _ ->
+                let response = Http.Request("https://github.com/humhei/FPublisher/commits/AspNetCore",silentHttpErrors = true)
+                if response.StatusCode >= 400 then None
+                else Some nugetServer
+            with error ->
                 None
 
         let publish (packages: string list) (nugetServer: NugetServer) = async {

@@ -54,7 +54,7 @@ let nonGitTests() =
     testCase "build projects" <| fun _ ->
       BuildServer.run (!^ (NonGit.Msg.Build None)) role
 
-    ftestCase "publish projects" <| fun _ ->
+    testCase "publish projects" <| fun _ ->
       BuildServer.run (!^ (NonGit.Msg.Publish None)) role
 
     testCase "test projects" <| fun _ ->
@@ -75,7 +75,7 @@ let forkerTests() =
 
 let collaboratorTests() =
   testList "Collaborator Tests" [
-    testCase "next release" <| fun _ ->
+    ftestCase "next release" <| fun _ ->
       BuildServer.run (!^ Collaborator.Msg.NextRelease) role
   ]
 
