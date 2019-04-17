@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.27 - tbd
+## 0.1.28-alpha - tbd
+
+## 0.1.27 - 2019-04-17
 * Collaborators.NextRelease Target: check (github_token,github_releaseUser environments) first
 * Zip AspNetCore projects
 * Added FPublishe.Utils.Cli
