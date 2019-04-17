@@ -10,6 +10,9 @@ open FakeHelper.Build
 open System.Xml
 open FakeHelper
 
+
+
+
 [<RequireQualifiedAccess>]
 type Framework =
     | MultipleTarget of string list
@@ -190,6 +193,10 @@ module Project =
         dotnet "add" [project.ProjPath; "package"; package; "-v"; version] (project.Projdir)
 
 
+type PublishResult =
+    { OutputDir: string 
+      OriginProject: Project }
+
 type Solution =
     { Path: string
       Projects: Project list }
@@ -285,6 +292,24 @@ module Solution =
             let versionText = SemVerInfo.normalize version
             dotnet "build" [solution.Path; "-p:Version=" + versionText] solution.WorkingDir
         | None -> dotnet "build" [solution.Path] solution.WorkingDir
+
+    let publish versionOp (solution: Solution) =
+
+        solution.AspNetCoreProjects
+        |> List.map (fun project ->
+            let tmpDir = Directory.randomDir()
+
+            match versionOp with
+            | Some (version: SemVerInfo) ->
+                let versionText = SemVerInfo.normalize version
+                dotnet "publish" ["--no-build"; project.ProjPath; "-p:Version=" + versionText;] project.Projdir
+            | None -> dotnet "publish" ["--no-build"; project.ProjPath;] project.Projdir
+            
+            { OutputDir = tmpDir
+              OriginProject = project }
+        )
+
+
 
     let test (solution: Solution) =
         let runExpectoTest() = 

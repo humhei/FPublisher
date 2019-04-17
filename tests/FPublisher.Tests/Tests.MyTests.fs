@@ -11,7 +11,6 @@ open FPublisher.Git
 open FPublisher.Nuget
 open Fake.Core
 open FPublisher.FakeHelper.Build
-open Fake.IO.FileSystemOperators
 
 
 let pass() = Expect.isTrue true "passed"
@@ -55,6 +54,9 @@ let nonGitTests() =
     testCase "build projects" <| fun _ ->
       BuildServer.run (!^ (NonGit.Msg.Build None)) role
 
+    ftestCase "publish projects" <| fun _ ->
+      BuildServer.run (!^ (NonGit.Msg.Publish None)) role
+
     testCase "test projects" <| fun _ ->
       BuildServer.run (!^ NonGit.Msg.Test) role
   ]
@@ -73,7 +75,7 @@ let forkerTests() =
 
 let collaboratorTests() =
   testList "Collaborator Tests" [
-    ftestCase "next release" <| fun _ ->
+    testCase "next release" <| fun _ ->
       BuildServer.run (!^ Collaborator.Msg.NextRelease) role
   ]
 

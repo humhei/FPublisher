@@ -2,7 +2,7 @@
   "profiles": {
     "FPublisher.Utils.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "service start  --username AspNetCoreService --password 123456  --output \"D:\\Users\\Jia\\Downloads\\AspNetCoreService\\bin\\Debug\\netcoreapp2.2\\win7-x64\\publish\\SampleApp.exe\""
+      "commandLineArgs": "service start  --username AspNetCoreService --password 123456  --executable \"D:\\Users\\Jia\\Downloads\\AspNetCoreService\\bin\\Debug\\netcoreapp2.2\\win7-x64\\publish\\SampleApp.exe\""
     }
   }
 }
