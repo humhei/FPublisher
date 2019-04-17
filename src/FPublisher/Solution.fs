@@ -197,6 +197,11 @@ type PublishResult =
     { OutputDir: string 
       OriginProject: Project }
 
+[<RequireQualifiedAccess>]
+type PublishNetCoreDependency =
+    | None
+    | Keep
+
 type Solution =
     { Path: string
       Projects: Project list }
@@ -293,7 +298,7 @@ module Solution =
             dotnet "build" [solution.Path; "-p:Version=" + versionText] solution.WorkingDir
         | None -> dotnet "build" [solution.Path] solution.WorkingDir
 
-    let publish versionOp (solution: Solution) =
+    let publish publishNetCoreDependency versionOp (solution: Solution) =
 
         solution.AspNetCoreProjects
         |> List.map (fun project ->
@@ -305,6 +310,10 @@ module Solution =
                 dotnet "publish" ["--no-build"; project.ProjPath; "-p:Version=" + versionText;] project.Projdir
             | None -> dotnet "publish" ["--no-build"; project.ProjPath;] project.Projdir
             
+            match publishNetCoreDependency with 
+            | PublishNetCoreDependency.None ->
+                Directory.delete (tmpDir </> "publish" </> "refs")
+            | _ -> ()
             { OutputDir = tmpDir
               OriginProject = project }
         )
