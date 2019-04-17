@@ -199,7 +199,9 @@ with
     member x.CliProjects =
         x.Projects |> List.filter (fun project ->
             match project.OutputType with
-            | OutputType.Exe -> not (project.Name.Contains "test" || project.Name.Contains "Test")
+            | OutputType.Exe -> 
+                not (project.Name.Contains "test" || project.Name.Contains "Test") 
+                && project.SDK <> SDK.Microsoft_NET_Sdk_Web
             | OutputType.Library -> false
         )
 
