@@ -78,10 +78,42 @@ module OutputType =
             | _ -> ".dll"
         | OutputType.Library -> ".dll"
 
+[<RequireQualifiedAccess>]
+type SDK =
+    | Microsoft_NET_Sdk
+    | Microsoft_NET_Sdk_Web
+    | Other of string
+
+[<RequireQualifiedAccess>]
+module SDK =
+    let ofProjPath (projPath: string) =
+        let doc = new XmlDocument()
+        doc.Load(projPath)
+
+        match doc.GetElementsByTagName "Project" with
+        | nodes when nodes.Count = 1 -> 
+            let node = nodes.[0]
+            let sdkAttr = node.Attributes.GetNamedItem ("Sdk")
+            match sdkAttr.Value with 
+            | "Microsoft.NET.Sdk" -> SDK.Microsoft_NET_Sdk
+            | "Microsoft.NET.Sdk.Web" -> SDK.Microsoft_NET_Sdk_Web
+            | other -> SDK.Other other
+        | _ -> failwithf "Cannot find Project tag in project file %s" projPath
+
+
+    let outputExt framework = function
+        | OutputType.Exe -> 
+            match framework with 
+            | Framework.FullFramework ->
+                ".exe"
+            | _ -> ".dll"
+        | OutputType.Library -> ".dll"
+
 type Project =
     { ProjPath: string
       OutputType: OutputType
-      TargetFramework: Framework }
+      TargetFramework: Framework
+      SDK: SDK }
 with
     member x.Name = Path.GetFileNameWithoutExtension x.ProjPath
 
@@ -102,7 +134,8 @@ module Project =
     let create projPath =
         { OutputType = OutputType.ofProjPath projPath
           ProjPath = projPath
-          TargetFramework = Framework.ofProjPath projPath }
+          TargetFramework = Framework.ofProjPath projPath
+          SDK = SDK.ofProjPath projPath }
 
 
     let buildOutputInPackages (projPath: string) =
@@ -180,6 +213,17 @@ with
     member x.LibraryProjects =
         x.Projects |> List.filter (fun project ->
             project.OutputType = OutputType.Library
+        )
+
+    member x.AspNetCoreProjects =
+        x.Projects |> List.filter (fun project ->
+            match project.OutputType with
+            | OutputType.Exe -> 
+                match project.SDK with 
+                | SDK.Microsoft_NET_Sdk -> true
+                | _ -> false
+
+            | OutputType.Library -> false
         )
 
     member x.TargetTestDlls =

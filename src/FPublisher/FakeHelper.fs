@@ -40,6 +40,15 @@ module FakeHelper =
             |> function Some t -> t | _ -> failwithf "%s not found" tool
 
 
+        let exec tool args dir =
+            let result =
+                args
+                |> CreateProcess.fromRawCommand tool
+                |> CreateProcess.withWorkingDirectory dir
+                |> Proc.run
+
+            if result.ExitCode <> 0
+            then failwithf "Error while running %s with args %A" tool (List.ofSeq args)
 
         let private dotnetWith command args dir =
             DotNet.exec
@@ -61,15 +70,6 @@ module FakeHelper =
                     dotnet "tool" ["install"; "-g"; tool] "./"
                     platformTool tool
 
-        let exec tool args dir =
-            let result =
-                args
-                |> CreateProcess.fromRawCommand tool
-                |> CreateProcess.withWorkingDirectory dir
-                |> Proc.run
-
-            if result.ExitCode <> 0
-            then failwithf "Error while running %s with args %A" tool (List.ofSeq args)
 
         [<RequireQualifiedAccess>]
         module Git =

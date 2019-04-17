@@ -307,7 +307,7 @@ module Collaborator =
 
 
 
-    let private roleAction role = function
+    let private roleAction (role: Role) = function
         | Msg.Forker forkerMsg ->
             { PreviousMsgs = []
               Action = MapChild (fun role -> Forker.run forkerMsg role.Forker)}
@@ -339,6 +339,11 @@ module Collaborator =
             }
 
         | Msg.NextRelease ->
+
+            /// check environments first
+            let _ = GitHubData.githubToken role.GitHubData
+            let _ = GitHubData.releaseUserName role.GitHubData
+
             let nextReleaseNotes = Role.nextReleaseNotes role
 
             { PreviousMsgs =

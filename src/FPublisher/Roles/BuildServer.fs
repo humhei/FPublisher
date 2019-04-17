@@ -166,7 +166,7 @@ module BuildServer =
                         [ !^ NonGit.Msg.InstallPaketPackages
                           !^ (NonGit.Msg.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
                           !^ (Forker.Msg.Pack nextReleaseNotes)
-                          !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects )) ]
+                          !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
                       Action = MapState (fun role ->
                         let appveyor = platformTool "appveyor"
 
