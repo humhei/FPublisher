@@ -102,7 +102,7 @@ module NonGit =
             | Msg.Publish semverInfoOp ->
                 { PreviousMsgs = [ Msg.Build semverInfoOp; Msg.Test ]
                   Action = MapState (fun role -> 
-                    Solution.publish PublishNetCoreDependency.None semverInfoOp role.Solution; none
+                    Solution.publish PublishNetCoreDependency.Keep semverInfoOp role.Solution; none
                   ) }
 
             | Msg.Zip projects ->
