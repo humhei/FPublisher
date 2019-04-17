@@ -240,7 +240,7 @@ module Nuget =
 
         let ping (nugetServer: NugetServer) =
             try
-                let response = Http.Request("https://github.com/humhei/FPublisher/commits/AspNetCore",silentHttpErrors = true)
+                let response = Http.Request(nugetServer.Serviceable,silentHttpErrors = true)
                 if response.StatusCode >= 400 then None
                 else Some nugetServer
             with error ->
