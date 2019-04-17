@@ -222,7 +222,7 @@ with
             match project.OutputType with
             | OutputType.Exe -> 
                 match project.SDK with 
-                | SDK.Microsoft_NET_Sdk -> true
+                | SDK.Microsoft_NET_Sdk_Web -> true
                 | _ -> false
 
             | OutputType.Library -> false
