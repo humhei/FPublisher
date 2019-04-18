@@ -107,37 +107,18 @@ let configureLogging (builder : ILoggingBuilder) =
 [<EntryPoint>]
 let main args =
 
-    let isConsole =
-        (Debugger.IsAttached || Array.contains "--console" args)
-
-    let builder =
-        WebHostBuilder()
-            .UseKestrel()
-            .UseIISIntegration()
-            .Configure(Action<IApplicationBuilder> configureApp)
-            .ConfigureServices(configureServices)
-            .ConfigureLogging(configureLogging)
-
-    if isConsole
-    then 
-        let dir = 
-            let pathToExe = Process.GetCurrentProcess().MainModule.FileName
-            Path.GetDirectoryName pathToExe
-        Directory.SetCurrentDirectory dir
-
-
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
 
-    let builder =
-        builder
-            .UseContentRoot(contentRoot)
-            .UseWebRoot(webRoot)
-            .Build()
-
-
-    if isConsole
-    then builder.Run()
-    else builder.RunAsService()
+    WebHostBuilder()
+        .UseKestrel()
+        .UseIISIntegration()
+        .Configure(Action<IApplicationBuilder> configureApp)
+        .ConfigureServices(configureServices)
+        .ConfigureLogging(configureLogging)
+        .UseContentRoot(contentRoot)
+        .UseWebRoot(webRoot)
+        .Build()
+        .Run()
 
     0

@@ -232,8 +232,8 @@ module Nuget =
     with
         static member DefaultBaGetLocal =
             { ApiEnvironmentName = None
-              Serviceable ="http://localhost:5000/v3/index.json"
-              SearchQueryService = "http://localhost:5000/v3/search" }
+              Serviceable ="http://127.0.0.1:5000/v3/index.json"
+              SearchQueryService = "http://127.0.0.1:5000/v3/search" }
 
     [<RequireQualifiedAccess>]
     module NugetServer =

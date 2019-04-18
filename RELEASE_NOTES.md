@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.28-alpha - tbd
+## 0.1.28 - tbd
+* Local Baget url http://localhost:5000 -> http://127.0.0.1:5000
 
 ## 0.1.27 - 2019-04-17
 * Collaborators.NextRelease Target: check (github_token,github_releaseUser environments) first

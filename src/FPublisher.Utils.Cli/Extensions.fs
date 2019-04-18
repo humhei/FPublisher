@@ -103,8 +103,6 @@ module PowerShell =
 
     let tryRegiterService serviceName output (userName: string) (password: string option) =
             
-        let output = Path.ChangeExtension(output, ".exe")
-
         match tryGetServiceByName serviceName with 
         | None ->
             let pwd = 
@@ -121,7 +119,7 @@ module PowerShell =
                             [ "-Name"; serviceName;
                               "-DisplayName"; serviceName; 
                               "-Description"; serviceName; 
-                              "-BinaryPathName"; output
+                              "-BinaryPathName"; ("dotnet '" + output + "'")
                               "-Credential"; "$c"
                               "-StartupType"; "Automatic" ]
                 ]
