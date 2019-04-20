@@ -5,6 +5,7 @@ open Argu
 open FPublisher.Roles
 open FPublisher
 open FPublisher.Nuget
+open Fake.Core
 
 type Arguments =
     | Create_Sln
@@ -24,7 +25,7 @@ with
             | Test _ -> "test projects"
             | Next_Release -> "draft next release"
             | Run_CI -> "only invoked by CI"
-            | Baget -> "publish packages to local baget nuget server"
+            | Baget -> "publish packages to local baget nuget server; port is read from environment baget_port; defalut port is 5000"
 
 [<EntryPoint>]
 let main argv =
@@ -41,7 +42,15 @@ let main argv =
                 { BuildServer.Config.DefaultValue
                     with
                         LoggerLevel = Logger.Level.Normal
-                        LocalNugetServer = Some NugetServer.DefaultBaGetLocal }
+                        LocalNugetServer = 
+                            match Environment.environVarOrNone "baget_port" with 
+                            | Some port ->
+                                { ApiEnvironmentName = None
+                                  Serviceable = sprintf "http://127.0.0.1:%s/v3/index.json" port
+                                  SearchQueryService = sprintf "http://127.0.0.1:%s/v3/search" port} 
+                            | None -> NugetServer.DefaultBaGetLocal
+                            |> Some 
+                }
 
 
         match result with 
