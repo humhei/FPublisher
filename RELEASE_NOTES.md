@@ -1,6 +1,9 @@
 ﻿# Release Notes
 
-## 0.1.29-alpha - tbd
+## 0.1.30-alpha - tbd
+
+## 0.1.29 - 2019-05-15
+* Don't test when release next
 
 ## 0.1.28 - 2019-04-18
 * Local Baget url http://localhost:5000 -> http://127.0.0.1:5000
