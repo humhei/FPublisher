@@ -16,9 +16,9 @@ open FPublisher.FakeHelper.Build
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
-//let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
+let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
-let root = @"D:\VsCode\Github\FCSWatch"
+//let root = @"D:\VsCode\Github\FCSWatch"
 //let root = @"D:\VsCode\Github\CellScript"
 #if !FAKE
 let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
