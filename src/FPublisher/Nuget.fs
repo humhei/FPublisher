@@ -238,6 +238,12 @@ module Nuget =
     [<RequireQualifiedAccess>]
     module NugetServer =
 
+        let createBagetLocalWithPort port = 
+            { ApiEnvironmentName = None
+              Serviceable = sprintf "http://127.0.0.1:%s/v3/index.json" port
+              SearchQueryService = sprintf "http://127.0.0.1:%s/v3/search" port} 
+
+
         let ping (nugetServer: NugetServer) =
             try
                 let response = Http.Request(nugetServer.Serviceable,silentHttpErrors = true)

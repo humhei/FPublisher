@@ -16,9 +16,10 @@ open FPublisher.FakeHelper.Build
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
-let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
+//let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
-//let root = @"D:\VsCode\Github\FCSWatch"
+let root = @"D:\VsCode\Github\FCSWatch"
+//let root = @"D:\VsCode\Github\CellScript"
 #if !FAKE
 let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
 Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
@@ -44,7 +45,7 @@ let role =
             with
                 WorkingDir = root
                 LoggerLevel = Logger.Level.Normal
-                LocalNugetServer = Some NugetServer.DefaultBaGetLocal }
+                LocalNugetServer = Some (NugetServer.createBagetLocalWithPort "4000") }
 
 let nonGitTests() =
   testList "NonGit tests" [
@@ -75,7 +76,7 @@ let forkerTests() =
 
 let collaboratorTests() =
   testList "Collaborator Tests" [
-    ftestCase "next release" <| fun _ ->
+    testCase "next release" <| fun _ ->
       BuildServer.run (!^ Collaborator.Msg.NextRelease) role
   ]
 

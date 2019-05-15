@@ -37,19 +37,20 @@ let main argv =
         let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
         Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
         
+        let localNugetServer =
+            match Environment.environVarOrNone "baget_port" with 
+            | Some port -> NugetServer.createBagetLocalWithPort port
+             
+            | None -> NugetServer.DefaultBaGetLocal
+            |> Some 
+
         let buildServer =
             BuildServer.create
                 { BuildServer.Config.DefaultValue
                     with
                         LoggerLevel = Logger.Level.Normal
-                        LocalNugetServer = 
-                            match Environment.environVarOrNone "baget_port" with 
-                            | Some port ->
-                                { ApiEnvironmentName = None
-                                  Serviceable = sprintf "http://127.0.0.1:%s/v3/index.json" port
-                                  SearchQueryService = sprintf "http://127.0.0.1:%s/v3/search" port} 
-                            | None -> NugetServer.DefaultBaGetLocal
-                            |> Some 
+                        LocalNugetServer = localNugetServer
+
                 }
 
 

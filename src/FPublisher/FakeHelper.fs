@@ -59,7 +59,7 @@ module FakeHelper =
         let dotnet command args dir =
             let result = dotnetWith command args dir
             if result.ExitCode <> 0
-            then failwithf "Error while running %s with args %s" command (Args.toWindowsCommandLine args)
+            then failwithf "Error while running dotnet %s with args %s" command (Args.toWindowsCommandLine args)
 
         let dotnetGlobalTool tool =
             tool

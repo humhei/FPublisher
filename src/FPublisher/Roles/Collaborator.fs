@@ -347,8 +347,8 @@ module Collaborator =
             let nextReleaseNotes = Role.nextReleaseNotes role
 
             { PreviousMsgs =
-                [ Msg.EnsureGitChangesAllPushedAndInDefaultBranch
-                  !^ NonGit.Msg.Test
+                [ !^ (NonGit.Msg.Build (Some nextReleaseNotes.SemVer))
+                  Msg.EnsureGitChangesAllPushedAndInDefaultBranch
                   !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects )) ]
 
               Action =

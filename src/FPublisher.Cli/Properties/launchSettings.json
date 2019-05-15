@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "FPublisher.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "--baget"
+    }
+  }
+}
