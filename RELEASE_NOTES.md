@@ -1,6 +1,10 @@
 ﻿# Release Notes
 
-## 0.1.31-alpha - tbd
+## 0.1.32-alpha - tbd
+
+## 0.1.31 - 2019-05-20
+* Don't paket install if paket.exe is not exist
+
 
 ## 0.1.31-alpha.1 - 2019-05-20
 * Don't paket install if paket.exe is not exist
