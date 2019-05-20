@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
 ## 0.1.31-alpha - tbd
+* Don't paket install if paket.exe is not exist
 
 ## 0.1.30 - 2019-05-20
 * Also retrive local nuget version from tbd ReleaseNotes

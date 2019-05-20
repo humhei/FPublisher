@@ -46,16 +46,16 @@ module Workspace =
 
         if not (File.exists paketPath) then 
             printfn "file %s is not exist" paketPath
+        else 
+            if Environment.isUnix 
+            then
+                match Mono.monoPath with 
+                | Some mono -> 
+                    exec mono [yield paketPath; yield! args] workspace
 
-        if Environment.isUnix 
-        then
-            match Mono.monoPath with 
-            | Some mono -> 
-                exec mono [yield paketPath; yield! args] workspace
-
-            | None -> failwith "Cannot find mono path in environment varaibles"
-        else
-            exec paketPath args workspace
+                | None -> failwith "Cannot find mono path in environment varaibles"
+            else
+                exec paketPath args workspace
 
     let dotnet command args (workspace: Workspace) = CommandHelper.dotnet command args workspace.WorkingDir
 
