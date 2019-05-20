@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.30 - tbd
+## 0.1.31-alpha - tbd
+
+## 0.1.30 - 2019-05-20
 * Also retrive local nuget version from tbd ReleaseNotes
 
 ## 0.1.29 - 2019-05-15
