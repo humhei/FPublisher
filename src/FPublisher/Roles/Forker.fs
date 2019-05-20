@@ -57,7 +57,8 @@ module Forker =
 
         member x.VersionFromLastReleaseNotes = x.LastReleaseNotes |> Option.map (fun releaseNotes -> releaseNotes.SemVer)
 
-        member x.VersionFromTbdReleaseNotes = x.TbdReleaseNotes.SemVer
+        member x.VersionFromTbdReleaseNotes = 
+            x.TbdReleaseNotes.SemVer
 
         member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
 
@@ -162,17 +163,18 @@ module Forker =
         let currentVersion versionFromLocalNugetServer (role: Role) =
             VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
 
-        let nextVersion versionFromLocalNugetServer (role: Role) =
+        let nextLocalNugetVersion versionFromLocalNugetServer (role: Role) =
             let versionController = role.VersionController.Value
             let currentVersion = currentVersion versionFromLocalNugetServer role
+            let tbdVersion =  versionController.VersionFromTbdReleaseNotes
 
             match currentVersion with
-            | Some version -> SemVerInfo.nextBuildVersion version
-            | None -> SemVerInfo.nextBuildVersion (versionController.VersionFromTbdReleaseNotes)
+            | Some version -> SemVerInfo.nextBuildVersion (max version tbdVersion)
+            | None -> SemVerInfo.nextBuildVersion (tbdVersion)
 
 
-        let nextReleaseNotes versionFromLocalNugetServer role =
-            let nextVersion = nextVersion versionFromLocalNugetServer role
+        let nextLocalNugetReleaseNotes versionFromLocalNugetServer role =
+            let nextVersion = nextLocalNugetVersion versionFromLocalNugetServer role
             VersionController.nextReleaseNotes nextVersion role.VersionController.Value
 
         let versionFromLocalNugetServer role = async {
@@ -228,7 +230,7 @@ module Forker =
             match role.LocalNugetServer with
             | Some localNugetServer ->
                 let versionFromLocalNugetServer = Role.versionFromLocalNugetServer role |> Async.RunSynchronously
-                let nextReleaseNotes = Role.nextReleaseNotes versionFromLocalNugetServer role
+                let nextReleaseNotes = Role.nextLocalNugetReleaseNotes versionFromLocalNugetServer role
 
                 { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
                   Action = MapState (fun role ->
@@ -238,7 +240,7 @@ module Forker =
 
                     logger.CurrentVersion currentVersion
 
-                    let nextVersion = Role.nextVersion versionFromLocalNugetServer role
+                    let nextVersion = Role.nextLocalNugetVersion versionFromLocalNugetServer role
 
                     logger.ImportantGreen "Next version is %s" (SemVerInfo.normalize nextVersion)
 

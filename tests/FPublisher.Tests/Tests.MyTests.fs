@@ -20,6 +20,7 @@ let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
 //let root = @"D:\VsCode\Github\FCSWatch"
 //let root = @"D:\VsCode\Github\CellScript"
+//let root = @"D:\VsCode\Github\ExcelProcesser"
 #if !FAKE
 let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
 Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
@@ -70,13 +71,13 @@ let forkerTests() =
       let lastReleaseNotes = ReleaseNotes.loadLast role.Workspace.ReleaseNotesFile
       BuildServer.run (!^ (Forker.Msg.Pack lastReleaseNotes.Value)) role
 
-    testCase "publish to local nuget server" <| fun _ ->
+    ftestCase "publish to local nuget server" <| fun _ ->
       BuildServer.run (!^ (Forker.Msg.PublishToLocalNugetServer)) role
   ]
 
 let collaboratorTests() =
   testList "Collaborator Tests" [
-    ftestCase "next release" <| fun _ ->
+    testCase "next release" <| fun _ ->
       BuildServer.run (!^ Collaborator.Msg.NextRelease) role
   ]
 

@@ -44,7 +44,8 @@ module Workspace =
     let paket args (workspace: Workspace) = 
         let paketPath = paketPath workspace 
 
-        if not (File.exists paketPath) then failwithf "file %s is not exist" paketPath
+        if not (File.exists paketPath) then 
+            printfn "file %s is not exist" paketPath
 
         if Environment.isUnix 
         then
