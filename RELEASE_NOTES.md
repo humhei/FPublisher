@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
 ## 0.1.32-alpha - tbd
+
+## 0.1.32-alpha.1 - 2019-09-02
 * Pack nuget package in release mode
 
 ## 0.1.31 - 2019-05-20
