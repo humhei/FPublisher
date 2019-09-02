@@ -189,7 +189,7 @@ module Nuget =
                   yield "--output" 
                   yield targetDirectory
                   yield "--configuration"
-                  yield "Debug"
+                  yield "Release"
                 ]
 
 
