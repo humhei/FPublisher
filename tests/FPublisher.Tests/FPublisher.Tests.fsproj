@@ -9,7 +9,12 @@
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Expecto" Version="8.11.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.0" />
+  </ItemGroup>
 </Project>

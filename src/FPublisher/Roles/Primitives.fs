@@ -1,66 +1,38 @@
-namespace FPublisher.Roles
-open FPublisher
-open FPublisher.Utils
-open Microsoft.FSharp.Reflection
-open System.Threading.Tasks
-open Microsoft.FSharp.Quotations
-open System.Diagnostics
-open FPublisher.FakeHelper.Build
-open Fake.Core
+﻿namespace FPublisher.Roles
 
+open Microsoft.FSharp.Reflection
+open FPublisher
+open System.Diagnostics
 
 module Primitives =
-
-    type Logger.Logger with
-        member x.CurrentVersion (currentVersionOp: SemVerInfo option) =
-            match currentVersionOp with
-            | Some currentVersion ->
-                logger.ImportantGreen "Current version is %s" (SemVerInfo.normalize currentVersion)
-            | None ->
-                logger.ImportantGreen "Current version is None"
-
-    type IRole<'TargetState> = interface end
-
-    [<RequireQualifiedAccess>]
-    type StateTask<'Result> =
-        | Init
-        | Result of Task<'Result>
-
-
-    [<RequireQualifiedAccess>]
-    type State<'Result> =
-        | Init
-        | Result of 'Result
-
-    type BoxedState = State<obj>
-
-
 
     let none = box ()
 
     [<RequireQualifiedAccess>]
-    module State =
-        let update stateName action (state: BoxedState) =
-            match state with
-            | State.Init ->
-                logger.ImportantGreen "FPUBLISH: Start target %s" stateName
-                let stopWatch = Stopwatch.StartNew()
-                let result = action()
-                logger.ImportantGreen "FPUBLISH: Finished target %s in %O" stateName stopWatch.Elapsed
-                State.Result result
-            | State.Result _ -> state
+    type TargetState<'result> =
+        | Init
+        | Done of 'result
 
-        let getResult = function
-            | State.Init -> failwith "result have not been evaluated"
-            | State.Result result -> unbox result
+    type BoxedTargetState = TargetState<obj>
 
+    type RoleAction<'role, 'childRole> =
+        | MapState of ('role -> obj)
+        | MapChild of ('role -> 'childRole)
+
+    type RoleIntegratedAction<'role, 'target, 'childRole> =
+        { DependsOn: 'target list
+          Action: RoleAction<'role, 'childRole> }
+
+    type IRole<'targetStates> = interface end
 
     [<AutoOpen>]
-    module internal Reflection =
+    module IRoleExtensions =
 
         [<RequireQualifiedAccess>]
-        module Record =
-            let setProperty name makeValue (record: 'record) : 'record =
+        module private Record =
+
+            /// immutable
+            let setProperty name newValue (record: 'record) : 'record =
                 let recordType = typeof<'record>
 
                 let values =
@@ -69,73 +41,66 @@ module Primitives =
                         let value = prop.GetValue(record)
 
                         if prop.Name = name
-                        then makeValue value
+                        then newValue
                         else value
                     )
                 FSharpValue.MakeRecord(recordType, values)
                 |> unbox
 
+        type IRole<'targetStates> with  
+            static member Run(makeRoleIntegratedAction: 'role -> 'target -> RoleIntegratedAction<'role, 'target, 'childRole>) =
+                fun
+                    (target: 'target) 
+                    (role: 'role when 'role :> IRole<'targetStates>) ->
 
-        [<RequireQualifiedAccess>]
-        module TargetState =
-            let updateByStateName stateName action (targetState: 'targetState): 'targetState =
-                Record.setProperty stateName (fun value ->
-                    State.update stateName action (unbox value)
-                    |> box
-                ) targetState
-
-            let update (expr: Expr<_>) action (targetState: 'targetState): 'targetState =
-                let stateName = Expr.nameof expr
-                updateByStateName stateName action targetState
-
-        type RoleActionType<'role,'stateResult,'childRole> =
-            | MapState of ('role -> 'stateResult)
-            | MapChild of ('role -> 'childRole)
-
-        type RoleAction<'role,'msg,'stateResult,'childRole> =
-            { PreviousMsgs: 'msg list
-              Action: RoleActionType<'role,'stateResult,'childRole> }
-
-        [<RequireQualifiedAccess>]
-        module Role =
-
-            let rec updateComplex (makeRoleAction: 'role -> 'msg -> RoleAction<'role,'msg,'stateResult,'childRole>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
-
-
-
-                let roleAction = makeRoleAction role msg
+                let integratedAction = makeRoleIntegratedAction role target
 
                 let role =
-                    roleAction.PreviousMsgs |> List.fold (fun role msg ->
-                        updateComplex makeRoleAction msg role
-                    ) role
+                    (role,integratedAction.DependsOn) ||> List.fold (fun role target ->
+                        IRole<'targetStates>.Run makeRoleIntegratedAction target role
+                    ) 
 
-                let targetState: 'TargetState =
+                let targetStates: 'targetStates =
                     let tp = typeof<'role>
-                    tp.GetProperty("TargetState").GetValue(role)
+                    tp.GetProperty("TargetStates").GetValue(role)
                     |> unbox
 
-                let stateName = UnionCase.getName msg
-                match roleAction.Action with
-                | MapState action ->
-                    let newTargetState =
-                        TargetState.updateByStateName stateName (fun _ ->
-                            box (action role)
-                        ) targetState
-                    Record.setProperty "TargetState" (fun _ -> box newTargetState) role
+                let targetName = 
+                    let tp = target.GetType()
+                    let uci, _ = FSharpValue.GetUnionFields(target, tp)
+                    uci.Name
+                    
+
+                match integratedAction.Action with 
+                | MapState mapping ->
+                    let newTargetStates = 
+                        logger.ImportantGreen "FPUBLISH: Start target %s" targetName
+                        let stopWatch = Stopwatch.StartNew()
+
+                        let newTargetState = 
+                            let targetStatePropertyType = 
+                                FSharpType.GetRecordFields(typeof<'targetStates>) 
+                                |> Array.find (fun prop -> prop.Name = targetName)
+                                |> fun prop -> prop.PropertyType
+
+                            let uci = 
+                                FSharpType.GetUnionCases(targetStatePropertyType)
+                                |> Array.find (fun uci -> uci.Name = "Done")
+                            FSharpValue.MakeUnion(uci, [| mapping role |])
+
+                        logger.ImportantGreen "FPUBLISH: Finished target %s in %O" targetName stopWatch.Elapsed
+
+                        Record.setProperty targetName newTargetState targetStates
+
+                    Record.setProperty "TargetStates" newTargetStates role
 
                 | MapChild mapping ->
-                    let newChildRole = mapping role
-                    let newChildTargetState = newChildRole.GetType().GetProperty("TargetState").GetValue(newChildRole)
+                    let newTargetStates = 
+                        let newChildRole = mapping role
+                        let newChildTargetStates = newChildRole.GetType().GetProperty("TargetStates").GetValue(newChildRole)
+                        Record.setProperty targetName newChildTargetStates targetStates
 
-                    let setChildRole role = Record.setProperty stateName (fun _ -> box newChildRole) role
-                    let setChildTargetState role =
-                        let newTargetState = Record.setProperty stateName (fun _ -> box newChildTargetState ) targetState
-                        Record.setProperty "TargetState" (fun _ -> box newTargetState) role
+                    Record.setProperty "TargetStates" newTargetStates role
 
-                    role |> setChildRole |> setChildTargetState
-
-
-
-            let update (makeRoleAction: 'msg -> RoleAction<'role, 'msg,'stateResult,'childRole>) (msg: 'msg) (role: 'role when 'role :> IRole<'TargetState>) =
-                updateComplex (fun _ msg -> makeRoleAction msg) msg role
+            static member Run(makeRoleIntegratedAction: 'target -> RoleIntegratedAction<'role, 'target, 'childRole>) = 
+                IRole<'targetStates>.Run(fun _ -> makeRoleIntegratedAction)

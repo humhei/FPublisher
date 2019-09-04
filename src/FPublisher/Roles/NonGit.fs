@@ -1,65 +1,63 @@
 ﻿namespace FPublisher.Roles
 open FPublisher
-open FPublisher.Nuget
 open Fake.IO.FileSystemOperators
-open FPublisher.Git
-open Primitives
-open Fake.IO.Globbing.Operators
 open Fake.Core
 open Fake.DotNet
 open System.IO
 open Fake.IO
-open FPublisher.FakeHelper
+open Primitives
+open Solution
+open FPublisher.Nuget
+open Fake.IO.Globbing.Operators
+open Fake.DotNet.NuGet.NuGet
 
 [<RequireQualifiedAccess>]
 module NonGit =
-    open System
-    open Fake.IO
-    open System.IO.Compression
 
     [<RequireQualifiedAccess>]
-    type Msg =
+    type Target =
         | InstallPaketPackages
-        | Build of SemVerInfo option
-
-        | AddSourceLinkPackages of SourceLinkCreate
+        | Build of (DotNet.BuildOptions -> DotNet.BuildOptions)
+        | Pack of (FPublisher.DotNet.PackOptions -> FPublisher.DotNet.PackOptions)
         | Test
-        /// dotnet publish
-        | Publish of SemVerInfo option
-        | Zip of Project list
+        | PushToLocalNugetServerV3
+        | Publish of (DotNet.PublishOptions -> DotNet.PublishOptions)
 
-    type TargetState =
-        { InstallPaketPackages: BoxedState
-          Build: BoxedState
-          AddSourceLinkPackages: BoxedState
-          Test: BoxedState
-          Publish: BoxedState
-          Zip: BoxedState }
+
+    type TargetStates =
+        { InstallPaketPackages: BoxedTargetState
+          Build: BoxedTargetState
+          Pack: TargetState<list<ProjectKind * Project list>>
+          Test: BoxedTargetState
+          PushToLocalNugetServerV3: BoxedTargetState
+          Publish: BoxedTargetState }
 
     [<RequireQualifiedAccess>]
-    module TargetState =
+    module TargetStates =
         let init =
-            { InstallPaketPackages = State.Init
-              AddSourceLinkPackages = State.Init
-              Build = State.Init
-              Test = State.Init
-              Publish = State.Init
-              Zip = State.Init }
+            { InstallPaketPackages = TargetState.Init
+              Build = TargetState.Init
+              Pack = TargetState.Init
+              Test = TargetState.Init
+              PushToLocalNugetServerV3 = TargetState.Init
+              Publish = TargetState.Init }
 
     type Role =
         { Solution: Solution
           Workspace: Workspace
-          TargetState: TargetState }
-    with
-        interface IRole<TargetState>
+          LocalNugetServerV3: NugetServer option
+          TargetStates: TargetStates }
+    with 
+        interface IRole<TargetStates>
 
-    let create loggerLevel (workspace: Workspace) =
+
+    let create loggerLevel localNugetServerV3 (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
         let slnPath =
             let defaultSlnName =
-                match Workspace.tryRepoName workspace with
+                match Workspace.tryGetRepoName workspace with
                 | Some repoName -> repoName
-                | None -> workspace.DefaultSlnName
+                | None -> Path.GetFileName workspace.WorkingDir
 
 
             let poiorSlnPath = 
@@ -71,58 +69,76 @@ module NonGit =
             then poiorSlnPath
             else workspace.WorkingDir </> (defaultSlnName  + ".sln")
 
-
-        Workspace.createSlnWith slnPath false workspace
         { Solution = Solution.read slnPath
           Workspace = workspace
-          TargetState = TargetState.init }
+          LocalNugetServerV3 = localNugetServerV3
+          TargetStates = TargetStates.init }
 
     let run =
-        Role.update (function
-            | Msg.InstallPaketPackages ->
-                { PreviousMsgs = [] 
+        IRole.Run (fun role target ->
+            match target with
+            | Target.InstallPaketPackages ->
+                { DependsOn = [] 
                   Action = MapState (fun role -> Workspace.paket ["install"] role.Workspace; none)}
-            
-            | Msg.AddSourceLinkPackages sourceLinkCreate ->
-                { PreviousMsgs = [] 
-                  Action = MapState (fun role ->
-                    let solution = role.Solution
-                    SourceLinkCreate.addSourceLinkPackages solution sourceLinkCreate
-                    none
-                  )}
 
-            | Msg.Build semverInfoOp ->
-                { PreviousMsgs = []
-                  Action = MapState (fun role -> Solution.build semverInfoOp role.Solution; none) }
+            | Target.Build setParams ->
+                { DependsOn = [Target.InstallPaketPackages] 
+                  Action = MapState (fun role -> Solution.build setParams role.Solution ; none)}
 
-            | Msg.Test ->
-                { PreviousMsgs = [ Msg.Build None ]
-                  Action = MapState (fun role -> Solution.test role.Solution; none) }
+            | Target.Pack setParams ->
+                { DependsOn = [Target.InstallPaketPackages] 
+                  Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
 
-            | Msg.Publish semverInfoOp ->
-                { PreviousMsgs = [ Msg.Build semverInfoOp; Msg.Test ]
-                  Action = MapState (fun role -> 
-                    Solution.publish PublishNetCoreDependency.Keep semverInfoOp role.Solution; none
-                  ) }
+            | Target.PushToLocalNugetServerV3 ->
+                match role.LocalNugetServerV3 with 
+                | Some localNugetServer ->
+                    let outputDirectory = Path.GetTempPath() </> Path.GetRandomFileName()
 
-            | Msg.Zip projects ->
-                { PreviousMsgs = [ Msg.Build None ]
-                  Action = MapState (fun role -> 
-                    projects |> List.collect (fun project ->
-                        project.OutputPaths |> List.map (fun outputPath ->
-                            let dir = Path.getDirectory outputPath
-                            let zipPath = 
-                                let randomDir = 
-                                    Path.GetTempPath() </> Path.GetRandomFileName()
-                                    |> Directory.ensureReturn 
+                    Directory.ensure outputDirectory
 
-                                randomDir </> project.Name + ".zip"
+                    let packTarget = 
+                        let version = 
+                            let packageNames = Solution.getPackageNames role.Solution
 
-                            !! (dir </> "**")
-                            |> List.ofSeq
-                            |> Zip.zip dir zipPath
-                            zipPath
-                        ) 
-                    )
-                    |> box ) }
+                            let lastVersions = 
+                                packageNames
+                                |> List.choose (fun packageName ->
+                                    NugetServer.getLastNugetVersionV3 packageName true localNugetServer
+                                )
+                                |> List.map (SemVer.parse)
+
+                            if lastVersions.IsEmpty then "1.0.0"
+                            else 
+                                let maxVersion  = (List.max lastVersions)
+                                { maxVersion with Patch = maxVersion.Patch + 1u }.Normalize()
+
+                        Target.Pack (fun ops ->
+                            { ops with 
+                                OutputPath = Some outputDirectory 
+                                Configuration = DotNet.BuildConfiguration.Release 
+                                Version = Some version }
+                        )
+
+                    { DependsOn = [Target.InstallPaketPackages; packTarget] 
+                      Action = MapState (fun role -> 
+                        let nupkgs = !! (outputDirectory </> "./*.nupkg")
+                        for nupkg in nupkgs do
+                            DotNet.nugetPush (fun ops -> 
+                                {ops with 
+                                    PushParams = 
+                                        { NuGetPushParams.Create() with     
+                                            ApiKey = localNugetServer.ApiEnvironmentName 
+                                            Source = Some localNugetServer.Serviceable
+                                        }
+                                }
+                            ) nupkg
+                        none
+                      )}
+
+                | None -> 
+                    logger.Warn "role %A doesn't include a local nuget server" role
+                    { DependsOn = [] 
+                      Action = MapState (fun role -> none) }
+
+            | _ -> failwith "Not implemented"
         )

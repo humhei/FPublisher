@@ -1,8 +1,0 @@
-Fake.Core.ReleaseNotes
-Fake.Api.GitHub
-TaskBuilder.fs
-Fake.DotNet.Cli
-Fake.Tools.Git
-FSharp.Data
-Fake.DotNet.NuGet
-Fake.BuildServer.AppVeyor

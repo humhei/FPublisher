@@ -4,22 +4,25 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Logger.fs" />
-    <Compile Include="Utils.fs" />
-    <Compile Include="FakeHelper.fs" />
-    <Compile Include="Solution.fs" />
-    <Compile Include="Workspace.fs" />
-    <Compile Include="Git.fs" />
-    <Compile Include="GitHub.fs" />
+    <Compile Include="Extensions.fs" />
+    <Compile Include="Types.fs" />
     <Compile Include="Nuget.fs" />
-    <Compile Include="Roles/Primitives.fs" />
+    <Compile Include="DotNet.fs" />
+    <Compile Include="Solution.fs" />
+    <Compile Include="Roles\Primitives.fs" />
     <Compile Include="Roles/NonGit.fs" />
-    <Compile Include="Roles/Forker.fs" />
-    <Compile Include="Roles/Collaborator.fs" />
-    <Compile Include="Roles/BuildServer.fs" />
-    <Compile Include="Roles/SRTPMsgs.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Fake.IO.Zip" Version="5.12.4" />
+    <PackageReference Include="Fake.Core.Process" Version="5.16.1" />
+    <PackageReference Include="Fake.Core.ReleaseNotes" Version="5.16.1" />
+    <PackageReference Include="Fake.DotNet.Cli" Version="5.16.1" />
+    <PackageReference Include="Fake.IO.FileSystem" Version="5.16.1" />
+    <PackageReference Include="Fake.Tools.Git" Version="5.16.1" />
+    <PackageReference Include="FParsec" Version="1.0.3" />
+    <PackageReference Include="FSharp.Data" Version="3.1.1" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.0" />
+  </ItemGroup>
 </Project>

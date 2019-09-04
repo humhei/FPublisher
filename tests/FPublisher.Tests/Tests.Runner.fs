@@ -12,9 +12,9 @@ let testConfig =
 let allTests =
     testList "All tests" [
         nonGitTests()
-        forkerTests()
-        workspaceTests()
-        collaboratorTests()
+        //forkerTests()
+        //workspaceTests()
+        //collaboratorTests()
     ]
 
 
@@ -22,8 +22,9 @@ let allTests =
 let main argv = 
     let tests = 
         match argv with 
-        | argv when Array.contains "--RunCI" argv ->
-            buildServerTests()
+        | argv when Array.contains "--RunCI" argv -> allTests
         | _ -> allTests
 
     runTests testConfig tests
+
+    Console.Read()

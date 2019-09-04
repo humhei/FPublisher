@@ -1,357 +1,240 @@
-namespace FPublisher
-open Fake.IO
-open System.Text
-open System.Text.RegularExpressions
-open System.IO
-open Fake.IO.FileSystemOperators
-open FakeHelper.CommandHelper
-open Fake.Core
-open FakeHelper.Build
+﻿namespace FPublisher
 open System.Xml
-open FakeHelper
-
-
-
-
-[<RequireQualifiedAccess>]
-type Framework =
-    | MultipleTarget of string list
-    | SingleTarget of string
-
-[<RequireQualifiedAccess>]
-module Framework =
-    let (|CoreApp|FullFramework|NetStandard|) (framework: string) =
-        if framework.StartsWith "netcoreapp" 
-        then CoreApp 
-        elif framework.StartsWith "netstandard"
-        then NetStandard
-        else FullFramework
-
-    let asList = function
-        | Framework.MultipleTarget targets -> targets
-        | Framework.SingleTarget target -> [target]
-
-    let ofProjPath (projectFile: string) =
-        let projectFile = projectFile.Replace('\\','/')
-        let doc = new XmlDocument()
-        doc.Load(projectFile)
-        match doc.GetElementsByTagName "TargetFramework" with
-        | frameworkNodes when frameworkNodes.Count = 0 ->
-            let frameworksNodes = doc.GetElementsByTagName "TargetFrameworks"
-            let frameworksNode = [ for node in frameworksNodes do yield node ] |> List.exactlyOne
-            frameworksNode.InnerText.Split(';')
-            |> Array.map (fun text -> text.Trim())
-            |> List.ofSeq
-            |> Framework.MultipleTarget
-
-        | frameWorkNodes ->
-            let frameworkNode = [ for node in frameWorkNodes do yield node ] |> List.exactlyOne
-            Framework.SingleTarget frameworkNode.InnerText
-
-[<RequireQualifiedAccess>]
-type OutputType =
-    | Exe
-    | Library
-
-[<RequireQualifiedAccess>]
-module OutputType =
-    let ofProjPath (projPath: string) =
-        let doc = new XmlDocument()
-
-        doc.Load(projPath)
-
-        match doc.GetElementsByTagName "OutputType" with
-        | nodes when nodes.Count = 0 -> OutputType.Library
-        | nodes -> 
-            let nodes = 
-                [ for node in nodes -> node ]
-            nodes |> List.tryFind (fun node ->
-                node.InnerText = "Exe"
-            )
-            |> function 
-                | Some _ -> OutputType.Exe
-                | None -> OutputType.Library
-            
-
-    let outputExt framework = function
-        | OutputType.Exe -> 
-            match framework with 
-            | Framework.FullFramework ->
-                ".exe"
-            | _ -> ".dll"
-        | OutputType.Library -> ".dll"
-
-[<RequireQualifiedAccess>]
-type SDK =
-    | Microsoft_NET_Sdk
-    | Microsoft_NET_Sdk_Web
-    | Other of string
-
-[<RequireQualifiedAccess>]
-module SDK =
-    let ofProjPath (projPath: string) =
-        let doc = new XmlDocument()
-        doc.Load(projPath)
-
-        match doc.GetElementsByTagName "Project" with
-        | nodes when nodes.Count = 1 -> 
-            let node = nodes.[0]
-            let sdkAttr = node.Attributes.GetNamedItem ("Sdk")
-            match sdkAttr.Value with 
-            | "Microsoft.NET.Sdk" -> SDK.Microsoft_NET_Sdk
-            | "Microsoft.NET.Sdk.Web" -> SDK.Microsoft_NET_Sdk_Web
-            | other -> SDK.Other other
-        | _ -> failwithf "Cannot find Project tag in project file %s" projPath
-
-
-    let outputExt framework = function
-        | OutputType.Exe -> 
-            match framework with 
-            | Framework.FullFramework ->
-                ".exe"
-            | _ -> ".dll"
-        | OutputType.Library -> ".dll"
-
-type Project =
-    { ProjPath: string
-      OutputType: OutputType
-      TargetFramework: Framework
-      SDK: SDK }
-with
-    member x.Name = Path.GetFileNameWithoutExtension x.ProjPath
-
-    member x.Projdir = Path.getDirectory x.ProjPath
-
-    member x.OutputPaths =
-        Framework.asList x.TargetFramework
-        |> List.map (fun framework ->
-            x.Projdir </> "bin/Debug" </> framework </> x.Name + OutputType.outputExt framework x.OutputType
-            |> Path.nomarlizeToUnixCompitiable
-        )
-
-    member x.OutputDirs =
-        x.OutputPaths 
-        |> List.map Path.getDirectory
-
-
-
-
-[<RequireQualifiedAccess>]
-module Project =
-    let create projPath =
-        { OutputType = OutputType.ofProjPath projPath
-          ProjPath = projPath
-          TargetFramework = Framework.ofProjPath projPath
-          SDK = SDK.ofProjPath projPath }
-
-
-    let buildOutputInPackages (projPath: string) =
-        let doc = new XmlDocument()
-
-        doc.Load(projPath)
-
-        match doc.GetElementsByTagName "BuildOutputInPackage" with
-        | nodes when nodes.Count = 0 -> []
-        | nodes ->
-            [ for node in nodes do
-                yield node.InnerText ]
-
-    let existFullFramework (project: Project) = 
-        project.TargetFramework
-        |> Framework.asList
-        |> List.exists (fun framework ->
-            match framework with 
-            | Framework.FullFramework -> true
-            | _ -> false
-        )
-
-    let exec (args: seq<string>) (project: Project) =
-        project.TargetFramework
-        |> Framework.asList
-        |> List.iter (fun framework ->
-            let outputDll =
-                project.Projdir </> "bin/Debug" </> framework </> project.Name + ".dll"
-                |> Path.nomarlizeToUnixCompitiable
-
-            let outputExe = outputDll |> Path.changeExtension ".exe"
-
-            let outputDir = Path.getDirectory outputDll
-
-            match framework, Environment.isUnix with
-            | Framework.CoreApp, _ ->
-                dotnet outputDll args outputDir
-
-            | Framework.NetStandard _,_ -> failwith "cannot exec class library"
-
-            | Framework.FullFramework, false ->
-                exec outputDll args outputDir
-            | Framework.FullFramework, true ->
-                match Mono.monoPath with
-                | Some mono ->
-                    exec mono ([outputDll; outputExe] @ List.ofSeq args) outputDir
-                | None ->
-                    failwith "cannot find mono"
-        )
-
-    let addPackage package version (project: Project) = 
-        dotnet "add" [project.ProjPath; "package"; package; "-v"; version] (project.Projdir)
-
-
-[<RequireQualifiedAccess>]
-type PublishNetCoreDependency =
-    | None
-    | Keep
-
-type Solution =
-    { Path: string
-      Projects: Project list }
-with
-    member x.WorkingDir = Path.getDirectory x.Path
-
-    member x.CliProjects =
-        x.Projects |> List.filter (fun project ->
-            match project.OutputType with
-            | OutputType.Exe -> 
-                not (project.Name.Contains "test" || project.Name.Contains "Test") 
-                && project.SDK <> SDK.Microsoft_NET_Sdk_Web
-            | OutputType.Library -> false
-        )
-
-    member x.TestProjects =
-        x.Projects |> List.filter (fun project ->
-            match project.OutputType with
-            | OutputType.Exe -> project.Name.Contains "test" || project.Name.Contains "Test"
-            | OutputType.Library -> false
-        )
-
-    member x.LibraryProjects =
-        x.Projects |> List.filter (fun project ->
-            project.OutputType = OutputType.Library
-        )
-
-    member x.AspNetCoreProjects =
-        x.Projects |> List.filter (fun project ->
-            match project.OutputType with
-            | OutputType.Exe -> 
-                match project.SDK with 
-                | SDK.Microsoft_NET_Sdk_Web -> true
-                | _ -> false
-
-            | OutputType.Library -> false
-        )
-
-    member x.TargetTestDlls =
-        x.TestProjects |> List.map (fun testProj -> testProj.OutputPaths)
-
-[<RequireQualifiedAccess>]
+open FParsec
+open System.IO
+open Fake.IO
+open Fake.IO.FileSystemOperators
+open System.Text.RegularExpressions
+open System.Text
+open Fake.DotNet
+open Fake.DotNet
 module Solution =
 
-    let nugetPackageNames (solution: Solution) =
-        solution.Projects
-        |> List.map (fun fsproj ->
-            Path.GetFileNameWithoutExtension fsproj.ProjPath
-        )
+    [<RequireQualifiedAccess>]
+    type TargetFramework =
+        | CoreApp of float
+        | FullFramework of int
+        | NetStandard of float
 
-    let private pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w\-.]+)\",[ ]+\"(?<relativePath>[\w\\\.\-]+)\""
+    [<RequireQualifiedAccess>]
+    module TargetFramework =
+        let internal create (framework: string) =
+            let parser =
+                (pstringCI "netcoreapp" >>. pfloat .>> eof |>> TargetFramework.CoreApp)
+                <|> (pstringCI "netstandard" >>. pfloat .>> eof |>> TargetFramework.NetStandard)
+                <|> (pstringCI "net" >>. pint32 .>> eof |>> TargetFramework.FullFramework )
 
-    let checkValidSlnPath path =
-        if Path.GetExtension path <> ".sln" then failwithf "%s is a valid sln path" path
+            match run parser framework with 
+            | Success (result, _ , _) -> result
+            | Failure (msg, _, _) -> failwithf "%s" msg
+
+        let name = function
+            | TargetFramework.CoreApp number -> sprintf "netcoreapp%2f" number
+            | TargetFramework.FullFramework number ->  sprintf "net%d" number
+            | TargetFramework.NetStandard number -> sprintf "netstandard%2f" number
 
 
-    let read slnPath =
 
-        checkValidSlnPath slnPath
-        let workingDir = Path.getDirectory slnPath
+    [<RequireQualifiedAccess>]
+    type TargetFrameworks =
+        | Multiple of TargetFramework list
+        | Single of TargetFramework
 
-        let projects =
-            let projPaths =
-                let input = File.readAsStringWithEncoding Encoding.UTF8 slnPath
-                [ for m in Regex.Matches(input,pattern) -> m ]
+    [<RequireQualifiedAccess>]
+    module TargetFrameworks =
+        let ofProjPath (projectFile: string) =
+            let projectFile = projectFile.Replace('\\','/')
+            let doc = new XmlDocument()
+            doc.Load(projectFile)
+            match doc.GetElementsByTagName "TargetFramework" with
+            | frameworkNodes when frameworkNodes.Count = 0 ->
+                let frameworksNodes = doc.GetElementsByTagName "TargetFrameworks"
+                let frameworksNode = [ for node in frameworksNodes do yield node ] |> List.exactlyOne
+                frameworksNode.InnerText.Split(';')
+                |> Array.map (fun text -> TargetFramework.create (text.Trim()))
+                |> List.ofSeq
+                |> TargetFrameworks.Multiple
 
-                |> List.filter (fun m ->
-                    let relativePath = m.Groups.[2].Value
-                    let ext = Path.GetExtension relativePath
-                    ext = ".csproj" || ext = ".fsproj"
+            | frameWorkNodes ->
+                let frameworkNode = [ for node in frameWorkNodes do yield node ] |> List.exactlyOne
+                frameworkNode.InnerText.Trim()
+                |> TargetFramework.create
+                |> TargetFrameworks.Single
+
+    [<RequireQualifiedAccess>]
+    type OutputType =
+        | Exe
+        | Library
+
+    [<RequireQualifiedAccess>]
+    module OutputType =
+        let ofProjPath (projPath: string) =
+            let doc = new XmlDocument()
+
+            doc.Load(projPath)
+
+            match doc.GetElementsByTagName "OutputType" with
+            | nodes when nodes.Count = 0 -> OutputType.Library
+            | nodes -> 
+                let nodes = 
+                    [ for node in nodes -> node ]
+                nodes |> List.tryFind (fun node ->
+                    node.InnerText = "Exe"
                 )
-                |> List.map (fun m ->
-                    let relativePath = m.Groups.[2].Value
-                    let projPath = Path.getFullName (workingDir </> relativePath)
-                    Path.nomarlizeToUnixCompitiable projPath
-                )
+                |> function 
+                    | Some _ -> OutputType.Exe
+                    | None -> OutputType.Library
 
-            projPaths
-            |> List.filter File.exists
-            |> List.map Project.create
 
-        { Path = slnPath
-          Projects = projects }
+    [<RequireQualifiedAccess>]
+    type SDK =
+        | Microsoft_NET_Sdk
+        | Microsoft_NET_Sdk_Web
+        | Others of string
 
-        
+    [<RequireQualifiedAccess>]
+    module SDK =
+        let ofProjPath (projPath: string) =
+            let doc = new XmlDocument()
+            doc.Load(projPath)
 
-    let restore (solution: Solution) =
-        dotnet "restore" [solution.Path] solution.WorkingDir
+            match doc.GetElementsByTagName "Project" with
+            | nodes when nodes.Count = 1 -> 
+                let node = nodes.[0]
+                let sdkAttr = node.Attributes.GetNamedItem ("Sdk")
+                match sdkAttr.Value with 
+                | "Microsoft.NET.Sdk" -> SDK.Microsoft_NET_Sdk
+                | "Microsoft.NET.Sdk.Web" -> SDK.Microsoft_NET_Sdk_Web
+                | others -> SDK.Others others
+            | _ -> failwithf "Cannot find Project tag in project file %s" projPath
 
-    let build versionOp (solution: Solution) =
-        match versionOp with
-        | Some (version: SemVerInfo) ->
-            let versionText = SemVerInfo.normalize version
-            dotnet "build" [solution.Path; "-p:Version=" + versionText] solution.WorkingDir
-        | None -> dotnet "build" [solution.Path] solution.WorkingDir
 
-    let publish publishNetCoreDependency versionOp (solution: Solution) =
+    type ProjectKind =
+        | CoreCli = 0
+        | Library = 1
+        | Test = 2
+        | AspNetCore = 3
+        | Others = 4
 
-        solution.AspNetCoreProjects
-        |> List.iter (fun project ->
+    type Project =
+        { ProjPath: string
+          OutputType: OutputType
+          TargetFrameworks: TargetFrameworks
+          SDK: SDK }
+    with
+        member x.GetName() = Path.GetFileNameWithoutExtension x.ProjPath
 
-            match versionOp with
-            | Some (version: SemVerInfo) ->
-                let versionText = SemVerInfo.normalize version
-                dotnet "publish" ["--no-build"; project.ProjPath; "-p:Version=" + versionText;] project.Projdir
-            | None -> dotnet "publish" ["--no-build"; project.ProjPath;] project.Projdir
+        member x.GetProjDir() = Path.getDirectory x.ProjPath
+
+        member x.GetOutputPaths (configuration: DotNet.BuildConfiguration) =
+            let frameworkList = 
+                match x.TargetFrameworks with 
+                | TargetFrameworks.Multiple frameworks -> frameworks
+                | TargetFrameworks.Single framework -> [framework] 
             
-            match publishNetCoreDependency with 
-            | PublishNetCoreDependency.None ->
-                project.OutputDirs
-                |> List.iter (fun outputDir ->
-                    Directory.delete (outputDir </> "publish" </> "refs")
+            frameworkList
+            |> List.map (fun framework ->
+                let ext = 
+                    match framework, x.OutputType with 
+                    | TargetFramework.CoreApp number, OutputType.Exe -> ".dll"
+                    | TargetFramework.NetStandard _, OutputType.Library -> ".dll"
+                    | TargetFramework.FullFramework _, OutputType.Library -> ".dll"
+                    | TargetFramework.FullFramework _, OutputType.Exe -> ".exe"
+                    | _ -> failwithf "target framework %A is not supported when output type is %A" framework x.OutputType
+                let fileName = x.GetName() + ext
+
+                let outputDir = sprintf "bin/%O/%s" configuration (TargetFramework.name framework)
+                outputDir </> fileName
+            )
+ 
+        member x.GetOutputDirs configuration =
+            x.GetOutputPaths configuration
+            |> List.map Path.getDirectory
+
+        member x.GetProjectKind() =
+            match x.OutputType, x.SDK, x.TargetFrameworks with 
+            | OutputType.Exe, SDK.Microsoft_NET_Sdk, TargetFrameworks.Single (TargetFramework.CoreApp _) ->
+                if x.GetName().Contains("test", true) then ProjectKind.Test
+                else ProjectKind.CoreCli
+
+            | OutputType.Exe, SDK.Microsoft_NET_Sdk_Web, _ -> ProjectKind.AspNetCore
+
+            | OutputType.Library, SDK.Microsoft_NET_Sdk, _ -> ProjectKind.Library
+            | _ -> ProjectKind.Others
+
+    [<RequireQualifiedAccess>]
+    module Project =
+        let create (projPath: string) =
+            { OutputType = OutputType.ofProjPath projPath
+              ProjPath = projPath
+              TargetFrameworks = TargetFrameworks.ofProjPath projPath
+              SDK = SDK.ofProjPath projPath }
+
+
+    type Solution =
+        { Path: string
+          Projects: Project list }
+
+    [<RequireQualifiedAccess>]
+    module Solution =
+        let read slnPath =
+            let pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w\-.]+)\",[ ]+\"(?<relativePath>[\w\\\.\-]+)\""
+            let slnPath = Path.normalizeToUnixCompatible slnPath
+
+            let checkValidSlnPath path =
+                if Path.GetExtension path <> ".sln" then failwithf "%s is a valid sln path" path
+
+            checkValidSlnPath slnPath
+
+            let workingDir = Path.getDirectory slnPath
+
+            let projects =
+                let projPaths =
+                    let input = File.readAsStringWithEncoding Encoding.UTF8 slnPath
+                    [ for m in Regex.Matches(input,pattern) -> m ]
+
+                    |> List.filter (fun m ->
+                        let relativePath = m.Groups.[2].Value
+                        let ext = Path.GetExtension relativePath
+                        ext = ".csproj" || ext = ".fsproj"
+                    )
+                    |> List.map (fun m ->
+                        let relativePath = m.Groups.[2].Value
+                        let projPath = Path.getFullName (workingDir </> relativePath)
+                        Path.normalizeToUnixCompatible projPath
+                    )
+                let existentProjPaths, nonexistentProjPaths =
+                    projPaths
+                    |> List.partition File.exists
+
+                for path in nonexistentProjPaths do
+                    logger.Warn "project file %s doesn't exist" path
+
+                existentProjPaths
+                |> List.map Project.create
+
+            { Path = slnPath
+              Projects = projects }
+
+        let build setParams (solution: Solution) =
+            DotNet.build setParams solution.Path 
+
+        let pack setParams (solution: Solution) =
+            let groupedProjects = 
+                solution.Projects
+                |> List.groupBy(fun project -> project.GetProjectKind())
+                |> List.filter(fun (projectKind, _) ->
+                    match projectKind with 
+                    | ProjectKind.CoreCli | ProjectKind.Library -> true
+                    | _ -> false
                 )
-            | _ -> ()
-        )
 
+            for (projectKind, projects) in groupedProjects do 
+                for project in projects do
+                    FPublisher.DotNet.pack setParams project.ProjPath
 
+            groupedProjects
 
-    let test (solution: Solution) =
-        let runExpectoTest() = 
-            solution.TestProjects
-            |> List.map (fun testProject -> async {
-                Project.exec ["--summary"] testProject
-                testProject.OutputPaths |> List.iter (fun outputPath ->
-                    let testResultXml =
-                        let name = testProject.Name + ".TestResults.xml"
-                        let outputDir = Path.getDirectory outputPath
-                        outputDir </> name
-
-                    if File.Exists testResultXml then
-                        Trace.publish (ImportData.Nunit NunitDataVersion.Nunit) testResultXml
-                )
-
-            })
-            |> Async.Parallel
-            |> Async.RunSynchronously
-            |> ignore
-
-        let runOtherTest() =
-            solution.TestProjects 
-            |> List.map (fun testProject -> async {
-                let testResultXml = testProject.Projdir </> "TestResults" </> testProject.Name + ".TestResults.xml"
-                dotnet "test" ["--no-build"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml] testProject.Projdir
-                if File.exists testResultXml then
-                    Trace.publish (ImportData.Nunit NunitDataVersion.Nunit3) testResultXml
-
-            })
-            |> Async.Parallel
-            |> Async.RunSynchronously
-            |> ignore
-
-        runExpectoTest()
-        runOtherTest()
+        let getPackageNames (solution: Solution) =
+            solution.Projects
+            |> List.map (fun project -> project.GetName())

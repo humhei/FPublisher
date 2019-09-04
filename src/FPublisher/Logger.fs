@@ -1,6 +1,7 @@
 namespace FPublisher
 open Fake.Core
-
+open Fake.DotNet
+    
 
 [<RequireQualifiedAccess>]
 module Logger =
@@ -73,3 +74,7 @@ module Logger =
             Printf.ksprintf _error format
 
     let create level = Logger(level)
+
+[<AutoOpen>]
+module internal Global =
+    let mutable logger = Logger.create (Logger.Level.Minimal)
