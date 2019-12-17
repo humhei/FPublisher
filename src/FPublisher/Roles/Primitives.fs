@@ -73,26 +73,36 @@ module Primitives =
 
                 match integratedAction.Action with 
                 | MapState mapping ->
-                    let newTargetStates = 
-                        logger.ImportantGreen "FPUBLISH: Start target %s" targetName
-                        let stopWatch = Stopwatch.StartNew()
+                    let targetState = 
+                        typeof<'targetStates>.GetProperty(targetName).GetValue(targetStates)
+                        
+                    let isInit = 
+                        targetState.GetType().GetProperty("IsInit").GetValue(targetState)
+                        |> unbox
 
-                        let newTargetState = 
-                            let targetStatePropertyType = 
-                                FSharpType.GetRecordFields(typeof<'targetStates>) 
-                                |> Array.find (fun prop -> prop.Name = targetName)
-                                |> fun prop -> prop.PropertyType
+                    if isInit then
 
-                            let uci = 
-                                FSharpType.GetUnionCases(targetStatePropertyType)
-                                |> Array.find (fun uci -> uci.Name = "Done")
-                            FSharpValue.MakeUnion(uci, [| mapping role |])
+                        let newTargetStates = 
+                            logger.ImportantGreen "FPUBLISH: Start target %s" targetName
+                            let stopWatch = Stopwatch.StartNew()
 
-                        logger.ImportantGreen "FPUBLISH: Finished target %s in %O" targetName stopWatch.Elapsed
+                            let newTargetState = 
+                                let targetStatePropertyType = 
+                                    FSharpType.GetRecordFields(typeof<'targetStates>) 
+                                    |> Array.find (fun prop -> prop.Name = targetName)
+                                    |> fun prop -> prop.PropertyType
 
-                        Record.setProperty targetName newTargetState targetStates
+                                let uci = 
+                                    FSharpType.GetUnionCases(targetStatePropertyType)
+                                    |> Array.find (fun uci -> uci.Name = "Done")
+                                FSharpValue.MakeUnion(uci, [| mapping role |])
 
-                    Record.setProperty "TargetStates" newTargetStates role
+                            logger.ImportantGreen "FPUBLISH: Finished target %s in %O" targetName stopWatch.Elapsed
+
+                            Record.setProperty targetName newTargetState targetStates
+
+                        Record.setProperty "TargetStates" newTargetStates role
+                    else role
 
                 | MapChild mapping ->
                     let newTargetStates = 

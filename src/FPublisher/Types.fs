@@ -19,12 +19,25 @@ module Workspace =
     let git args (workspace: Workspace) = runGitCommand workspace.WorkingDir args
 
     let tryGetGitUrl workspace =
-        let _, lines, _ = git (sprintf "config --get remote.origin.url") workspace
-        if lines.Length = 1
-        then Some lines.[0]
-        elif lines.Length = 0
-        then None
-        else failwithf "repo name should only contain one line, current lines is %A" lines
+        let linesOp = 
+            try 
+                let _, lines, _ = 
+                    git (sprintf "config --get remote.origin.url") workspace
+
+                Some lines
+            with ex -> None
+
+        match linesOp with 
+        | Some lines ->
+            if lines.Length = 1
+            then Some lines.[0]
+            elif lines.Length = 0
+            then None
+            else failwithf "repo name should only contain one line, current lines is %A" lines
+
+        | None -> None
+
+
 
     let tryGetRepoName workspace =
         tryGetGitUrl workspace 
@@ -39,6 +52,14 @@ module Workspace =
 
         if result.ExitCode <> 0
         then failwithf "Error while running %s with args %A" tool (List.ofSeq args)
+
+    let nuget args (workspace: Workspace) =
+        let nugetPath =
+            match ProcessUtils.tryFindFileOnPath "nuget" with 
+            | Some paketPath -> paketPath
+            | None -> failwith "Cannot find nuget path in environment varaibles"
+
+        exec nugetPath args workspace
 
     let paket args (workspace: Workspace) = 
 

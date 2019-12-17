@@ -11,6 +11,7 @@
     <Compile Include="Solution.fs" />
     <Compile Include="Roles\Primitives.fs" />
     <Compile Include="Roles/NonGit.fs" />
+    <Compile Include="Roles\BuilderServer.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fake.Core.Process" Version="5.16.1" />

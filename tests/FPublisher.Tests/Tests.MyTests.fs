@@ -19,7 +19,10 @@ let fail() = Expect.isTrue false "failed"
 //let root = @"D:\VsCode\Github\FCSWatch"
 //let root = @"D:\VsCode\Github\CellScript"
 //let root = @"D:\VsCode\Github\ExcelProcesser"
-let root = @"D:\VsCode\Github\Shrimp.Pdf"
+//let root = @"D:\VsCode\Github\Shrimp.Pdf"
+let root = @"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction"
+//let root = @"D:\VsCode\Github\Shrimp.Compiler.Service"
+//let root = "D:\VsCode\Github\Hyperion"
 #if !FAKE
 let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
 Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
@@ -60,6 +63,7 @@ let nonGitTests() =
     ftestCase "push to local nuget" <| fun _ ->
       NonGit.run (NonGit.Target.PushToLocalNugetServerV3) role
       |> ignore
+
     //testCase "test projects" <| fun _ ->
     //  BuildServer.run (!^ NonGit.Msg.Test) role
   ]

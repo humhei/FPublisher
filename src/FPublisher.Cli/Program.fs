@@ -6,6 +6,7 @@ open FPublisher.Roles
 open FPublisher
 open FPublisher.Nuget
 open Fake.Core
+open System.IO
 
 type Arguments =
     | Create_Sln
@@ -37,31 +38,20 @@ let main argv =
         let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
         Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
         
-        let localNugetServer =
-            match Environment.environVarOrNone "baget_port" with 
-            | Some port -> NugetServer.createBagetLocalWithPort port
-             
-            | None -> NugetServer.DefaultBaGetLocal
-            |> Some 
-
-        let buildServer =
-            BuildServer.create
-                { BuildServer.Config.DefaultValue
-                    with
-                        LoggerLevel = Logger.Level.Normal
-                        LocalNugetServer = localNugetServer
-
-                }
-
 
         match result with 
-        | Create_Sln -> Workspace.createDefaultSln false buildServer.Workspace
-        | Clean -> Workspace.cleanBinAndObj buildServer.Workspace
-        | Build -> BuildServer.run (!^ (NonGit.Msg.Build None)) buildServer
-        | Test -> BuildServer.run (!^ NonGit.Msg.Test) buildServer
-        | Next_Release -> BuildServer.run (!^ Collaborator.Msg.NextRelease) buildServer
-        | Run_CI -> BuildServer.run (BuildServer.Msg.RunCI) buildServer
-        | Baget -> BuildServer.run (!^ Forker.Msg.PublishToLocalNugetServer) buildServer
+        //| Create_Sln -> Workspace.createDefaultSln false buildServer.Workspace
+        //| Clean -> Workspace.cleanBinAndObj buildServer.Workspace
+        //| Build -> BuildServer.run (!^ (NonGit.Msg.Build None)) buildServer
+        //| Test -> BuildServer.run (!^ NonGit.Msg.Test) buildServer
+        //| Next_Release -> BuildServer.run (!^ Collaborator.Msg.NextRelease) buildServer
+        //| Run_CI -> BuildServer.run (BuildServer.Msg.RunCI) buildServer
+        | Baget -> 
+            let workspace = Workspace (Directory.GetCurrentDirectory())
+            let role = NonGit.create Logger.Level.Normal (Some {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}) workspace
+            NonGit.run NonGit.Target.PushToLocalNugetServerV3 role
+            |> ignore
+        | _ -> failwith "Not impelment"
     | _ -> 
         parser.PrintUsage()
         |> printfn "%s"

@@ -114,7 +114,8 @@ module Solution =
         | Library = 1
         | Test = 2
         | AspNetCore = 3
-        | Others = 4
+        | Samples = 4
+        | Others = 5
 
     type Project =
         { ProjPath: string
@@ -152,15 +153,17 @@ module Solution =
             |> List.map Path.getDirectory
 
         member x.GetProjectKind() =
-            match x.OutputType, x.SDK, x.TargetFrameworks with 
-            | OutputType.Exe, SDK.Microsoft_NET_Sdk, TargetFrameworks.Single (TargetFramework.CoreApp _) ->
-                if x.GetName().Contains("test", true) then ProjectKind.Test
-                else ProjectKind.CoreCli
+            if x.ProjPath.Contains("sample", true) then ProjectKind.Samples
+            else
+                match x.OutputType, x.SDK, x.TargetFrameworks with 
+                | OutputType.Exe, SDK.Microsoft_NET_Sdk, TargetFrameworks.Single (TargetFramework.CoreApp _) ->
+                    if x.GetName().Contains("test", true) then ProjectKind.Test
+                    else ProjectKind.CoreCli
 
-            | OutputType.Exe, SDK.Microsoft_NET_Sdk_Web, _ -> ProjectKind.AspNetCore
+                | OutputType.Exe, SDK.Microsoft_NET_Sdk_Web, _ -> ProjectKind.AspNetCore
 
-            | OutputType.Library, SDK.Microsoft_NET_Sdk, _ -> ProjectKind.Library
-            | _ -> ProjectKind.Others
+                | OutputType.Library, SDK.Microsoft_NET_Sdk, _ -> ProjectKind.Library
+                | _ -> ProjectKind.Others
 
     [<RequireQualifiedAccess>]
     module Project =

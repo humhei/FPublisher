@@ -11,6 +11,11 @@ open FPublisher.Nuget
 open Fake.IO.Globbing.Operators
 open Fake.DotNet.NuGet.NuGet
 
+type NonGitArgs =
+    { LoggerLevel: Logger.Level 
+      LocalNugetServerV3: NugetServer option 
+      Workspace: Workspace }
+
 [<RequireQualifiedAccess>]
 module NonGit =
 
@@ -51,7 +56,14 @@ module NonGit =
         interface IRole<TargetStates>
 
 
-    let create loggerLevel localNugetServerV3 (workspace: Workspace) =
+    let create (nonGitArgs: NonGitArgs) =
+
+        let loggerLevel = nonGitArgs.LoggerLevel
+
+        let workspace = nonGitArgs.Workspace
+
+        let localNugetServerV3 = nonGitArgs.LocalNugetServerV3
+
         logger <- Logger.create(loggerLevel)
         let slnPath =
             let defaultSlnName =
@@ -127,7 +139,7 @@ module NonGit =
                                 {ops with 
                                     PushParams = 
                                         { NuGetPushParams.Create() with     
-                                            ApiKey = localNugetServer.ApiEnvironmentName 
+                                            ApiKey = localNugetServer.ApiEnvironmentName |> Option.map Environment.environVar 
                                             Source = Some localNugetServer.Serviceable
                                         }
                                 }
