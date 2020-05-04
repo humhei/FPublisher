@@ -220,12 +220,13 @@ module Solution =
             DotNet.build setParams solution.Path 
 
         let pack setParams (solution: Solution) =
+
             let groupedProjects = 
                 solution.Projects
                 |> List.groupBy(fun project -> project.GetProjectKind())
                 |> List.filter(fun (projectKind, _) ->
                     match projectKind with 
-                    | ProjectKind.CoreCli | ProjectKind.Library -> true
+                    | ProjectKind.CoreCli | ProjectKind.Library | ProjectKind.AspNetCore -> true
                     | _ -> false
                 )
 

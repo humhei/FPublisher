@@ -9,7 +9,7 @@ open FPublisher
 open FPublisher.Roles
 open Fake.Core
 open FPublisher.Nuget
-
+open FPublisher.Solution
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
@@ -17,9 +17,16 @@ let fail() = Expect.isTrue false "failed"
 //let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
 //let root = @"D:\VsCode\Github\FCSWatch"
-//let root = @"D:\VsCode\Github\CellScript"
 //let root = @"D:\VsCode\Github\ExcelProcesser"
-let root = @"D:\VsCode\Github\Shrimp.Pdf"
+//let root = @"D:\VsCode\Github\Shrimp.Pdf" 
+//let root = @"D:\VsCode\Github\Shrimp.FSharp.Plus" 
+//let root = @"D:\VsCode\Github\Shrimp.LiteDB" 
+//let root = @"D:\VsCode\Github\CellScript"
+let root = @"D:\VsCode\Github\Shrimp.UI" 
+//let root = @"D:\VsCode\Github\Shrimp.Bartender"
+//let root = @"D:\VsCode\Github\Shrimp.Compiler.Service"
+//let root = @"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction"
+
 #if !FAKE
 let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
 Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
@@ -45,6 +52,19 @@ let nonGitTests() =
   let role = NonGit.create Logger.Level.Normal (Some {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}) workspace
    
   testList "NonGit tests" [
+    testCase "solution tests" <| fun _ ->
+        let m = 
+            role.Solution.Projects 
+            |> List.groupBy(fun project -> project.GetProjectKind())
+            |> List.filter(fun (projectKind, _) ->
+                match projectKind with 
+                | ProjectKind.CoreCli | ProjectKind.Library | ProjectKind.AspNetCore -> true
+                | _ -> false
+            )
+
+
+        ()
+
     testCase "paket install" <| fun _ ->
       NonGit.run (NonGit.Target.InstallPaketPackages) role
       |> ignore
@@ -60,6 +80,7 @@ let nonGitTests() =
     ftestCase "push to local nuget" <| fun _ ->
       NonGit.run (NonGit.Target.PushToLocalNugetServerV3) role
       |> ignore
+
     //testCase "test projects" <| fun _ ->
     //  BuildServer.run (!^ NonGit.Msg.Test) role
   ]

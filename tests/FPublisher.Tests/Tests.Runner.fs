@@ -8,7 +8,7 @@ let testConfig =
     { Expecto.Tests.defaultConfig with
          parallelWorkers = 1
          verbosity = LogLevel.Debug }
-
+            
 let allTests =
     testList "All tests" [
         nonGitTests()

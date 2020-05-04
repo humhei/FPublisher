@@ -1,6 +1,8 @@
 ﻿namespace FPublisher
 open Fake.DotNet
 open Fake.Core
+open Fake
+open Fake.IO
 
 [<RequireQualifiedAccess>]
 module DotNet =
@@ -68,8 +70,12 @@ module DotNet =
                         |> Some
                 }
               NoRestore = packOptions.NoRestore
-              MSBuildParams = MSBuild.CliArguments.Create() }
+              MSBuildParams = MSBuild.CliArguments.Create()
+                   
+            }
 
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = setParams PackOptions.DefaultValue
-        DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
+        try
+            DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
+        with ex -> ()

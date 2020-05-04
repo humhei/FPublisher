@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Logger.fs" />
@@ -13,16 +13,17 @@
     <Compile Include="Roles/NonGit.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Fake.Core.Process" Version="5.16.1" />
-    <PackageReference Include="Fake.Core.ReleaseNotes" Version="5.16.1" />
-    <PackageReference Include="Fake.DotNet.Cli" Version="5.16.1" />
-    <PackageReference Include="Fake.IO.FileSystem" Version="5.16.1" />
-    <PackageReference Include="Fake.Tools.Git" Version="5.16.1" />
-    <PackageReference Include="FParsec" Version="1.0.3" />
-    <PackageReference Include="FSharp.Data" Version="3.1.1" />
+    <PackageReference Include="Fake.Core.Process" Version="5.17.0" />
+    <PackageReference Include="Fake.Core.ReleaseNotes" Version="5.17.0" />
+    <PackageReference Include="Fake.DotNet.Cli" Version="5.17.0" />
+    <PackageReference Include="Fake.IO.FileSystem" Version="5.17.0" />
+    <PackageReference Include="Fake.Tools.Git" Version="5.17.0" />
+    <PackageReference Include="FParsec" Version="1.1.1" />
+    <PackageReference Include="FSharp.Data" Version="3.3.3" />
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0-preview.2.20160.6" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="4.7.0" />
+    <PackageReference Update="FSharp.Core" Version="4.7.1" />
   </ItemGroup>
 </Project>
