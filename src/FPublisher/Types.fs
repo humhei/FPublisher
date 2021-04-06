@@ -28,7 +28,12 @@ module Workspace =
 
     let tryGetRepoName workspace =
         tryGetGitUrl workspace 
-        |> Option.map Path.GetFileNameWithoutExtension
+        |> Option.map (fun m -> 
+            let fileName = Path.GetFileName m
+            if (fileName).EndsWith ".git"
+            then fileName.Substring(0, fileName.Length - 4)
+            else fileName
+        )
 
     let exec tool args (Workspace dir) =
         let result =

@@ -53,26 +53,50 @@ module NonGit =
 
     let create loggerLevel localNugetServerV3 (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
-        let slnPath =
-            let defaultSlnName =
-                match Workspace.tryGetRepoName workspace with
-                | Some repoName -> repoName
-                | None -> Path.GetFileName workspace.WorkingDir
+
+        let repoName = Workspace.tryGetRepoName workspace
 
 
-            let poiorSlnPath = 
-                let priorSlnName = defaultSlnName + ".FPublisher"
+        let poiorSlnPath1 = 
+            match repoName with 
+            | Some repoName -> 
+                 workspace.WorkingDir </> (repoName  + ".FPublisher" + ".sln")
+                 |> Some
+            | None -> None
+           
+        let poiorSlnPath2 = 
+            match repoName with 
+            | Some repoName -> 
+                 workspace.WorkingDir </> (repoName + ".sln")
+                 |> Some
+            | None -> None
 
-                workspace.WorkingDir </> (priorSlnName  + ".sln")
+        let poiorSlnPath3 =  
+            workspace.WorkingDir </> (Path.GetFileName workspace.WorkingDir + ".FPublisher" + ".sln")
+            |> Some
 
-            if File.Exists poiorSlnPath 
-            then poiorSlnPath
-            else workspace.WorkingDir </> (defaultSlnName  + ".sln")
+        let poiorSlnPath4 =  
+            workspace.WorkingDir </> (Path.GetFileName workspace.WorkingDir + ".sln")
+            |> Some
 
-        { Solution = Solution.read slnPath
-          Workspace = workspace
-          LocalNugetServerV3 = localNugetServerV3
-          TargetStates = TargetStates.init }
+        let slnPaths = 
+            [
+                poiorSlnPath1
+                poiorSlnPath2
+                poiorSlnPath3
+                poiorSlnPath4
+            ]
+            |> List.choose id
+
+        match List.tryFind (File.exists) slnPaths with 
+        | Some slnPath ->
+
+            { Solution = Solution.read slnPath
+              Workspace = workspace
+              LocalNugetServerV3 = localNugetServerV3
+              TargetStates = TargetStates.init }
+
+        | None -> failwithf "Solution of %A not found" slnPaths
 
     let run =
         IRole.Run (fun role target ->
@@ -88,6 +112,9 @@ module NonGit =
             | Target.Pack setParams ->
                 { DependsOn = [Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
+
+            | Target.Test ->
+                failwith "Not implemented"
 
             | Target.PushToLocalNugetServerV3 ->
                 match role.LocalNugetServerV3 with 
@@ -107,7 +134,7 @@ module NonGit =
                                 )
                                 |> List.map (SemVer.parse)
 
-                            if lastVersions.IsEmpty then "1.0.0"
+                            if lastVersions.IsEmpty then "0.0.1"
                             else 
                                 let maxVersion  = (List.max lastVersions)
                                 { maxVersion with Patch = maxVersion.Patch + 1u }.Normalize()
@@ -140,5 +167,5 @@ module NonGit =
                     { DependsOn = [] 
                       Action = MapState (fun role -> none) }
 
-            | _ -> failwith "Not implemented"
+            | Target.Publish _ -> failwith "Not implemented"
         )

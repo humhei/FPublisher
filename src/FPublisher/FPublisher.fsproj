@@ -20,6 +20,7 @@
     <PackageReference Include="Fake.Tools.Git" Version="5.17.0" />
     <PackageReference Include="FParsec" Version="1.1.1" />
     <PackageReference Include="FSharp.Data" Version="3.3.3" />
+    <PackageReference Include="MSBuild.StructuredLogger" Version="2.1.133" />
     <PackageReference Include="System.Collections.Immutable" Version="5.0.0-preview.2.20160.6" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>

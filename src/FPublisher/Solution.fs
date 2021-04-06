@@ -13,8 +13,9 @@ module Solution =
     [<RequireQualifiedAccess>]
     type TargetFramework =
         | CoreApp of float
-        | FullFramework of int
+        | FullFramework of float
         | NetStandard of float
+        | Unified of float
 
     [<RequireQualifiedAccess>]
     module TargetFramework =
@@ -22,17 +23,21 @@ module Solution =
             let parser =
                 (pstringCI "netcoreapp" >>. pfloat .>> eof |>> TargetFramework.CoreApp)
                 <|> (pstringCI "netstandard" >>. pfloat .>> eof |>> TargetFramework.NetStandard)
-                <|> (pstringCI "net" >>. pint32 .>> eof |>> TargetFramework.FullFramework )
+                <|> (pstringCI "net" >>. pfloat .>> eof |>> (fun number ->
+                    if number < 5.0 
+                    then TargetFramework.FullFramework number
+                    else TargetFramework.Unified number
+                ))
 
             match run parser framework with 
             | Success (result, _ , _) -> result
             | Failure (msg, _, _) -> failwithf "%s" msg
 
         let name = function
-            | TargetFramework.CoreApp number -> sprintf "netcoreapp%2f" number
-            | TargetFramework.FullFramework number ->  sprintf "net%d" number
-            | TargetFramework.NetStandard number -> sprintf "netstandard%2f" number
-
+            | TargetFramework.CoreApp number -> sprintf "netcoreapp%g" number
+            | TargetFramework.FullFramework number  ->  sprintf "net%g" number
+            | TargetFramework.NetStandard number -> sprintf "netstandard%g" number
+            | TargetFramework.Unified number -> sprintf "net%g" number
 
 
     [<RequireQualifiedAccess>]

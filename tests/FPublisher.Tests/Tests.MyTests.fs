@@ -11,8 +11,13 @@ open Fake.Core
 open FPublisher.Nuget
 open FPublisher.Solution
 
+open FSharp.Linq.RuntimeHelpers
+
+
+
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
+
 
 //let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
@@ -21,8 +26,15 @@ let fail() = Expect.isTrue false "failed"
 //let root = @"D:\VsCode\Github\Shrimp.Pdf" 
 //let root = @"D:\VsCode\Github\Shrimp.FSharp.Plus" 
 //let root = @"D:\VsCode\Github\Shrimp.LiteDB" 
-//let root = @"D:\VsCode\Github\CellScript"
-let root = @"D:\VsCode\Github\Shrimp.UI" 
+let root = @"D:\VsCode\Github\LiteDB.FSharp"
+//let root = @"D:\VsCode\Github\CellScript" 
+//let root = @"D:\VsCode\Github\Shrimp.UI"
+//let root = @"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
+//let root = @"D:\VsCode\Github\Shrimp.UI\Server"
+//let root = @"D:\VsCode\Github\Shrimp.UI\ServerScripting\OrdersTable"
+//let root = @"D:\VsCode\Github\Shrimp.UI\ServerScripting\TaskHandling"
+//let root = @"D:\VsCode\Github\Shrimp.UI\ServerScripting\DSL"
+//let root = @"D:\VsCode\Github\Shrimp.Pdf.DataTable\"
 //let root = @"D:\VsCode\Github\Shrimp.Bartender"
 //let root = @"D:\VsCode\Github\Shrimp.Compiler.Service"
 //let root = @"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction"
