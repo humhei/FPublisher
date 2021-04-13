@@ -17,6 +17,7 @@ module NonGit =
     [<RequireQualifiedAccess>]
     type Target =
         | InstallPaketPackages
+        | Clean
         | Build of (DotNet.BuildOptions -> DotNet.BuildOptions)
         | Pack of (FPublisher.DotNet.PackOptions -> FPublisher.DotNet.PackOptions)
         | Test
@@ -26,6 +27,7 @@ module NonGit =
 
     type TargetStates =
         { InstallPaketPackages: BoxedTargetState
+          Clean: BoxedTargetState
           Build: BoxedTargetState
           Pack: TargetState<list<ProjectKind * Project list>>
           Test: BoxedTargetState
@@ -36,6 +38,7 @@ module NonGit =
     module TargetStates =
         let init =
             { InstallPaketPackages = TargetState.Init
+              Clean = TargetState.Init
               Build = TargetState.Init
               Pack = TargetState.Init
               Test = TargetState.Init
@@ -105,12 +108,17 @@ module NonGit =
                 { DependsOn = [] 
                   Action = MapState (fun role -> Workspace.paket ["install"] role.Workspace; none)}
 
+            | Target.Clean ->
+                { DependsOn = [] 
+                  Action = MapState (fun role -> Solution.clean role.Solution; none)}
+
+
             | Target.Build setParams ->
-                { DependsOn = [Target.InstallPaketPackages] 
+                { DependsOn = [Target.Clean; Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.build setParams role.Solution ; none)}
 
             | Target.Pack setParams ->
-                { DependsOn = [Target.InstallPaketPackages] 
+                { DependsOn = [Target.Clean; Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
 
             | Target.Test ->
@@ -119,6 +127,12 @@ module NonGit =
             | Target.PushToLocalNugetServerV3 ->
                 match role.LocalNugetServerV3 with 
                 | Some localNugetServer ->
+                    let role =
+                        { role with 
+                            Solution = 
+                                Solution.updatePackages localNugetServer role.Solution
+                            }
+                        
                     let outputDirectory = Path.GetTempPath() </> Path.GetRandomFileName()
 
                     Directory.ensure outputDirectory

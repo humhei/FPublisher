@@ -10,6 +10,8 @@ open FPublisher.Roles
 open Fake.Core
 open FPublisher.Nuget
 open FPublisher.Solution
+open System.Text.RegularExpressions
+open FParsec
 
 open FSharp.Linq.RuntimeHelpers
 
@@ -19,30 +21,16 @@ let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
 
-//let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
+let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
 
-//let root = @"D:\VsCode\Github\FCSWatch"
-//let root = @"D:\VsCode\Github\ExcelProcesser"
-//let root = @"D:\VsCode\Github\Shrimp.Pdf" 
-//let root = @"D:\VsCode\Github\Shrimp.FSharp.Plus" 
-//let root = @"D:\VsCode\Github\Shrimp.LiteDB" 
-let root = @"D:\VsCode\Github\LiteDB.FSharp"
-//let root = @"D:\VsCode\Github\CellScript" 
-//let root = @"D:\VsCode\Github\Shrimp.UI"
-//let root = @"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
-//let root = @"D:\VsCode\Github\Shrimp.UI\Server"
-//let root = @"D:\VsCode\Github\Shrimp.UI\ServerScripting\OrdersTable"
-//let root = @"D:\VsCode\Github\Shrimp.UI\ServerScripting\TaskHandling"
-//let root = @"D:\VsCode\Github\Shrimp.UI\ServerScripting\DSL"
-//let root = @"D:\VsCode\Github\Shrimp.Pdf.DataTable\"
-//let root = @"D:\VsCode\Github\Shrimp.Bartender"
-//let root = @"D:\VsCode\Github\Shrimp.Compiler.Service"
-//let root = @"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction"
+
+
 
 #if !FAKE
 let execContext = Fake.Core.Context.FakeExecutionContext.Create false "generate.fsx" []
 Fake.Core.Context.setExecutionContext (Fake.Core.Context.RuntimeContext.Fake execContext)
 #endif
+
 
 let workspace = (Workspace root)
 
@@ -62,9 +50,28 @@ let workspace = (Workspace root)
 
 let nonGitTests() =
   let role = NonGit.create Logger.Level.Normal (Some {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}) workspace
-   
+  let localNugetServer =
+    {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}
   testList "NonGit tests" [
+    testCase "Project test" <| fun _ ->
+        let proj = 
+            Project.create @"D:\VsCode\Github\LiteDB.FSharp\LiteDB.FSharp\LiteDB.FSharp.fsproj"
+
+        proj
+        |> Project.updatePackages localNugetServer 
+
+        ()
+
     testCase "solution tests" <| fun _ ->
+
+                
+        let package: PackageReference = 
+            { Name = "Fake.Core.Process" 
+              Version = SemVer.parse "5.17.0"
+              Tag = PackageReferenceTag.Include
+            }
+
+   
         let m = 
             role.Solution.Projects 
             |> List.groupBy(fun project -> project.GetProjectKind())
@@ -74,8 +81,8 @@ let nonGitTests() =
                 | _ -> false
             )
 
+        pass()
 
-        ()
 
     testCase "paket install" <| fun _ ->
       NonGit.run (NonGit.Target.InstallPaketPackages) role
@@ -90,8 +97,33 @@ let nonGitTests() =
       |> ignore
 
     ftestCase "push to local nuget" <| fun _ ->
-      NonGit.run (NonGit.Target.PushToLocalNugetServerV3) role
-      |> ignore
+      let paths =
+          [
+              //@"D:\VsCode\Github\FCSWatch"
+              //@"D:\VsCode\Github\LiteDB"
+              //@"D:\VsCode\Github\LiteDB.FSharp"
+              //@"D:\VsCode\Github\Shrimp.FSharp.Plus" 
+              //@"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction" 
+              //@"D:\VsCode\Github\Shrimp.Compiler.Service"
+              //@"D:\VsCode\Github\Shrimp.Pdf" 
+              //@"D:\VsCode\Github\Shrimp.Pdf.DataTable\"
+              //@"D:\VsCode\Github\ExcelProcesser"
+              //@"D:\VsCode\Github\CellScript" 
+              //@"D:\VsCode\Github\Shrimp.LiteDB" 
+              //@"D:\VsCode\Github\Shrimp.Bartender"
+              //@"D:\VsCode\Github\Shrimp.UI"
+              //@"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
+              @"D:\VsCode\Github\Shrimp.UI\Server"
+              //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\OrdersTable"
+              //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\TaskHandling"
+              //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\DSL"
+          ]
+
+      for root in paths do
+          let workspace = (Workspace root)
+          let role = NonGit.create Logger.Level.Normal (Some localNugetServer) workspace
+          NonGit.run (NonGit.Target.PushToLocalNugetServerV3) role
+          |> ignore
 
     //testCase "test projects" <| fun _ ->
     //  BuildServer.run (!^ NonGit.Msg.Test) role

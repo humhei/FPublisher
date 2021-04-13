@@ -3,6 +3,7 @@
 open FSharp.Data
 open Newtonsoft.Json
 open Fake.Core
+open System.Collections.Concurrent
 
 module Nuget =
     type NugetServer =
@@ -18,6 +19,7 @@ module Nuget =
 
         type NugetSearchResultV3 =
             { data: NugetSearchItemResultV3 list }
+
 
         let getLastNugetVersionV3 packageName (includePrerelease: bool) (nugetServer: NugetServer) =
 

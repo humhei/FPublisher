@@ -1,4 +1,5 @@
 ﻿namespace FPublisher
+#nowarn "0104"
 open System.Xml
 open FParsec
 open System.IO
@@ -7,7 +8,8 @@ open Fake.IO.FileSystemOperators
 open System.Text.RegularExpressions
 open System.Text
 open Fake.DotNet
-open Fake.DotNet
+open Fake.Core
+
 module Solution =
 
     [<RequireQualifiedAccess>]
@@ -65,6 +67,106 @@ module Solution =
                 frameworkNode.InnerText.Trim()
                 |> TargetFramework.create
                 |> TargetFrameworks.Single
+
+    type PackageReferenceTag =
+        | Include = 0
+        | Update = 1
+
+    type PackageReference =
+        { Name: string 
+          Version: SemVerInfo
+          Tag: PackageReferenceTag }
+    with 
+        member x.AsNodeText =
+            sprintf """<PackageReference %s="%s" Version="%s"/>""" (x.Tag.ToString()) x.Name (x.Version.AsString)
+
+        member package.RegexSearcher =
+            let regexSearcher = 
+                sprintf 
+                    """<\s*PackageReference\s+%s\s*=\s*"%s"\s+Version\s*=\s*"%s"\s*\/> """ 
+                    (package.Tag.ToString())
+                    (package.Name.Replace(".", "[.]"))
+                    (package.Version.AsString.Replace(".", "[.]"))
+
+                |> fun m -> m.Trim()
+            regexSearcher
+
+
+    type UpdatablePackageReference =
+        { Package: PackageReference
+          TargetVersion: SemVerInfo }
+    with 
+        member x.AsNodeText =
+            { x.Package with 
+                Version = x.TargetVersion}.AsNodeText
+
+    type PackageReferences = private PackageReferences of PackageReference list
+    with 
+        member x.AsList =
+            let (PackageReferences v) = x
+            v
+
+        static member OfProjPath(projectFile: string) =
+            let projectFile = projectFile.Replace('\\','/')
+            let doc = new XmlDocument()
+            doc.Load(projectFile)
+            let nodes = [ for node in doc.GetElementsByTagName "PackageReference" -> node.OuterXml ]
+            
+            let packages = 
+                nodes
+                |> List.map (fun m ->
+                    let parser: Parser<_ ,unit> =
+                        //<PackageReference Include="System.ValueTuple" Version="4.5.0" />
+                        pchar '<'
+                            >>.
+                            spaces
+                            >>. pstringCI "PackageReference" 
+                            >>. 
+                            (spaces1 
+                                >>. ((pstringCI "Update" <|> pstringCI "Include") 
+                                    |>> (
+                                        fun m -> 
+                                            match m.ToLower() with 
+                                            | "update" -> PackageReferenceTag.Update
+                                            | "include" -> PackageReferenceTag.Include
+                                            | _ -> failwith "Invalid token" 
+                                        )
+                                )
+                                .>>. 
+                                (
+                                    spaces 
+                                    >>. pchar '='
+                                    >>. spaces
+                                    >>. (pchar '"' >>. (many1CharsTill anyChar (pchar '"'))
+                                )
+                            )
+                            .>>. 
+                            (spaces1
+                                >>. pstringCI "Version"
+                                >>. spaces 
+                                >>. pchar '='
+                                >>. spaces
+                                >>. (pchar '"' >>. (many1CharsTill anyChar (pchar '"')))
+                            )
+                        ) 
+                        |>> 
+                            (fun ((tag, name), version) -> 
+                                { Tag = tag
+                                  Name = name 
+                                  Version = SemVer.parse version}
+                            )
+
+                    match run parser m with 
+                    | Success (v, _, _) -> v
+                    | Failure (error, _ , _) -> failwith "Error"
+                )
+
+
+
+            packages
+            |> List.distinctBy(fun m -> m.Name.ToLower())
+            |> PackageReferences 
+
 
     [<RequireQualifiedAccess>]
     type OutputType =
@@ -125,6 +227,7 @@ module Solution =
         { ProjPath: string
           OutputType: OutputType
           TargetFrameworks: TargetFrameworks
+          PackageReferences: PackageReferences
           SDK: SDK }
     with
         member x.GetName() = Path.GetFileNameWithoutExtension x.ProjPath
@@ -169,12 +272,63 @@ module Solution =
 
     [<RequireQualifiedAccess>]
     module Project =
+        open FPublisher.Nuget
+
         let create (projPath: string) =
             { OutputType = OutputType.ofProjPath projPath
               ProjPath = projPath
               TargetFrameworks = TargetFrameworks.ofProjPath projPath
+              PackageReferences = PackageReferences.OfProjPath projPath
               SDK = SDK.ofProjPath projPath }
 
+
+        let updatablePackages (nugetServer: NugetServer) (project: Project) =    
+            let updatablePackages = 
+                project.PackageReferences.AsList
+                |> List.filter(fun package ->
+                    match package.Tag with 
+                    | PackageReferenceTag.Include -> true
+                    | PackageReferenceTag.Update -> false
+                )
+                |> List.choose(fun package ->
+                    match NugetServer.getLastNugetVersionV3 package.Name true nugetServer with 
+                    | Some version -> 
+                        let serverVersion = SemVer.parse version
+                        let localVersion = package.Version
+                        if serverVersion > localVersion
+                        then Some { Package = package; TargetVersion = serverVersion }
+                        else None
+                    | None -> None
+                )
+
+            updatablePackages
+
+        let updatePackages (nugetServer: NugetServer) project =
+            let packages = updatablePackages nugetServer project
+            let projText = File.ReadAllText(project.ProjPath, Encoding.UTF8)
+
+            let newProjText =
+                (projText, packages)
+                ||> List.fold(fun projText package ->
+                    Regex.Replace(projText, package.Package.RegexSearcher, package.AsNodeText)
+                ) 
+
+            File.WriteAllText(project.ProjPath, newProjText, Encoding.UTF8)
+
+
+            { project with 
+                PackageReferences = PackageReferences.OfProjPath project.ProjPath
+            }
+
+        let clean (project: Project) =
+            let projDir = project.GetProjDir() 
+            let binDir = projDir </> "bin"
+            let objDir = projDir </> "obj"
+
+            Shell.cleanDir binDir
+            Shell.cleanDir objDir
+
+            
 
     type Solution =
         { Path: string
@@ -224,6 +378,10 @@ module Solution =
         let build setParams (solution: Solution) =
             DotNet.build setParams solution.Path 
 
+        let clean (solution: Solution) =
+            for project in solution.Projects do
+                Project.clean project
+
         let pack setParams (solution: Solution) =
 
             let groupedProjects = 
@@ -240,6 +398,19 @@ module Solution =
                     FPublisher.DotNet.pack setParams project.ProjPath
 
             groupedProjects
+
+        let updatablePackages nugetServer (solution: Solution) =
+            solution.Projects
+            |> List.collect(Project.updatablePackages nugetServer)
+
+        let updatePackages nugetServer (solution: Solution) =
+            { solution with 
+                Projects =
+                    solution.Projects
+                    |> List.map (Project.updatePackages nugetServer)
+                }
+
+
 
         let getPackageNames (solution: Solution) =
             solution.Projects
