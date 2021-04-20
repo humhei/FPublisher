@@ -305,6 +305,7 @@ module Solution =
 
         let updatePackages (nugetServer: NugetServer) project =
             let packages = updatablePackages nugetServer project
+
             let projText = File.ReadAllText(project.ProjPath, Encoding.UTF8)
 
             let newProjText =
@@ -315,6 +316,18 @@ module Solution =
 
             File.WriteAllText(project.ProjPath, newProjText, Encoding.UTF8)
 
+
+            //for package in packages do
+            //    let r = 
+
+            //        DotNet.exec (fun op -> 
+            //            {op with 
+            //                WorkingDirectory = project.GetProjDir()
+            //        }) (sprintf "add %s package" project.ProjPath) (sprintf "%s --source %s" package.Package.Name nugetServer.Serviceable)
+
+            //    match r.OK with 
+            //    | true -> ()
+            //    | false -> failwithf "%A" r.Errors
 
             { project with 
                 PackageReferences = PackageReferences.OfProjPath project.ProjPath

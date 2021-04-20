@@ -22,6 +22,7 @@ module NonGit =
         | Pack of (FPublisher.DotNet.PackOptions -> FPublisher.DotNet.PackOptions)
         | Test
         | PushToLocalNugetServerV3
+        | PushToLocalPackagesFolder
         | Publish of (DotNet.PublishOptions -> DotNet.PublishOptions)
 
 
@@ -32,6 +33,7 @@ module NonGit =
           Pack: TargetState<list<ProjectKind * Project list>>
           Test: BoxedTargetState
           PushToLocalNugetServerV3: BoxedTargetState
+          PushToLocalPackagesFolder: BoxedTargetState
           Publish: BoxedTargetState }
 
     [<RequireQualifiedAccess>]
@@ -43,18 +45,20 @@ module NonGit =
               Pack = TargetState.Init
               Test = TargetState.Init
               PushToLocalNugetServerV3 = TargetState.Init
+              PushToLocalPackagesFolder = TargetState.Init
               Publish = TargetState.Init }
 
     type Role =
         { Solution: Solution
           Workspace: Workspace
           LocalNugetServerV3: NugetServer option
+          LocalPackagesFolder: string option
           TargetStates: TargetStates }
     with 
         interface IRole<TargetStates>
 
 
-    let create loggerLevel localNugetServerV3 (workspace: Workspace) =
+    let create loggerLevel localNugetServerV3 localPackagesFolder (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
 
         let repoName = Workspace.tryGetRepoName workspace
@@ -97,6 +101,7 @@ module NonGit =
             { Solution = Solution.read slnPath
               Workspace = workspace
               LocalNugetServerV3 = localNugetServerV3
+              LocalPackagesFolder = localPackagesFolder
               TargetStates = TargetStates.init }
 
         | None -> failwithf "Solution of %A not found" slnPaths
@@ -163,6 +168,33 @@ module NonGit =
                     { DependsOn = [Target.InstallPaketPackages; packTarget] 
                       Action = MapState (fun role -> 
                         let nupkgs = !! (outputDirectory </> "./*.nupkg")
+
+                        match role.LocalPackagesFolder with 
+                        | Some localPackagesFolder -> 
+                            let nugetTool =
+                                let platformTool tool =
+                                    ProcessUtils.tryFindFileOnPath tool
+                                    |> function Some t -> t | _ -> failwithf "%s not found" tool
+                                platformTool "nuget"
+
+                            let run cmd dir args =
+                                let result =
+                                    CreateProcess.fromRawCommandLine cmd args
+                                    |> CreateProcess.withWorkingDirectory dir
+                                    |> Proc.run
+                                if result.ExitCode <> 0 then
+                                    failwithf "Error while running '%s' with args: %s " cmd args
+
+                            nupkgs
+                            |> Seq.iter(fun nupkg ->
+                                let destFile = localPackagesFolder </> (Path.GetFileName nupkg)
+                                run nugetTool role.Workspace.WorkingDir (sprintf "add %s -source %s" nupkg localPackagesFolder) 
+
+                                //File.Copy(nupkg, destFile, true)
+                            )
+
+                        | None -> ()
+
                         for nupkg in nupkgs do
                             DotNet.nugetPush (fun ops -> 
                                 {ops with 
@@ -180,6 +212,10 @@ module NonGit =
                     logger.Warn "role %A doesn't include a local nuget server" role
                     { DependsOn = [] 
                       Action = MapState (fun role -> none) }
+
+
+            | Target.PushToLocalPackagesFolder -> failwith "Not implemented"
+                
 
             | Target.Publish _ -> failwith "Not implemented"
         )

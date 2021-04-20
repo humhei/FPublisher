@@ -2,8 +2,6 @@
 
 open FSharp.Data
 open Newtonsoft.Json
-open Fake.Core
-open System.Collections.Concurrent
 
 module Nuget =
     type NugetServer =

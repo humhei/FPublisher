@@ -44,12 +44,13 @@ let workspace = (Workspace root)
 //  ]
 
 
-
+let localPackagesFolder = Some @"D:\Users\Jia\Documents\MyData\Tools\LocalPackages"
 
 
 
 let nonGitTests() =
-  let role = NonGit.create Logger.Level.Normal (Some {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}) workspace
+  
+  let role = NonGit.create Logger.Level.Normal (Some {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}) localPackagesFolder workspace
   let localNugetServer =
     {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}
   testList "NonGit tests" [
@@ -106,14 +107,14 @@ let nonGitTests() =
               //@"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction" 
               //@"D:\VsCode\Github\Shrimp.Compiler.Service"
               //@"D:\VsCode\Github\Shrimp.Pdf" 
+              //@"D:\VsCode\Github\CellScript" 
               //@"D:\VsCode\Github\Shrimp.Pdf.DataTable\"
               //@"D:\VsCode\Github\ExcelProcesser"
-              //@"D:\VsCode\Github\CellScript" 
               //@"D:\VsCode\Github\Shrimp.LiteDB" 
               //@"D:\VsCode\Github\Shrimp.Bartender"
               //@"D:\VsCode\Github\Shrimp.UI"
-              //@"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
-              @"D:\VsCode\Github\Shrimp.UI\Server"
+              @"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
+              //@"D:\VsCode\Github\Shrimp.UI\Server"
               //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\OrdersTable"
               //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\TaskHandling"
               //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\DSL"
@@ -121,7 +122,7 @@ let nonGitTests() =
 
       for root in paths do
           let workspace = (Workspace root)
-          let role = NonGit.create Logger.Level.Normal (Some localNugetServer) workspace
+          let role = NonGit.create Logger.Level.Normal (Some localNugetServer) localPackagesFolder workspace
           NonGit.run (NonGit.Target.PushToLocalNugetServerV3) role
           |> ignore
 
