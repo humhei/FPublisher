@@ -47,9 +47,10 @@ module DotNet =
 
         let asFakePackOptions packOptions : DotNet.PackOptions =
             { NoBuild = packOptions.NoBuild 
-              //NoLogo = true
-              //IncludeSymbols = false
+              NoLogo = true
+              IncludeSymbols = false
               Configuration = packOptions.Configuration 
+
               VersionSuffix = None 
               BuildBasePath = None 
               OutputPath = packOptions.OutputPath 
@@ -81,7 +82,3 @@ module DotNet =
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = setParams PackOptions.DefaultValue
         DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
-
-        //try
-        //    DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
-        //with ex -> ()

@@ -11,13 +11,13 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <PackageReference Include="Expecto" Version="8.9.1" />
-    <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.6" />
+    <PackageReference Include="Expecto" Version="9.0.4" />
+    <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.114" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.0" />
+    <PackageReference Update="FSharp.Core" Version="5.0.2" />
   </ItemGroup>
 </Project>

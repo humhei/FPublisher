@@ -2,22 +2,14 @@
 open FParsec
 open FParsec.CharParsers
 
+let a = 1.0
+let b = System.Int32.Parse (a.ToString())
+
 let parser: Parser<_ ,unit> =
     //<PackageReference Include="System.ValueTuple" Version="4.5.0" />
     
-    (pstringCI "PackageReference" 
-        >>. spaces1 
-        >>. (pstringCI "Update" <|> pstringCI "Include")
-        >>. spaces 
-        >>. pchar '='
-        >>. spaces
-        >>. between (pchar '"') (pchar '"') (many1Chars anyChar)
-        .>>. spaces1
-        >>. pstringCI "Version"
-        >>. spaces 
-        >>. pchar '='
-        >>. spaces
-        >>. between (pchar '"') (pchar '"') (many1Chars anyChar)
+    (anyString 100
     )
 
-run parser """PackageReference Include="System.ValueTuple" Version="4.5.0" """
+run parser """PackageReference Include="System.ValueTuple" Version="4.5.0" AASAAS SSSS    """
+|> printfn "%A"

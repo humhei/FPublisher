@@ -119,11 +119,11 @@ module NonGit =
 
 
             | Target.Build setParams ->
-                { DependsOn = [Target.Clean; Target.InstallPaketPackages] 
+                { DependsOn = [Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.build setParams role.Solution ; none)}
 
             | Target.Pack setParams ->
-                { DependsOn = [Target.Clean; Target.InstallPaketPackages] 
+                { DependsOn = [Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
 
             | Target.Test ->

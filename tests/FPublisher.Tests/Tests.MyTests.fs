@@ -100,10 +100,14 @@ let nonGitTests() =
     ftestCase "push to local nuget" <| fun _ ->
       let paths =
           [
+              //@"D:\VsCode\Github\Akkling" 
+                //@"D:\VsCode\Github\FPublisher"
+              //@"C:\Users\Jia\Desktop\hello"
+              //@"D:\VsCode\Github\Shrimp.FileWatcher" 
               //@"D:\VsCode\Github\FCSWatch"
               //@"D:\VsCode\Github\LiteDB"
               //@"D:\VsCode\Github\LiteDB.FSharp"
-              //@"D:\VsCode\Github\Shrimp.FSharp.Plus" 
+              @"D:\VsCode\Github\Shrimp.FSharp.Plus"
               //@"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction" 
               //@"D:\VsCode\Github\Shrimp.Compiler.Service"
               //@"D:\VsCode\Github\Shrimp.Pdf" 
@@ -113,9 +117,12 @@ let nonGitTests() =
               //@"D:\VsCode\Github\Shrimp.LiteDB" 
               //@"D:\VsCode\Github\Shrimp.Bartender"
               //@"D:\VsCode\Github\Shrimp.UI"
-              @"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
+              //@"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
               //@"D:\VsCode\Github\Shrimp.UI\Server"
-              //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\OrdersTable"
+              //@"D:\VsCode\Github\Shrimp.Workflow\src\TypeProvider"
+              //@"D:\VsCode\Github\Shrimp.Workflow\src\Orders"
+              //@"D:\VsCode\Github\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.VerifyDocuments"
+              //@"D:\VsCode\Github\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.DigitalPrinting"
               //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\TaskHandling"
               //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\DSL"
           ]
@@ -123,6 +130,7 @@ let nonGitTests() =
       for root in paths do
           let workspace = (Workspace root)
           let role = NonGit.create Logger.Level.Normal (Some localNugetServer) localPackagesFolder workspace
+          //NonGit.run (NonGit.Target.Clean) role
           NonGit.run (NonGit.Target.PushToLocalNugetServerV3) role
           |> ignore
 

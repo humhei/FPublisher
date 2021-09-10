@@ -13,18 +13,18 @@
     <Compile Include="Roles/NonGit.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Fake.Core.Process" Version="5.17.0" />
-    <PackageReference Include="Fake.Core.ReleaseNotes" Version="5.17.0" />
-    <PackageReference Include="Fake.DotNet.Cli" Version="5.17.0" />
-    <PackageReference Include="Fake.IO.FileSystem" Version="5.17.0" />
-    <PackageReference Include="Fake.Tools.Git" Version="5.17.0" />
+    <PackageReference Include="Fake.Core.Process" Version="5.20.4" />
+    <PackageReference Include="Fake.Core.ReleaseNotes" Version="5.20.4" />
+    <PackageReference Include="Fake.DotNet.Cli" Version="5.20.4" />
+    <PackageReference Include="Fake.IO.FileSystem" Version="5.20.4" />
+    <PackageReference Include="Fake.Tools.Git" Version="5.20.4" />
     <PackageReference Include="FParsec" Version="1.1.1" />
-    <PackageReference Include="FSharp.Data" Version="3.3.3" />
-    <PackageReference Include="MSBuild.StructuredLogger" Version="2.1.133" />
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0-preview.2.20160.6" />
+    <PackageReference Include="FSharp.Data" Version="4.2.2" />
+    <PackageReference Include="MSBuild.StructuredLogger" Version="2.1.545" />
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.0" />
+    <PackageReference Update="FSharp.Core" Version="5.0.2" />
   </ItemGroup>
 </Project>
