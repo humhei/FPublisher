@@ -12,9 +12,13 @@ open FPublisher.Nuget
 open FPublisher.Solution
 open System.Text.RegularExpressions
 open FParsec
-
+open Shrimp.FSharp.Plus
+open Deedle
 open FSharp.Linq.RuntimeHelpers
 
+let a =
+    [1; 2; 3]
+    |> List.minBy(fun m -> m)
 
 
 let pass() = Expect.isTrue true "passed"
@@ -22,6 +26,18 @@ let fail() = Expect.isTrue false "failed"
 
 
 let root =  Path.getFullName (Path.Combine (__SOURCE_DIRECTORY__,"../../"))
+
+type A =
+    { A: int 
+      B: bool }
+
+
+type B =
+    { A: int 
+      B: string }
+
+let m = {A = 6; B = ""}
+let cL: A = {A = 6; B = true }
 
 
 
@@ -46,7 +62,12 @@ let workspace = (Workspace root)
 
 let localPackagesFolder = Some @"D:\Users\Jia\Documents\MyData\Tools\LocalPackages"
 
-
+type Hello =
+    { Name: string 
+      Age: int 
+      Sex: string }
+with 
+    member x.Addr  = "MyAddreass"
 
 let nonGitTests() =
   
@@ -56,7 +77,7 @@ let nonGitTests() =
   testList "NonGit tests" [
     testCase "Project test" <| fun _ ->
         let proj = 
-            Project.create @"D:\VsCode\Github\LiteDB.FSharp\LiteDB.FSharp\LiteDB.FSharp.fsproj"
+            Project.create @"D:\VsCode\Workspace\LiteDB.FSharp\LiteDB.FSharp\LiteDB.FSharp.fsproj"
 
         proj
         |> Project.updatePackages localNugetServer 
@@ -98,33 +119,67 @@ let nonGitTests() =
       |> ignore
 
     ftestCase "push to local nuget" <| fun _ ->
+
       let paths =
           [
-              //@"D:\VsCode\Github\Akkling" 
-                //@"D:\VsCode\Github\FPublisher"
+              //@"D:\VsCode\Workspace\Akkling" 
+              //@"D:\VsCode\Workspace\FPublisher"
               //@"C:\Users\Jia\Desktop\hello"
-              //@"D:\VsCode\Github\Shrimp.FileWatcher" 
-              //@"D:\VsCode\Github\FCSWatch"
-              //@"D:\VsCode\Github\LiteDB"
-              //@"D:\VsCode\Github\LiteDB.FSharp"
-              @"D:\VsCode\Github\Shrimp.FSharp.Plus"
-              //@"D:\VsCode\Github\Shrimp.Akkling.Cluster.Intergraction" 
-              //@"D:\VsCode\Github\Shrimp.Compiler.Service"
-              //@"D:\VsCode\Github\Shrimp.Pdf" 
-              //@"D:\VsCode\Github\CellScript" 
-              //@"D:\VsCode\Github\Shrimp.Pdf.DataTable\"
-              //@"D:\VsCode\Github\ExcelProcesser"
-              //@"D:\VsCode\Github\Shrimp.LiteDB" 
-              //@"D:\VsCode\Github\Shrimp.Bartender"
-              //@"D:\VsCode\Github\Shrimp.UI"
-              //@"D:\VsCode\Github\Shrimp.UI\Shrimp.Model"
-              //@"D:\VsCode\Github\Shrimp.UI\Server"
-              //@"D:\VsCode\Github\Shrimp.Workflow\src\TypeProvider"
-              //@"D:\VsCode\Github\Shrimp.Workflow\src\Orders"
-              //@"D:\VsCode\Github\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.VerifyDocuments"
-              //@"D:\VsCode\Github\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.DigitalPrinting"
-              //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\TaskHandling"
-              //@"D:\VsCode\Github\Shrimp.UI\ServerScripting\DSL"
+              //@"D:\VsCode\Workspace\Shrimp.FileWatcher" 
+              //@"D:\VsCode\Workspace\FCSWatch"
+              //@"D:\VsCode\Workspace\LiteDB"
+              ////@"D:\VsCode\Workspace\LiteDB.FSharp"
+              //@"D:\VsCode\Workspace\Shrimp.FSharp.Plus"
+              //@"D:\VsCode\Workspace\Shrimp.Akkling.Cluster.Intergraction" 
+              //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"
+              //@"D:\VsCode\Workspace\Shrimp.Pdf" 
+              //@"D:\VsCode\Workspace\CellScript" 
+
+
+              //@"D:\VsCode\Workspace\Shrimp.Pdf.DataTable\"
+              //@"D:\VsCode\Workspace\ExcelProcesser"
+              //@"D:\VsCode\Workspace\Shrimp.LiteDB" 
+
+              ///-------------------------------------------------------------
+              /// Shrimp.LiteDB: LOCAL Background Application packages update
+              ///-------------------------------------------------------------
+
+              //@"D:\VsCode\Workspace\Shrimp.Acrobat"
+
+              ///-------------------------------------------------------------
+              /// Shrimp.Acrobat: LOCAL Background Application packages update
+              ///-------------------------------------------------------------
+
+
+              //@"D:\VsCode\Workspace\Shrimp.Bartender"
+
+              ///-------------------------------------------------------------
+              /// BARTENDER: LOCAL Background Application packages update
+              ///-------------------------------------------------------------
+
+
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.PdfPageInfos"
+
+
+
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\TypeProvider"
+
+              ///-------------------------------------------------------------
+              /// TypeProviderServer: LOCAL Background Application packages update
+              ///-------------------------------------------------------------
+
+
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Model"
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Orders"
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\CustomerSupply"  
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.Products"   
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\SuccessfulPrint"
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.OrderForm"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.VerifyDocuments"
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.DigitalPrinting"
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting"
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting.TwoFaces"
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\tools\ws"
           ]
 
       for root in paths do

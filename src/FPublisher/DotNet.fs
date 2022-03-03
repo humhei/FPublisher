@@ -45,6 +45,7 @@ module DotNet =
             override x.ToString() =
                 sprintf "/p:%s=\"%s\"" x.Property x.Value
 
+
         let asFakePackOptions packOptions : DotNet.PackOptions =
             { NoBuild = packOptions.NoBuild 
               NoLogo = true

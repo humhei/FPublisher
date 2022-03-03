@@ -19,5 +19,4 @@
     <ProjectReference Include="..\..\src\FPublisher.Expecto\FPublisher.Expecto.fsproj" />
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

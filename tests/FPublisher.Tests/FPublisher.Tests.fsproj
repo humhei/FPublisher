@@ -9,10 +9,10 @@
     <Compile Include="Tests.MyTests.fs" />
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
+    <PackageReference Include="Deedle" Version="2.5.0" />
     <PackageReference Include="Expecto" Version="9.0.4" />
-    <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.114" />
+    <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.257" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />

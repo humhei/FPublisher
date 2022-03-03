@@ -161,7 +161,7 @@ module NonGit =
                         Target.Pack (fun ops ->
                             { ops with 
                                 OutputPath = Some outputDirectory 
-                                Configuration = DotNet.BuildConfiguration.Release 
+                                Configuration = DotNet.BuildConfiguration.Release
                                 Version = Some version }
                         )
 
