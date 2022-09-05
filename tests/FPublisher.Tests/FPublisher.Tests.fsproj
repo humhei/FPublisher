@@ -12,12 +12,12 @@
   <ItemGroup>
     <PackageReference Include="Deedle" Version="2.5.0" />
     <PackageReference Include="Expecto" Version="9.0.4" />
-    <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.257" />
+    <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.394"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.2" />
+    <PackageReference Update="FSharp.Core" Version="5.0.1" />
   </ItemGroup>
 </Project>

@@ -83,3 +83,4 @@ module DotNet =
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = setParams PackOptions.DefaultValue
         DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
+

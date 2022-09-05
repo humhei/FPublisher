@@ -129,16 +129,17 @@ let nonGitTests() =
               //@"D:\VsCode\Workspace\FCSWatch"
               //@"D:\VsCode\Workspace\LiteDB"
               ////@"D:\VsCode\Workspace\LiteDB.FSharp"
+              //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"
               //@"D:\VsCode\Workspace\Shrimp.FSharp.Plus"
               //@"D:\VsCode\Workspace\Shrimp.Akkling.Cluster.Intergraction" 
-              //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"
-              //@"D:\VsCode\Workspace\Shrimp.Pdf" 
               //@"D:\VsCode\Workspace\CellScript" 
 
 
-              //@"D:\VsCode\Workspace\Shrimp.Pdf.DataTable\"
-              //@"D:\VsCode\Workspace\ExcelProcesser"
               //@"D:\VsCode\Workspace\Shrimp.LiteDB" 
+              //@"D:\VsCode\Workspace\Shrimp.Pdf" 
+              //@"D:\VsCode\Workspace\Shrimp.Pdf.Enhancement" 
+              //@"D:\VsCode\Workspace\Shrimp.Pdf.DataTable"
+              //@"D:\VsCode\Workspace\ExcelProcesser"
 
               ///-------------------------------------------------------------
               /// Shrimp.LiteDB: LOCAL Background Application packages update
@@ -158,6 +159,7 @@ let nonGitTests() =
               ///-------------------------------------------------------------
 
 
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Query"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.PdfPageInfos"
 
 
@@ -169,18 +171,373 @@ let nonGitTests() =
               ///-------------------------------------------------------------
 
 
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\CustomerSupply"  
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Model"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Orders"
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\CustomerSupply"  
-              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.Products"   
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.Products"   
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.Products.TasksTarget"   
               @"D:\VsCode\Workspace\Shrimp.Workflow\src\SuccessfulPrint"
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.OrderForm"
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.VerifyDocuments"
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.DigitalPrinting"
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting"
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting.TwoFaces"
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\tools\ws"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.Orderform"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.VerifyDocuments"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.DigitalPrinting"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting.TwoFaces"
+              @"d:\vscode\workspace\shrimp.workflow\tools\ws"
+              @"D:\VsCode\Workspace\ExcelDnaWidget\QuickImpose"
+              @"D:\VsCode\Workspace\ExcelDnaWidget\QuickImpose.Book"
+              @"D:\VsCode\Workspace\ExcelDnaWidget"
           ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       for root in paths do
           let workspace = (Workspace root)
