@@ -10,7 +10,7 @@ open System.IO
 module File =
     let writeToTmpFile ext text =
         let file = 
-            Path.ChangeExtension(Path.GetTempFileName(), ext)
+            Path.ChangeExtension(Path.GetTempFileNameEx(), ext)
         File.WriteAllText(file, text, Text.Encoding.UTF8)
         file
 

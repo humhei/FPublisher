@@ -8,6 +8,7 @@ open Fake.IO.FileSystemOperators
 open System.Text.RegularExpressions
 open System.Text
 open Fake.DotNet
+open Shrimp.FSharp.Plus
 open Fake.Core
 
 module Solution =
@@ -223,11 +224,73 @@ module Solution =
         | AspNetCore = 3
         | Others = 4
 
+    type ProjectReference = ProjectReference of string 
+    with 
+        member x.Value =
+            let (ProjectReference v) = x
+            v
+
+        member x.FileNameIC =
+            x.Value
+            |> Path.GetFileName
+            |> StringIC
+
+    type ProjectReferences = ProjectReferences of ProjectReference list
+    with 
+        member x.Value =
+            let (ProjectReferences v) = x
+            v
+
+        static member OfProjPath(projectFile: string) =
+            let projectFile = projectFile.Replace('\\','/')
+            let doc = new XmlDocument()
+            doc.Load(projectFile)
+            let nodes = [ for node in doc.GetElementsByTagName "ProjectReference" -> node.OuterXml ]
+            
+            let projectReferences = 
+                nodes
+                |> List.map (fun m ->
+                    let parser: Parser<_ ,unit> =
+                        //<PackageReference Include="System.ValueTuple" Version="4.5.0" />
+                        pchar '<'
+                            >>.
+                            spaces
+                            >>. pstringCI "ProjectReference" 
+                            >>. 
+                            (spaces1 
+                                >>. (pstringCI "Include") 
+                                
+                                >>. 
+                                (
+                                    spaces 
+                                    >>. pchar '='
+                                    >>. spaces
+                                    >>. (pchar '"' >>. (many1CharsTill anyChar (pchar '"'))
+                                )
+                            )
+                        ) 
+                        
+                            
+
+                    match run parser m with 
+                    | Success (v, _, _) -> v
+                    | Failure (error, _ , _) -> failwith "Error"
+                )
+
+
+
+            projectReferences
+            |> List.distinctBy(fun m -> m.ToLower())
+            |> List.map ProjectReference
+            |> ProjectReferences
+
+
     type Project =
         { ProjPath: string
           OutputType: OutputType
           TargetFrameworks: TargetFrameworks
           PackageReferences: PackageReferences
+          ProjectReferences: ProjectReferences
           SDK: SDK }
     with
         member x.GetName() = Path.GetFileNameWithoutExtension x.ProjPath
@@ -279,7 +342,9 @@ module Solution =
               ProjPath = projPath
               TargetFrameworks = TargetFrameworks.ofProjPath projPath
               PackageReferences = PackageReferences.OfProjPath projPath
-              SDK = SDK.ofProjPath projPath }
+              SDK = SDK.ofProjPath projPath
+              ProjectReferences = ProjectReferences.OfProjPath projPath
+              }
 
 
         let updatablePackages (nugetServer: NugetServer) (project: Project) =    
@@ -391,12 +456,13 @@ module Solution =
         let build setParams (solution: Solution) =
             DotNet.build setParams solution.Path 
 
+
+
         let clean (solution: Solution) =
             for project in solution.Projects do
                 Project.clean project
 
         let pack setParams (solution: Solution) =
-
             let groupedProjects = 
                 solution.Projects
                 |> List.groupBy(fun project -> project.GetProjectKind())
@@ -405,8 +471,49 @@ module Solution =
                     | ProjectKind.CoreCli | ProjectKind.Library | ProjectKind.AspNetCore -> true
                     | _ -> false
                 )
+            
+
+            let ops: FPublisher.DotNet.PackOptions = setParams (FPublisher.DotNet.PackOptions.DefaultValue)
+
+            //let build () =
+            //    match ops.NoBuild with 
+            //    | true -> ()
+            //    | false ->
+            //        let projects = 
+            //            groupedProjects
+            //            |> List.collect(snd)
+                
+            //        let bottomProjects =
+            //            let allTheReferenced =
+            //                projects
+            //                |> List.collect(fun m -> 
+            //                    let fileNames = 
+            //                        m.ProjectReferences.Value
+            //                        |> List.map(fun m -> m.FileNameIC)
+
+            //                    fileNames
+            //                )
+            //                |> List.distinct
+
+            //            projects
+            //            |> List.filter(fun m ->
+            //                let projName = m.ProjPath |> Path.GetFileName |> StringIC
+            //                List.contains projName allTheReferenced
+            //                |> not
+            //            )
+
+
+            //        for bottomProject in bottomProjects do
+            //            printfn "Building Bottom project %s" bottomProject.ProjPath
+            //            let ops = FPublisher.DotNet.PackOptions.asFakeBuildOptions ops 
+            //            DotNet.build (fun (m: DotNet.BuildOptions) ->
+            //                { ops with OutputPath = None }
+            //            ) bottomProject.ProjPath
+
+
 
             for (projectKind, projects) in groupedProjects do 
+                //build ()
                 for project in projects do
                     FPublisher.DotNet.pack setParams project.ProjPath
 

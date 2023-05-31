@@ -8,6 +8,7 @@ open Tests.MyTests
 open Fake.IO
 open FPublisher
 open Fake.Core
+open System.IO
 
 let testConfig =
     { Expecto.Tests.defaultConfig with
@@ -36,6 +37,7 @@ let private platformTool tool =
 
 [<EntryPoint>]
 let main argv = 
+
     let tests = 
         match argv with 
         | argv when Array.contains "--RunCI" argv -> allTests
@@ -54,7 +56,6 @@ let main argv =
     //| i -> failwith "Error while running ws.exe" 
         
 
-
-    runTests testConfig tests
+    runTests testConfig tests                              
 
     Console.Read()

@@ -37,7 +37,7 @@ module DotNet =
               Tags = [] }
 
     [<RequireQualifiedAccess>]
-    module private PackOptions =
+    module  PackOptions =
         type CustomParam =
             { Property: string 
               Value: string }
@@ -75,7 +75,36 @@ module DotNet =
                 }
               NoRestore = packOptions.NoRestore
               MSBuildParams = MSBuild.CliArguments.Create()
-                   
+            }
+
+        let asFakeBuildOptions (packOptions: PackOptions) : DotNet.BuildOptions =
+            let ops = DotNet.BuildOptions.Create()
+            { 
+              ops with 
+                  NoLogo = true
+                  Configuration = packOptions.Configuration 
+                  Framework = ops.Framework
+                  OutputPath = packOptions.OutputPath 
+                  Common = 
+                    { DotNet.Options.Create() with 
+                        CustomParams = 
+                            [
+                                if packOptions.Tags.Length > 0 then yield { Property = "PackageTags"; Value = String.separated ";" packOptions.Authors }
+                                if packOptions.Authors.Length > 0 then yield { Property = "Authors"; Value = String.separated ";" packOptions.Authors }
+                                if packOptions.GenerateDocumentationFile then yield { Property = "GenerateDocumentationFile"; Value = "true" }
+                                match packOptions.Description with Some description -> yield { Property = "Description"; Value = description } | None -> ()
+                                match packOptions.ReleaseNotes with Some releaseNotes -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes.Notes } | None -> ()
+                                match packOptions.PackageIconUrl with Some packageIconUrl -> yield { Property = "PackageIconUrl"; Value = packageIconUrl } | None -> ()
+                                match packOptions.PackageProjectUrl with Some packageProjectUrl -> yield { Property = "PackageProjectUrl"; Value = packageProjectUrl } | None -> ()
+                                match packOptions.PackageLicenseUrl with Some packageLicenseUrl -> yield { Property = "PackageLicenseUrl"; Value = packageLicenseUrl } | None -> ()
+                                match packOptions.Version with Some version -> yield { Property = "Version"; Value = version } | None -> ()
+                            ] 
+                            |> List.map (fun prop -> prop.ToString())
+                            |> String.concat " "
+                            |> Some
+                    }
+                  NoRestore = packOptions.NoRestore
+                  MSBuildParams = MSBuild.CliArguments.Create()
             }
 
 
@@ -83,4 +112,5 @@ module DotNet =
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = setParams PackOptions.DefaultValue
         DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
+
 
