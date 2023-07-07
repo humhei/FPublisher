@@ -146,7 +146,7 @@ let nonGitTests() =
               //@"D:\VsCode\Workspace\LiteDB"
               //@"D:\VsCode\Workspace\LiteDB.FSharp"
               //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"
-              @"D:\VsCode\Workspace\Shrimp.FSharp.Plus"
+              //@"D:\VsCode\Workspace\Shrimp.FSharp.Plus"
               //@"D:\VsCode\Workspace\Shrimp.Akkling.Cluster.Intergraction" 
               //@"D:\VsCode\Workspace\CellScript" 
 
