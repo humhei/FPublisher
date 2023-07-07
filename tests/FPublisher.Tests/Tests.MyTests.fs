@@ -198,7 +198,7 @@ let nonGitTests() =
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\SuccessfulPrint.Integrated.Concated"                                                            
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\SuccessfulPrint.Plugin"                                                            
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.Orderform"                 
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.VerifyDocuments"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.Verifydocuments"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.DigitalPrinting"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting.TwoFaces"
