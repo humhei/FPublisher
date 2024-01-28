@@ -14,7 +14,6 @@ open Fake.IO.FileSystemOperators
 open System.Text.RegularExpressions
 open System.Text
 open Fake.DotNet
-open Shrimp.FSharp.Plus
 open Fake.Core
 
 

@@ -4,6 +4,7 @@
       <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="FSharpPlus.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="FakeHelper.fs" />
     <Compile Include="Core\Extensions.fs" />
@@ -34,7 +35,6 @@
     <PackageReference Include="Fake.Tools.Git" Version="5.20.4" />
     <PackageReference Include="FParsec" Version="1.1.1" />
     <PackageReference Include="FSharp.Data" Version="4.2.2" />
-    <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.473" />
     <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
       <PackageReference Include="Fake.BuildServer.AppVeyor" Version="5.20.4" />

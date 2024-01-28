@@ -19,7 +19,6 @@ open System.Text.RegularExpressions
 open System.Text
 open Fake.DotNet
 open Fake.IO.Globbing.Operators
-open Shrimp.FSharp.Plus
 open Fake.Core
 
 [<AutoOpen>]
