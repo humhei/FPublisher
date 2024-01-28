@@ -44,7 +44,11 @@ let main argv =
         allResults
         |> List.tryPick(fun m ->
             match m with 
-            | Arguments.WorkingDir dir -> Some (Path.GetFullPath dir)
+            | Arguments.WorkingDir dir ->   
+                printf "Origin Working Dir %s" (Directory.GetCurrentDirectory())
+                let newWorkingDir = Path.GetFullPath dir
+                printf "New Working Dir %s" (newWorkingDir)
+                Some (newWorkingDir)
             | _ -> None
         )
 
