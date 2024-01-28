@@ -134,7 +134,7 @@ module BuildServer =
             match BuildServer.buildServer with
             | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
-
+                
                 let isJustAfterDraftedNewRelease (role: Role) =
                     let repoTagName = AppVeyor.Environment.RepoTagName
                     if String.isNullOrEmpty repoTagName

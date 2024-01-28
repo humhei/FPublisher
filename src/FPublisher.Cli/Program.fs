@@ -5,6 +5,7 @@ open Argu
 open FPublisher.Roles
 open FPublisher
 open FPublisher.Solution
+open System.IO
 open FPublisher.Nuget
 open FPublisher.Nuget.Nuget
 open Fake.Core
@@ -43,7 +44,7 @@ let main argv =
         allResults
         |> List.tryPick(fun m ->
             match m with 
-            | Arguments.WorkingDir dir -> Some dir
+            | Arguments.WorkingDir dir -> Some (Path.GetFullPath dir)
             | _ -> None
         )
 
