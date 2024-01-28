@@ -1,31 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
+      <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Logger.fs" />
-    <Compile Include="Extensions.fs" />
-    <Compile Include="Types.fs" />
-    <Compile Include="Nuget.fs" />
-    <Compile Include="DotNet.fs" />
-    <Compile Include="Solution.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="FakeHelper.fs" />
+    <Compile Include="Core\Extensions.fs" />
+    <Compile Include="Core\Logger.fs" />
+    <Compile Include="Core\Types.fs" />
+    <Compile Include="Core\DotNet.fs" />
+    <Compile Include="Core\Nuget.fs" />
+    <Compile Include="Core\SolutionTypes.fs" />
+    <Compile Include="Core\Solution.fs" />
+    <Compile Include="Git.fs" />
+    <Compile Include="Github.fs" />
+    <Compile Include="NugetPacker.fs" />
     <Compile Include="Roles\Primitives.fs" />
     <Compile Include="Roles/NonGit.fs" />
+    <Compile Include="Roles\Forker.fs" />
+    <Compile Include="Roles\Collaborator.fs" />
+    <Compile Include="Roles\BuildServer.fs" />
+    <Compile Include="Roles\SRTPMsgs.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fake.Core.Process" Version="5.20.4" />
     <PackageReference Include="Fake.Core.ReleaseNotes" Version="5.20.4" />
-    <PackageReference Include="Fake.DotNet.Cli" Version="5.20.4" />
+      <PackageReference Include="Fake.Api.Github" Version="5.20.4" />
+      <PackageReference Include="Fake.DotNet.Cli" Version="5.20.4" />
+      <PackageReference Include="Fake.IO.Zip" Version="5.20.4" />
+      <PackageReference Include="Fake.DotNet.NuGet" Version="5.20.4" />
     <PackageReference Include="Fake.IO.FileSystem" Version="5.20.4" />
     <PackageReference Include="Fake.Tools.Git" Version="5.20.4" />
     <PackageReference Include="FParsec" Version="1.1.1" />
     <PackageReference Include="FSharp.Data" Version="4.2.2" />
-    <PackageReference Include="MSBuild.StructuredLogger" Version="2.1.545" />
     <PackageReference Include="Shrimp.FSharp.Plus" Version="1.1.473" />
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+      <PackageReference Include="Fake.BuildServer.AppVeyor" Version="5.20.4" />
+      <PackageReference Include="TaskBuilder.fs" Version="2.1.0" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.1" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Update="FSharp.Core" Version="5.0.1" />
+    </ItemGroup>
+
 </Project>

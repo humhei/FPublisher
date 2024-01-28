@@ -2,11 +2,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Script1.fsx" />
     <Compile Include="Tests.MyTests.fs" />
+    <Compile Include="Tests.LocalTests.fs" />
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -16,7 +17,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.1" />
-  </ItemGroup>
+
 </Project>

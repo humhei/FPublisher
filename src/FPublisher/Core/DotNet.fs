@@ -3,9 +3,50 @@ open Fake.DotNet
 open Fake.Core
 open Fake
 open Fake.IO
+open FakeHelper.Build
 
 [<RequireQualifiedAccess>]
 module DotNet =
+    type CustomParam =
+        { Property: string 
+          Value: string }
+    with 
+        override x.ToString() =
+            sprintf "/p:%s=\"%s\"" x.Property x.Value
+
+    module PublishOptions =
+        let setVersion (version: SemVerInfo) (ops: DotNet.PublishOptions) =
+            { ops with 
+                Common = 
+                    { ops.Common with 
+                        CustomParams =
+                            [
+                                yield { Property = "Version"; Value = SemVerInfo.normalize version } 
+                            ]
+                            |> List.map (fun prop -> prop.ToString())
+                            |> String.concat " "
+                            |> Some
+                            
+                    }
+            }
+
+    [<RequireQualifiedAccess>]
+    module BuildOptions =
+        let setVersion (version: SemVerInfo) (ops: DotNet.BuildOptions) =
+            { ops with 
+                Common = 
+                    { ops.Common with 
+                        CustomParams =
+                            [
+                                yield { Property = "Version"; Value = SemVerInfo.normalize version } 
+                            ]
+                            |> List.map (fun prop -> prop.ToString())
+                            |> String.concat " "
+                            |> Some
+                            
+                    }
+            }
+
     type PackOptions =
         { NoBuild: bool
           NoRestore: bool
@@ -38,12 +79,7 @@ module DotNet =
 
     [<RequireQualifiedAccess>]
     module  PackOptions =
-        type CustomParam =
-            { Property: string 
-              Value: string }
-        with 
-            override x.ToString() =
-                sprintf "/p:%s=\"%s\"" x.Property x.Value
+
 
 
         let asFakePackOptions packOptions : DotNet.PackOptions =
@@ -74,7 +110,8 @@ module DotNet =
                         |> Some
                 }
               NoRestore = packOptions.NoRestore
-              MSBuildParams = MSBuild.CliArguments.Create()
+              MSBuildParams = 
+                { MSBuild.CliArguments.Create() with DisableInternalBinLog = true }
             }
 
         let asFakeBuildOptions (packOptions: PackOptions) : DotNet.BuildOptions =
@@ -104,7 +141,8 @@ module DotNet =
                             |> Some
                     }
                   NoRestore = packOptions.NoRestore
-                  MSBuildParams = MSBuild.CliArguments.Create()
+                  MSBuildParams = 
+                    { MSBuild.CliArguments.Create() with DisableInternalBinLog = true }
             }
 
 

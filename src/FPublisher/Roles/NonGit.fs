@@ -6,10 +6,12 @@ open Fake.DotNet
 open System.IO
 open Fake.IO
 open Primitives
-open Solution
+open FPublisher.Solution
 open FPublisher.Nuget
 open Fake.IO.Globbing.Operators
 open Fake.DotNet.NuGet.NuGet
+open FPublisher.Nuget.Nuget
+open FPublisher.Nuget.NugetPacker
 
 [<RequireQualifiedAccess>]
 module NonGit =
@@ -20,10 +22,12 @@ module NonGit =
         | Clean
         | Build of (DotNet.BuildOptions -> DotNet.BuildOptions)
         | Pack of (FPublisher.DotNet.PackOptions -> FPublisher.DotNet.PackOptions)
+        | AddSourceLinkPackages of SourceLinkCreate
         | Test
         | PushToLocalNugetServerV3
         | PushToLocalPackagesFolder
         | Publish of (DotNet.PublishOptions -> DotNet.PublishOptions)
+        | Zip of Project list
 
 
     type TargetStates =
@@ -31,10 +35,12 @@ module NonGit =
           Clean: BoxedTargetState
           Build: BoxedTargetState
           Pack: TargetState<list<ProjectKind * Project list>>
+          AddSourceLinkPackages: BoxedTargetState
           Test: BoxedTargetState
           PushToLocalNugetServerV3: BoxedTargetState
           PushToLocalPackagesFolder: BoxedTargetState
-          Publish: BoxedTargetState }
+          Publish: BoxedTargetState
+          Zip: BoxedTargetState }
 
     [<RequireQualifiedAccess>]
     module TargetStates =
@@ -43,10 +49,12 @@ module NonGit =
               Clean = TargetState.Init
               Build = TargetState.Init
               Pack = TargetState.Init
+              AddSourceLinkPackages = TargetState.Init
               Test = TargetState.Init
               PushToLocalNugetServerV3 = TargetState.Init
               PushToLocalPackagesFolder = TargetState.Init
-              Publish = TargetState.Init }
+              Publish = TargetState.Init
+              Zip = TargetState.Init }
 
     type Role =
         { Solution: Solution
@@ -125,6 +133,14 @@ module NonGit =
             | Target.Pack setParams ->
                 { DependsOn = [Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
+
+            | Target.AddSourceLinkPackages sourceLinkCreate  ->
+                { DependsOn = [] 
+                  Action = MapState (fun role ->
+                    let solution = role.Solution
+                    SourceLinkCreate.addSourceLinkPackages solution sourceLinkCreate
+                    none
+                )}
 
             | Target.Test ->
                 failwith "Not implemented"
@@ -218,4 +234,28 @@ module NonGit =
                 
 
             | Target.Publish _ -> failwith "Not implemented"
+
+            | Target.Zip projects ->
+
+                { DependsOn = [ Target.Build id ]
+                  Action = MapState (fun role -> 
+                    projects |> List.collect (fun project ->
+                        project.GetOutputPaths(DotNet.BuildOptions.Create().Configuration) |> List.map (fun outputPath ->
+                            let dir = Path.getDirectory outputPath
+                            let zipPath = 
+                                let randomDir = 
+                                    Path.GetTempPath() </> Path.GetRandomFileName()
+
+                                Directory.ensure randomDir
+
+                                randomDir </> project.Name + ".zip"
+
+                            !! (dir </> "**")
+                            |> List.ofSeq
+                            |> Zip.zip dir zipPath
+                            zipPath
+                        ) 
+                    )
+                    |> box ) }
+
         )

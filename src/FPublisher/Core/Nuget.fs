@@ -1,13 +1,21 @@
-﻿namespace FPublisher
+﻿namespace FPublisher.Nuget
 
 open FSharp.Data
 open Newtonsoft.Json
+open FPublisher
 
 module Nuget =
+
+    let [<Literal>] officalNugetV3SearchQueryServiceUrl = "https://api-v2v3search-0.nuget.org/query"
+
+
+
     type NugetServer =
         { ApiEnvironmentName: string option
           Serviceable: string
           SearchQueryService: string }
+
+        
 
     module NugetServer =
 
@@ -62,4 +70,5 @@ module Nuget =
                 item.id = packageName
             )
             |> Option.map (fun item -> item.version)
+
 

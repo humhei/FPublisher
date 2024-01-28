@@ -3,8 +3,18 @@
 open Microsoft.FSharp.Reflection
 open FPublisher
 open System.Diagnostics
+open Fake.Core
+open FPublisher.FakeHelper.Build
 
 module Primitives =
+
+    type Logger.Logger with
+        member x.CurrentVersion (currentVersionOp: SemVerInfo option) =
+            match currentVersionOp with
+            | Some currentVersion ->
+                logger.ImportantGreen "Current version is %s" (SemVerInfo.normalize currentVersion)
+            | None ->
+                logger.ImportantGreen "Current version is None"
 
     let none = box ()
 
@@ -13,7 +23,24 @@ module Primitives =
         | Init
         | Done of 'result
 
+
+
     type BoxedTargetState = TargetState<obj>
+
+    module TargetState =
+        let update stateName action (state: BoxedTargetState) =
+            match state with
+            | TargetState.Init ->
+                logger.ImportantGreen "FPUBLISH: Start target %s" stateName
+                let stopWatch = Stopwatch.StartNew()
+                let result = action()
+                logger.ImportantGreen "FPUBLISH: Finished target %s in %O" stateName stopWatch.Elapsed
+                TargetState.Done result
+            | TargetState.Done _ -> state
+
+        let getResult = function
+            | TargetState.Init -> failwith "result have not been evaluated"
+            | TargetState.Done result -> unbox result
 
     type RoleAction<'role, 'childRole> =
         | MapState of ('role -> obj)
@@ -104,3 +131,4 @@ module Primitives =
 
             static member Run(makeRoleIntegratedAction: 'target -> RoleIntegratedAction<'role, 'target, 'childRole>) = 
                 IRole<'targetStates>.Run(fun _ -> makeRoleIntegratedAction)
+

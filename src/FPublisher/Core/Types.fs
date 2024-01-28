@@ -1,6 +1,6 @@
 ﻿namespace FPublisher
 
-open Fake.Tools.Git.CommandHelper
+open Fake.Tools.Git
 open System.IO
 open Fake.IO.FileSystemOperators
 open Fake.IO
@@ -13,10 +13,22 @@ with
         let (Workspace value) = x
         value
 
+    member x.Name =  DirectoryInfo(x.WorkingDir).Name
+
+    member x.PaketLockerFile = x.WorkingDir </> "paket.lock"
+
+    member x.FakeCacheDir = x.WorkingDir </> ".fake"
+
+    member x.DefaultSlnName = x.Name
+
+    member x.DefaultSlnPath = x.WorkingDir </> (sprintf "%s.sln" x.DefaultSlnName)
+
+    member x.ReleaseNotesFile = x.WorkingDir </> "RELEASE_NOTES.md"
+
 
 [<RequireQualifiedAccess>]
 module Workspace =
-    let git args (workspace: Workspace) = runGitCommand workspace.WorkingDir args
+    let git args (workspace: Workspace) = CommandHelper.runGitCommand workspace.WorkingDir args
 
     let tryGetGitUrl workspace =
         let _, lines, _ = git (sprintf "config --get remote.origin.url") workspace
