@@ -134,13 +134,13 @@ module Forker =
 
     let upcastMsg (nonGitMsg: NonGit.Target) = Target.NonGit nonGitMsg
 
-    type TargetState =
+    type TargetStates =
         { NonGit: NonGit.TargetStates
           Pack: BoxedTargetState
           PublishToLocalNugetServer: BoxedTargetState }
 
     [<RequireQualifiedAccess>]
-    module TargetState =
+    module TargetStates =
         let init =
             { NonGit = NonGit.TargetStates.init
               Pack = TargetState.Init
@@ -148,7 +148,7 @@ module Forker =
 
     type Role =
         { NonGit: NonGit.Role
-          TargetState: TargetState
+          TargetStates: TargetStates
           NugetPacker: NugetPacker
           LocalNugetServer: NugetServer option
           VersionController: Lazy<VersionController> }
@@ -159,7 +159,7 @@ module Forker =
 
         member x.GitHubData = x.VersionController.Value.GitHubData
 
-        interface IRole<TargetState>
+        interface IRole<TargetStates>
 
     [<RequireQualifiedAccess>]
     module Role =
@@ -197,7 +197,7 @@ module Forker =
 
         { NonGit = nonGit
           NugetPacker = nugetPacker
-          TargetState = TargetState.init
+          TargetStates = TargetStates.init
           VersionController = VersionController.fetch nonGit.Solution nonGit.Workspace
           LocalNugetServer = localNugetServerOp }
 
@@ -237,7 +237,7 @@ module Forker =
 
                 { DependsOn = [ Target.Pack nextReleaseNotes ]
                   Action = MapState (fun role ->
-                    let packResult: PackResult = TargetState.getResult role.TargetState.Pack
+                    let packResult: PackResult = TargetState.getResult role.TargetStates.Pack
 
                     let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
 

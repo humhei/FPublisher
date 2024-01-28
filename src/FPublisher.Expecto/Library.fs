@@ -18,6 +18,6 @@ module ExpectoConfig =
 
                 let xmlFile = assemblyName + ".TestResults.xml"
 
-                let writeResults = TestResults.writeNUnitSummary (xmlFile, assemblyName)
+                let writeResults = TestResults.writeNUnitSummary xmlFile 
                 testConfig.appendSummaryHandler writeResults
             | None -> testConfig

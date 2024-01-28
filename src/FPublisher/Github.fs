@@ -8,6 +8,7 @@ open FSharp.Control.Tasks.V2.ContextInsensitive
 open Utils
 open FakeHelper.Build
 open System.Net.Http
+open System.IO
 open System
 open Octokit.Internal
 open System.Reflection
@@ -65,9 +66,14 @@ module GitHub =
             return GitHubClient(connection)
         }
 
-        let repository repoFullName (client: GitHubClient) = task {
+        let repository (repoFullName: string) (client: GitHubClient) = task {
+            let repoFullName = 
+                repoFullName
+                    .ToLowerInvariant()
+                    .Replace("git@github.com:", "")
+                    .Replace("https://github.com/", "")
             let! searchedRepositoryResult =
-                let request = SearchRepositoriesRequest(repoFullName)
+                let request = SearchRepositoriesRequest(Path.GetFileName repoFullName)
                 client.Search.SearchRepo(request)
 
             return

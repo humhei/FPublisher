@@ -89,7 +89,7 @@ module NugetPacker =
         static member DefaultValue =
             { Authors = NugetAuthors.GithubLoginName
               GenerateDocumentationFile = false
-              SourceLinkCreate = SourceLinkCreate.Library
+              SourceLinkCreate = SourceLinkCreate.None
               PackageIconUrl = None }
 
 
@@ -159,8 +159,9 @@ module NugetPacker =
                 
 
             let sourceLinkParams =
-                [ "/p:SourceLinkCreate=true"
-                  "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
+                []
+                //[ "/p:SourceLinkCreate=true"
+                //  "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
 
             { LibraryPackages = 
                 match nugetPacker.SourceLinkCreate with 

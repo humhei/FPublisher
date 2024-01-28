@@ -184,15 +184,15 @@ module Collaborator =
         | EnsureGitChangesAllPushedAndInDefaultBranch
         | NextRelease
 
-    type TargetState =
-        { Forker: Forker.TargetState
+    type TargetStates =
+        { Forker: Forker.TargetStates
           EnsureGitChangesAllPushedAndInDefaultBranch: BoxedTargetState
           NextRelease: BoxedTargetState }
 
     [<RequireQualifiedAccess>]
-    module TargetState =
+    module TargetStates =
         let init =
-            { Forker = Forker.TargetState.init
+            { Forker = Forker.TargetStates.init
               EnsureGitChangesAllPushedAndInDefaultBranch = TargetState.Init
               NextRelease = TargetState.Init }
 
@@ -200,7 +200,7 @@ module Collaborator =
     type Role =
         { Forker: Forker.Role
           OfficalNugetServer: OfficalNugetServer
-          TargetState: TargetState
+          TargetStates: TargetStates
           LocalNugetServer: NugetServer option
           VersionController: Lazy<VersionController> }
     with
@@ -217,7 +217,7 @@ module Collaborator =
 
         member x.NonGit = x.Forker.NonGit
 
-        interface IRole<TargetState>
+        interface IRole<TargetStates>
 
     [<RequireQualifiedAccess>]
     module Role =
@@ -286,7 +286,7 @@ module Collaborator =
 
         let versionController = Config.fetchVersionController forker.VersionController forker.Solution config
         { OfficalNugetServer = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }
-          TargetState = TargetState.init
+          TargetStates = TargetStates.init
           VersionController = versionController
           Forker = forker
           LocalNugetServer = config.LocalNugetServer }

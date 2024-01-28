@@ -8,6 +8,7 @@ open FakeHelper
 open FakeHelper.Build
 open FPublisher.Nuget.Nuget
 open FPublisher.Nuget
+open FPublisher.FakeHelper.CommandHelper
 
 #nowarn "0104"
 open System.Xml
@@ -96,7 +97,10 @@ module _Solution =
             Shell.cleanDir binDir
             Shell.cleanDir objDir
 
-
+    [<RequireQualifiedAccess>]
+    type PublishNetCoreDependency =
+        | None
+        | Keep
 
     [<RequireQualifiedAccess>]
     module Solution =
@@ -144,7 +148,12 @@ module _Solution =
               Projects = projects }
 
         let build setParams (solution: Solution) =
-            DotNet.build setParams solution.Path 
+            try
+                DotNet.build setParams solution.Path 
+            with ex ->
+                match ex.Message.StartsWith "Unsupported log file format" with 
+                | true -> ()
+                | false -> reraise()
 
 
 
@@ -274,3 +283,62 @@ module _Solution =
         let lastVersionFromOfficalNugetServer (solution: Solution) = versionFromServer getLastNugetVersionV3 Nuget.officalNugetV3SearchQueryServiceUrl solution
         let getLastVersion (solution: Solution) (nugetServer: Nuget.NugetServer) =
             lastVersionFromCustomNugetServer nugetServer.SearchQueryService solution
+
+
+
+        let publish publishNetCoreDependency setParams (solution: Solution) =
+
+            solution.AspNetCoreProjects
+            |> List.iter (fun project ->
+                try
+                    DotNet.publish setParams project.ProjPath
+                with ex ->
+                    match ex.Message.StartsWith "Unsupported log file format" with 
+                    | true -> ()
+                    | false -> reraise()
+
+                let ops = DotNet.PublishOptions.Create() |> setParams
+                match publishNetCoreDependency with 
+                | PublishNetCoreDependency.None ->
+                    project.GetOutputDirs(ops.Configuration)
+                    |> List.iter (fun outputDir ->
+                        Directory.delete (outputDir </> "publish" </> "refs")
+                    )
+                | _ -> ()
+            )
+
+        let test (solution: Solution) =
+            let runExpectoTest() = 
+                solution.TestProjects
+                |> List.map (fun testProject -> async {
+                    Project.exec ["--summary"] testProject
+                    testProject.GetOutputDirs(DotNet.BuildConfiguration.Debug) |> List.iter (fun outputPath ->
+                        let testResultXml =
+                            let name = testProject.Name + ".TestResults.xml"
+                            let outputDir = Path.getDirectory outputPath
+                            outputDir </> name
+
+                        if File.Exists testResultXml then
+                            Trace.publish (ImportData.Nunit NunitDataVersion.Nunit) testResultXml
+                    )
+
+                })
+                |> Async.Parallel
+                |> Async.RunSynchronously
+                |> ignore
+
+            let runOtherTest() =
+                solution.TestProjects 
+                |> List.map (fun testProject -> async {
+                    let testResultXml = testProject.Projdir </> "TestResults" </> testProject.Name + ".TestResults.xml"
+                    dotnet "test" ["--no-build"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml] testProject.Projdir
+                    if File.exists testResultXml then
+                        Trace.publish (ImportData.Nunit NunitDataVersion.Nunit3) testResultXml
+
+                })
+                |> Async.Parallel
+                |> Async.RunSynchronously
+                |> ignore
+
+            runExpectoTest()
+            runOtherTest()

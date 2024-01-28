@@ -15,6 +15,8 @@ module DotNet =
             sprintf "/p:%s=\"%s\"" x.Property x.Value
 
     module PublishOptions =
+        let noBuild (ops: DotNet.PublishOptions) =
+            { ops with NoBuild = true }
         let setVersion (version: SemVerInfo) (ops: DotNet.PublishOptions) =
             { ops with 
                 Common = 

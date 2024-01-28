@@ -318,6 +318,7 @@ with
     member x.Projdir = x.GetProjDir()
 
     member x.GetOutputPaths (configuration: DotNet.BuildConfiguration) =
+        let projDir = x.Projdir
         let frameworkList = 
             match x.TargetFrameworks with 
             | TargetFrameworks.Multiple frameworks -> frameworks
@@ -331,11 +332,13 @@ with
                 | TargetFramework.NetStandard _, OutputType.Library -> ".dll"
                 | TargetFramework.FullFramework _, OutputType.Library -> ".dll"
                 | TargetFramework.FullFramework _, OutputType.Exe -> ".exe"
+                | TargetFramework.Net _, OutputType.Library -> ".dll"
+                | TargetFramework.Net _, OutputType.Exe -> ".exe"
                 | _ -> failwithf "target framework %A is not supported when output type is %A" framework x.OutputType
             let fileName = x.GetName() + ext
 
             let outputDir = sprintf "bin/%O/%s" configuration (TargetFramework.name framework)
-            outputDir </> fileName
+            projDir </> outputDir </> fileName
         )
  
     member x.GetOutputDirs configuration =

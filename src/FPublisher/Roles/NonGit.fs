@@ -143,7 +143,8 @@ module NonGit =
                 )}
 
             | Target.Test ->
-                failwith "Not implemented"
+                { DependsOn = [ Target.Build(fun m -> {m with Configuration = DotNet.BuildConfiguration.Debug} ) ]
+                  Action = MapState (fun role -> Solution.test role.Solution; none) }
 
             | Target.PushToLocalNugetServerV3 ->
                 match role.LocalNugetServerV3 with 
@@ -231,9 +232,14 @@ module NonGit =
 
 
             | Target.PushToLocalPackagesFolder -> failwith "Not implemented"
-                
 
-            | Target.Publish _ -> failwith "Not implemented"
+            | Target.Publish setParams -> 
+                let ops = setParams (DotNet.PublishOptions.Create())
+                { DependsOn = []
+                  Action = MapState (fun role -> 
+                    Solution.publish PublishNetCoreDependency.Keep setParams role.Solution
+                    none
+                  ) }
 
             | Target.Zip projects ->
 

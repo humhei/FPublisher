@@ -53,13 +53,13 @@ module BuildServer =
         | Collaborator of Collaborator.Target
         | RunCI
 
-    type TargetState =
-        { Collaborator: Collaborator.TargetState
+    type TargetStates =
+        { Collaborator: Collaborator.TargetStates
           RunCI: BoxedTargetState }
 
     type Role =
         { Collaborator: Collaborator.Role
-          TargetState: TargetState
+          TargetStates: TargetStates
           ArtifactsName: string
           MajorCI: BuildServer }
     with
@@ -79,7 +79,7 @@ module BuildServer =
 
         member x.NonGit = x.Collaborator.Forker.NonGit
 
-        interface IRole<TargetState>
+        interface IRole<TargetStates>
 
 
     let create (config: Config) =
@@ -89,9 +89,10 @@ module BuildServer =
 
 
         { Collaborator = Collaborator.create config.AsCollaborator
-          TargetState =
-            { Collaborator = Collaborator.TargetState.init
+          TargetStates =
+            { Collaborator = Collaborator.TargetStates.init
               RunCI = TargetState.Init }
+
           MajorCI = BuildServer.AppVeyor
           ArtifactsName = config.ArtifactsName
         }
@@ -129,11 +130,12 @@ module BuildServer =
                     Collaborator.run collaboratorMsg role.Collaborator
                 )
             }
+
         | Target.RunCI ->
 
             match BuildServer.buildServer with
             | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
-            | buildServer when buildServer = role.MajorCI  ->
+            | buildServer  ->
                 
                 let isJustAfterDraftedNewRelease (role: Role) =
                     let repoTagName = AppVeyor.Environment.RepoTagName
@@ -172,8 +174,13 @@ module BuildServer =
 
                     { DependsOn = 
                         [ !^ NonGit.Target.InstallPaketPackages
-                          !^ (NonGit.Target.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
-                          !^ (NonGit.Target.Publish (DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer))
+                          //!^ (NonGit.Target.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
+                          !^ (NonGit.Target.Test)
+                          !^ (NonGit.Target.Publish (fun ops ->
+                             ops
+                             |> DotNet.PublishOptions.noBuild
+                             |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
+                          ))
                           !^ (Forker.Target.Pack nextReleaseNotes)
                           !^ (NonGit.Target.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
                       Action = MapState (fun role ->
@@ -190,7 +197,7 @@ module BuildServer =
 
                         let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
-                        let (packResult: PackResult) = role.Collaborator.Forker.TargetState.Pack |> TargetState.getResult
+                        let (packResult: PackResult) = role.Collaborator.Forker.TargetStates.Pack |> TargetState.getResult
 
                         NugetPacker.testSourceLink packResult nugetPacker
 
