@@ -205,7 +205,10 @@ module Forker =
     let private roleAction (role: Role) = function
         | Target.NonGit nonGitMsg ->
             { DependsOn = []
-              Action = MapChild (fun (role: Role) -> NonGit.run nonGitMsg role.NonGit )}
+              Action = MapChild (fun (role: Role) -> 
+                let newRole = NonGit.run nonGitMsg role.NonGit 
+                newRole
+            )}
 
         | Target.Pack releaseNotes ->
             { DependsOn = [!^ (NonGit.Target.Build (DotNet.BuildOptions.setVersion releaseNotes.SemVer)); !^ NonGit.Target.Test]

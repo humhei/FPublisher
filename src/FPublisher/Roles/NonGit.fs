@@ -245,7 +245,8 @@ module NonGit =
 
                 { DependsOn = [ Target.Build id ]
                   Action = MapState (fun role -> 
-                    projects |> List.collect (fun project ->
+                    projects 
+                    |> List.collect (fun project ->
                         project.GetOutputPaths(DotNet.BuildOptions.Create().Configuration) |> List.map (fun outputPath ->
                             let dir = Path.getDirectory outputPath
                             let zipPath = 
@@ -262,6 +263,7 @@ module NonGit =
                             zipPath
                         ) 
                     )
-                    |> box ) }
+                    |> box 
+                ) }
 
         )

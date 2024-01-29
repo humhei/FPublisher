@@ -122,8 +122,8 @@ module Primitives =
                     Record.setProperty "TargetStates" newTargetStates role
 
                 | MapChild mapping ->
+                    let newChildRole = mapping role
                     let newTargetStates = 
-                        let newChildRole = mapping role
                         let newChildTargetStates = newChildRole.GetType().GetProperty("TargetStates").GetValue(newChildRole)
                         Record.setProperty targetName newChildTargetStates targetStates
 

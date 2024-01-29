@@ -56,6 +56,9 @@ module BuildServer =
     type TargetStates =
         { Collaborator: Collaborator.TargetStates
           RunCI: BoxedTargetState }
+    with 
+        member x.Forker = x.Collaborator.Forker
+        member x.NonGit = x.Forker.NonGit
 
     type Role =
         { Collaborator: Collaborator.Role
@@ -134,7 +137,7 @@ module BuildServer =
         | Target.RunCI ->
 
             match BuildServer.buildServer with
-            | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
+            //| BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer  ->
                 
                 let isJustAfterDraftedNewRelease (role: Role) =
@@ -173,15 +176,16 @@ module BuildServer =
                     let nugetPacker = role.Collaborator.NugetPacker
 
                     { DependsOn = 
-                        [ !^ NonGit.Target.InstallPaketPackages
-                          //!^ (NonGit.Target.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
-                          !^ (NonGit.Target.Test)
-                          !^ (NonGit.Target.Publish (fun ops ->
-                             ops
-                             |> DotNet.PublishOptions.noBuild
-                             |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
-                          ))
-                          !^ (Forker.Target.Pack nextReleaseNotes)
+                        [ 
+                          //!^ NonGit.Target.InstallPaketPackages
+                          ////!^ (NonGit.Target.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
+                          //!^ (NonGit.Target.Test)
+                          //!^ (NonGit.Target.Publish (fun ops ->
+                          //   ops
+                          //   |> DotNet.PublishOptions.noBuild
+                          //   |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
+                          //))
+                          //!^ (Forker.Target.Pack nextReleaseNotes)
                           !^ (NonGit.Target.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
                       Action = MapState (fun role ->
                         let appveyor = platformTool "appveyor"

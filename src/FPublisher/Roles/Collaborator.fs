@@ -314,7 +314,10 @@ module Collaborator =
     let private roleAction (role: Role) = function
         | Target.Forker forkerMsg ->
             { DependsOn = []
-              Action = MapChild (fun role -> Forker.run forkerMsg role.Forker)}
+              Action = MapChild (fun role -> 
+                let newRole = Forker.run forkerMsg role.Forker
+                newRole
+            )}
 
         | Target.EnsureGitChangesAllPushedAndInDefaultBranch ->
             { DependsOn = []

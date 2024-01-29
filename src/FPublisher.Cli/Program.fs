@@ -45,9 +45,9 @@ let main argv =
         |> List.tryPick(fun m ->
             match m with 
             | Arguments.WorkingDir dir ->   
-                printf "Origin Working Dir %s" (Directory.GetCurrentDirectory())
+                printfn "Origin Working Dir %s" (Directory.GetCurrentDirectory())
                 let newWorkingDir = Path.GetFullPath dir
-                printf "Specific Working Dir %s" (newWorkingDir)
+                printfn "Specific Working Dir %s" (newWorkingDir)
                 Some (newWorkingDir)
             | _ -> None
         )
