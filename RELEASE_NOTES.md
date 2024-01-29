@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.35 - tbd
+## 0.1.36-alpha - tbd
+
+## 0.1.35 - 2024-01-29
 * Update to .net 6.0
 
 ## 0.1.32-alpha.1 - 2019-09-02
