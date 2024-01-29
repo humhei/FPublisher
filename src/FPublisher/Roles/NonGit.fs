@@ -116,6 +116,8 @@ module NonGit =
 
     let run =
         IRole.Run (fun role target ->
+            let nuget_api_key = Environment.environVarOrFail "nuget_api_key"
+            printfn "nuget_api_key %s" nuget_api_key
             match target with
             | Target.InstallPaketPackages ->
                 { DependsOn = [] 

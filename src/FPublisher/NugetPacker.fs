@@ -212,7 +212,6 @@ module NugetPacker =
                         match nugetServer.ApiEnvironmentName with
                         | Some envName ->
                             let nuget_api_key = Environment.environVarOrFail envName
-                            printfn "nuget_api_key %s" nuget_api_key
                             TraceSecrets.register "nuget_api_key" nuget_api_key
                             yield! [ "-k"; nuget_api_key ]
                         | None -> ()

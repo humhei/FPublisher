@@ -52,7 +52,7 @@ let localTests() =
               //@"D:\VsCode\Workspace\FPublisher"
               //@"C:\Users\Jia\Desktop\hello"
               //@"D:\VsCode\Workspace\Shrimp.FileWatcher" 
-              @"D:\VsCode\Github\FCSWatch"
+              //@"D:\VsCode\Github\FCSWatch"
               //@"D:\VsCode\Workspace\LiteDB"
               //@"D:\VsCode\Workspace\LiteDB.FSharp"
               //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"
@@ -93,7 +93,7 @@ let localTests() =
 
 
 
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\TypeProvider"
+              @"D:\VsCode\Workspace\Shrimp.Workflow\src\TypeProvider"
 
               ///-------------------------------------------------------------
               /// TypeProviderServer: LOCAL Background Application packages update
