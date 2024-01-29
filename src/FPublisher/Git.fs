@@ -1,4 +1,4 @@
-namespace FPublisher
+﻿namespace FPublisher
 open System
 open Fake.Tools.Git
 open FakeHelper.CommandHelper

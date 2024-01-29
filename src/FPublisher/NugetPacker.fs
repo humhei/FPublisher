@@ -1,11 +1,11 @@
-namespace FPublisher
+﻿namespace FPublisher.Nuget
+open FPublisher
 open Fake.Core
 open Fake.IO
 open System.IO
 open Fake.IO.FileSystemOperators
 open FakeHelper.CommandHelper
 open Utils
-open GitHub
 open Fake.IO.Globbing.Operators
 open Fake.DotNet.NuGet
 open FSharp.Data
@@ -13,9 +13,11 @@ open Newtonsoft.Json
 open Octokit
 open FakeHelper
 open FakeHelper.Build
+open FPublisher.Solution
+open FPublisher.GitHub
 
 
-module Nuget =
+module NugetPacker =
 
     [<RequireQualifiedAccess>]
     module Workspace =
@@ -26,55 +28,6 @@ module Nuget =
 
 
     let [<Literal>] officalNugetV3SearchQueryServiceUrl = "https://api-v2v3search-0.nuget.org/query"
-
-    [<RequireQualifiedAccess>]
-    module Solution =
-
-        let private versionFromServer getLastVersion server solution = async {
-            let versions =
-                Solution.nugetPackageNames solution
-                |> Seq.map (fun packageName ->
-                    async {return getLastVersion server packageName}
-                )
-                |> Async.Parallel
-                |> Async.RunSynchronously
-                |> Array.choose id
-
-            if versions.Length > 0 then return Some (Array.max versions)
-            else return None
-        }
-
-        let workaroundPaketNuSpecBug (solution: Solution) =
-            solution.Projects
-            |> Seq.collect (fun proj ->
-                let dir = Path.getDirectory proj.ProjPath
-                !! (dir </> "./obj/**/*.nuspec")
-            )
-            |> File.deleteAll
-
-
-        let lastStableVersionFromNugetServerV2 (solution: Solution) = versionFromServer Version.getLastNuGetVersion  "https://www.nuget.org/api/v2" solution
-
-        type NugetSearchItemResultV3 =
-            { version: string }
-
-        type NugetSearchResultV3 =
-            { data: NugetSearchItemResultV3 list }
-
-        let private getLastNugetVersionV3 server packageName =
-            let json = Http.RequestString (server,["q",packageName;"prerelease","true"])
-            let result = JsonConvert.DeserializeObject<NugetSearchResultV3> json
-            result.data
-            |> List.tryHead
-            |> Option.map (fun nugetItem ->
-                SemVerInfo.parse nugetItem.version
-            )
-
-
-        let lastVersionFromCustomNugetServer server (solution: Solution) = versionFromServer getLastNugetVersionV3 server solution
-        let lastVersionFromOfficalNugetServer (solution: Solution) = versionFromServer getLastNugetVersionV3 officalNugetV3SearchQueryServiceUrl solution
-
-
 
 
     [<RequireQualifiedAccess>]
@@ -92,7 +45,7 @@ module Nuget =
 
     type PackPackageResult =
         { Path: string 
-          OriginProject: FPublisher.Project }
+          OriginProject: Project }
 
 
     [<RequireQualifiedAccess>]
@@ -136,7 +89,7 @@ module Nuget =
         static member DefaultValue =
             { Authors = NugetAuthors.GithubLoginName
               GenerateDocumentationFile = false
-              SourceLinkCreate = SourceLinkCreate.Library
+              SourceLinkCreate = SourceLinkCreate.None
               PackageIconUrl = None }
 
 
@@ -206,8 +159,9 @@ module Nuget =
                 
 
             let sourceLinkParams =
-                [ "/p:SourceLinkCreate=true"
-                  "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
+                []
+                //[ "/p:SourceLinkCreate=true"
+                //  "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
 
             { LibraryPackages = 
                 match nugetPacker.SourceLinkCreate with 
@@ -223,17 +177,8 @@ module Nuget =
 
 
 
+    open FPublisher.Nuget.Nuget
 
-
-    type NugetServer =
-        { ApiEnvironmentName: string option
-          Serviceable: string
-          SearchQueryService: string }
-    with
-        static member DefaultBaGetLocal =
-            { ApiEnvironmentName = None
-              Serviceable ="http://127.0.0.1:5000/v3/index.json"
-              SearchQueryService = "http://127.0.0.1:5000/v3/search" }
 
     [<RequireQualifiedAccess>]
     module NugetServer =

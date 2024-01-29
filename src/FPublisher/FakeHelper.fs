@@ -1,4 +1,4 @@
-﻿namespace FPublisher
+namespace FPublisher
 open Fake.Core
 open Fake.DotNet
 open Fake.Tools.Git.CommandHelper
@@ -11,6 +11,8 @@ open Fake.DotNet.NuGet
 open Fake.IO.FileSystemOperators
 
 module FakeHelper =
+
+
 
     [<RequireQualifiedAccess>]
     module Path =

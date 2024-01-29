@@ -1,4 +1,4 @@
-namespace FPublisher
+﻿namespace FPublisher
 open Fake.IO
 open Fake.DotNet
 open Fake.Core
@@ -7,9 +7,6 @@ open System.Collections.Concurrent
 open Microsoft.FSharp.Reflection
 open System.Threading.Tasks
 
-[<AutoOpen>]
-module internal Global =
-    let mutable logger = Logger.create (Logger.Level.Minimal)
 
 module internal Utils =
 

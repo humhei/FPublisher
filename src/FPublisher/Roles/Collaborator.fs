@@ -1,5 +1,4 @@
-namespace FPublisher.Roles
-open Octokit
+﻿namespace FPublisher.Roles
 open FPublisher.Nuget
 open Fake.Core
 open FPublisher
@@ -7,7 +6,6 @@ open FPublisher.GitHub
 open FSharp.Control.Tasks.V2.ContextInsensitive
 open FPublisher.FakeHelper.Build
 open Fake.IO.FileSystemOperators
-open System.Threading.Tasks
 open Primitives
 open FPublisher.Git
 open System.IO
@@ -15,8 +13,12 @@ open FPublisher.FakeHelper
 open Fake.Tools.Git
 open Fake.IO
 open Fake.Api
-open FSharp.Data
 open FPublisher.Utils
+open FPublisher.Solution
+open FPublisher.Nuget.NugetPacker
+open System
+open Fake.DotNet
+open FPublisher.Nuget.Nuget
 
 #nowarn "0064"
 
@@ -131,7 +133,8 @@ module Collaborator =
           EnvironmentConfig: EnvironmentConfig
           WorkingDir: string
           LoggerLevel: Logger.Level
-          LocalNugetServer: NugetServer option }
+          LocalNugetServer: NugetServer option
+          LocalNugetPackagesFolder: string option }
 
     with
         member x.Workspace = Workspace x.WorkingDir
@@ -141,7 +144,8 @@ module Collaborator =
               EnvironmentConfig = EnvironmentConfig.DefaultValue
               WorkingDir = Directory.GetCurrentDirectory()
               LoggerLevel = Logger.Level.Minimal
-              LocalNugetServer = None }
+              LocalNugetServer = None
+              LocalNugetPackagesFolder = None }
 
     [<RequireQualifiedAccess>]
     module Config =
@@ -175,28 +179,28 @@ module Collaborator =
 
 
     [<RequireQualifiedAccess>]
-    type Msg =
-        | Forker of Forker.Msg
+    type Target =
+        | Forker of Forker.Target
         | EnsureGitChangesAllPushedAndInDefaultBranch
         | NextRelease
 
-    type TargetState =
-        { Forker: Forker.TargetState
-          EnsureGitChangesAllPushedAndInDefaultBranch: BoxedState
-          NextRelease: BoxedState }
+    type TargetStates =
+        { Forker: Forker.TargetStates
+          EnsureGitChangesAllPushedAndInDefaultBranch: BoxedTargetState
+          NextRelease: BoxedTargetState }
 
     [<RequireQualifiedAccess>]
-    module TargetState =
+    module TargetStates =
         let init =
-            { Forker = Forker.TargetState.init
-              EnsureGitChangesAllPushedAndInDefaultBranch = State.Init
-              NextRelease = State.Init }
+            { Forker = Forker.TargetStates.init
+              EnsureGitChangesAllPushedAndInDefaultBranch = TargetState.Init
+              NextRelease = TargetState.Init }
 
 
     type Role =
         { Forker: Forker.Role
           OfficalNugetServer: OfficalNugetServer
-          TargetState: TargetState
+          TargetStates: TargetStates
           LocalNugetServer: NugetServer option
           VersionController: Lazy<VersionController> }
     with
@@ -205,7 +209,7 @@ module Collaborator =
 
         member x.Workspace = x.Forker.Workspace
 
-        member x.ReleaseNotesFile = x.Workspace.WorkingDir </> "RELEASE_NOTES.md"
+        member x.ReleaseNotesFile = x.Workspace.ReleaseNotesFile
 
         member x.Solution = x.Forker.Solution
 
@@ -213,7 +217,7 @@ module Collaborator =
 
         member x.NonGit = x.Forker.NonGit
 
-        interface IRole<TargetState>
+        interface IRole<TargetStates>
 
     [<RequireQualifiedAccess>]
     module Role =
@@ -278,11 +282,11 @@ module Collaborator =
 
     let create (config: Config) =
         let config = Config.tweak config
-        let forker = Forker.create config.LoggerLevel config.LocalNugetServer config.Workspace config.NugetPacker
+        let forker = Forker.create config.LoggerLevel config.LocalNugetServer config.LocalNugetPackagesFolder config.Workspace config.NugetPacker
 
         let versionController = Config.fetchVersionController forker.VersionController forker.Solution config
         { OfficalNugetServer = { ApiEnvironmentName = config.EnvironmentConfig.NugetApiKey }
-          TargetState = TargetState.init
+          TargetStates = TargetStates.init
           VersionController = versionController
           Forker = forker
           LocalNugetServer = config.LocalNugetServer }
@@ -292,28 +296,35 @@ module Collaborator =
 
         type Ext = Ext
             with
-                static member Bar (ext : Ext, nonGit : NonGit.Msg) =
+                static member Bar (ext : Ext, nonGit : NonGit.Target) =
                     Forker.upcastMsg nonGit
-                    |> Msg.Forker
+                    |> Target.Forker
 
-                static member Bar (ext : Ext, forker : Forker.Msg) =
-                    Msg.Forker forker
+                static member Bar (ext : Ext, forker : Forker.Target) =
+                    Target.Forker forker
 
     let inline upcastMsg msg =
-        ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
+        ((^b or ^a) : (static member Bar : ^b * ^a -> Target) (Ext, msg))
 
     let inline private (!^) msg =
-        ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
+        ((^b or ^a) : (static member Bar : ^b * ^a -> Target) (Ext, msg))
 
 
 
     let private roleAction (role: Role) = function
-        | Msg.Forker forkerMsg ->
-            { PreviousMsgs = []
-              Action = MapChild (fun role -> Forker.run forkerMsg role.Forker)}
+        | Target.Forker forkerMsg ->
+            { DependsOn = []
+              Action = MapChild (fun role -> 
+                let newChildRole = Forker.run forkerMsg role.Forker
+                { role with 
+                    TargetStates = 
+                        { role.TargetStates with Forker = newChildRole.TargetStates }
+                    Forker = newChildRole
+                }
+            )}
 
-        | Msg.EnsureGitChangesAllPushedAndInDefaultBranch ->
-            { PreviousMsgs = []
+        | Target.EnsureGitChangesAllPushedAndInDefaultBranch ->
+            { DependsOn = []
               Action =
                 MapState (fun role ->
                     if role.GitHubData.IsInDefaultBranch
@@ -338,7 +349,7 @@ module Collaborator =
                 )
             }
 
-        | Msg.NextRelease ->
+        | Target.NextRelease ->
 
             /// check environments first
             let _ = GitHubData.githubToken role.GitHubData
@@ -346,10 +357,10 @@ module Collaborator =
 
             let nextReleaseNotes = Role.nextReleaseNotes role
 
-            { PreviousMsgs =
-                [ !^ (NonGit.Msg.Build (Some nextReleaseNotes.SemVer))
-                  Msg.EnsureGitChangesAllPushedAndInDefaultBranch
-                  !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects )) ]
+            { DependsOn =
+                [ !^ (NonGit.Target.Build (DotNet.BuildOptions.setVersion nextReleaseNotes.SemVer))
+                  Target.EnsureGitChangesAllPushedAndInDefaultBranch
+                  !^ (NonGit.Target.Zip (List.filter Project.existFullFramework role.Solution.CliProjects )) ]
 
               Action =
                 MapState (fun role ->
@@ -357,7 +368,7 @@ module Collaborator =
                     let currentVersion =
                         VersionController.currentVersion role.VersionController.Value
 
-                    let zipOutputs = State.getResult role.NonGit.TargetState.Zip 
+                    let zipOutputs = TargetState.getResult role.NonGit.TargetStates.Zip 
 
                     logger.CurrentVersion currentVersion
 
@@ -377,4 +388,4 @@ module Collaborator =
             }
 
     let run =
-        Role.updateComplex roleAction
+        Role.Run roleAction

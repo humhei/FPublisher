@@ -9,8 +9,13 @@ open Fake.IO.FileSystemOperators
 open FPublisher.FakeHelper
 open FPublisher
 open FPublisher.FakeHelper.CommandHelper
-open Fake.SystemHelper
-open FPublisher.GitHub
+open FPublisher.Git
+open FPublisher.Utils
+open FPublisher.Solution
+open FPublisher.Nuget.NugetPacker
+open Fake.DotNet
+open FPublisher.Nuget.Nuget
+
 
 #nowarn "0064"
 
@@ -22,7 +27,8 @@ module BuildServer =
           EnvironmentConfig: EnvironmentConfig
           WorkingDir: string
           LoggerLevel: Logger.Level
-          LocalNugetServer: NugetServer option }
+          LocalNugetServer: NugetServer option
+          LocalNugetPackagesFolder: string option }
     with
         static member DefaultValue =
             let collaborator = Collaborator.Config.DefaultValue
@@ -31,27 +37,32 @@ module BuildServer =
               EnvironmentConfig = collaborator.EnvironmentConfig
               WorkingDir = collaborator.WorkingDir
               LoggerLevel = collaborator.LoggerLevel
-              LocalNugetServer = collaborator.LocalNugetServer }
+              LocalNugetServer = collaborator.LocalNugetServer
+              LocalNugetPackagesFolder = None }
 
         member internal x.AsCollaborator: Collaborator.Config =
             { NugetPacker = x.NugetPacker
               EnvironmentConfig = x.EnvironmentConfig
               WorkingDir = x.WorkingDir
               LoggerLevel = x.LoggerLevel
-              LocalNugetServer = x.LocalNugetServer }
+              LocalNugetServer = x.LocalNugetServer
+              LocalNugetPackagesFolder = x.LocalNugetPackagesFolder }
 
     [<RequireQualifiedAccess>]
-    type Msg =
-        | Collaborator of Collaborator.Msg
+    type Target =
+        | Collaborator of Collaborator.Target
         | RunCI
 
-    type TargetState =
-        { Collaborator: Collaborator.TargetState
-          RunCI: BoxedState }
+    type TargetStates =
+        { Collaborator: Collaborator.TargetStates
+          RunCI: BoxedTargetState }
+    with 
+        member x.Forker = x.Collaborator.Forker
+        member x.NonGit = x.Forker.NonGit
 
     type Role =
         { Collaborator: Collaborator.Role
-          TargetState: TargetState
+          TargetStates: TargetStates
           ArtifactsName: string
           MajorCI: BuildServer }
     with
@@ -71,7 +82,7 @@ module BuildServer =
 
         member x.NonGit = x.Collaborator.Forker.NonGit
 
-        interface IRole<TargetState>
+        interface IRole<TargetStates>
 
 
     let create (config: Config) =
@@ -81,9 +92,10 @@ module BuildServer =
 
 
         { Collaborator = Collaborator.create config.AsCollaborator
-          TargetState =
-            { Collaborator = Collaborator.TargetState.init
-              RunCI = State.Init }
+          TargetStates =
+            { Collaborator = Collaborator.TargetStates.init
+              RunCI = TargetState.Init }
+
           MajorCI = BuildServer.AppVeyor
           ArtifactsName = config.ArtifactsName
         }
@@ -93,40 +105,47 @@ module BuildServer =
 
         type Ext = Ext
             with
-                static member Bar (ext : Ext, nonGit : NonGit.Msg) =
+                static member Bar (ext : Ext, nonGit : NonGit.Target) =
                     Collaborator.upcastMsg nonGit
-                    |> Msg.Collaborator
+                    |> Target.Collaborator
 
-                static member Bar (ext : Ext, forker : Forker.Msg) =
+                static member Bar (ext : Ext, forker : Forker.Target) =
                     Collaborator.upcastMsg forker
-                    |> Msg.Collaborator
+                    |> Target.Collaborator
 
-                static member Bar (ext : Ext, collaborator : Collaborator.Msg) =
+                static member Bar (ext : Ext, collaborator : Collaborator.Target) =
                     collaborator
-                    |> Msg.Collaborator
+                    |> Target.Collaborator
 
     let inline upcastMsg msg =
-        ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
+        ((^b or ^a) : (static member Bar : ^b * ^a -> Target) (Ext, msg))
 
     let inline private (!^) msg =
-        ((^b or ^a) : (static member Bar : ^b * ^a -> Msg) (Ext, msg))
+        ((^b or ^a) : (static member Bar : ^b * ^a -> Target) (Ext, msg))
 
 
     let private circleCIBuildNumber = Environment.environVar "CIRCLE_BUILD_NUM"
 
     let private roleAction (role: Role) = function
-        | Msg.Collaborator collaboratorMsg ->
-            { PreviousMsgs = []
+        | Target.Collaborator collaboratorMsg ->
+            { DependsOn = []
               Action = MapChild (fun role ->
-                    Collaborator.run collaboratorMsg role.Collaborator
+                    let newChildRole = Collaborator.run collaboratorMsg role.Collaborator
+                    { role with 
+                        TargetStates = 
+                            { role.TargetStates with Collaborator = newChildRole.TargetStates }
+                        Collaborator = newChildRole
+                    }
+
                 )
             }
-        | Msg.RunCI ->
+
+        | Target.RunCI ->
 
             match BuildServer.buildServer with
             | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
             | buildServer when buildServer = role.MajorCI  ->
-
+                
                 let isJustAfterDraftedNewRelease (role: Role) =
                     let repoTagName = AppVeyor.Environment.RepoTagName
                     if String.isNullOrEmpty repoTagName
@@ -162,12 +181,18 @@ module BuildServer =
 
                     let nugetPacker = role.Collaborator.NugetPacker
 
-                    { PreviousMsgs = 
-                        [ !^ NonGit.Msg.InstallPaketPackages
-                          !^ (NonGit.Msg.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
-                          !^ (NonGit.Msg.Publish (Some nextReleaseNotes.SemVer))
-                          !^ (Forker.Msg.Pack nextReleaseNotes)
-                          !^ (NonGit.Msg.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
+                    { DependsOn = 
+                        [ 
+                          !^ NonGit.Target.InstallPaketPackages
+                          //!^ (NonGit.Target.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
+                          !^ (NonGit.Target.Test)
+                          !^ (NonGit.Target.Publish (fun ops ->
+                             ops
+                             |> DotNet.PublishOptions.noBuild
+                             |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
+                          ))
+                          !^ (Forker.Target.Pack nextReleaseNotes)
+                          !^ (NonGit.Target.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
                       Action = MapState (fun role ->
                         let appveyor = platformTool "appveyor"
 
@@ -176,13 +201,13 @@ module BuildServer =
 
                         Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
                         
-                        let zipOutputs = State.getResult role.NonGit.TargetState.Zip
+                        let zipOutputs = TargetState.getResult role.NonGit.TargetStates.Zip
 
                         zipOutputs |> List.iter artifact
 
                         let isJustAfterDraftedNewRelease = isJustAfterDraftedNewRelease role
 
-                        let (packResult: PackResult) = role.Collaborator.Forker.TargetState.Pack |> State.getResult
+                        let (packResult: PackResult) = role.Collaborator.Forker.TargetStates.Pack |> TargetState.getResult
 
                         NugetPacker.testSourceLink packResult nugetPacker
 
@@ -190,30 +215,29 @@ module BuildServer =
 
                         newPackages |> Shell.copyFiles role.ArtifactsDirPath
                         newPackages |> List.iter artifact
+                        let r = 
+                            if isJustAfterDraftedNewRelease then
+                                let githubData = role.GitHubData
+                                if githubData.BranchName = "HEAD" then
 
-                        if isJustAfterDraftedNewRelease then
-                            let githubData = role.GitHubData
-                            if githubData.BranchName = "HEAD" then
-
-                                if Collaborator.GitHubData.isInDefaultRepo role.Workspace  githubData
-                                then
-                                    logger.Importantts "Begin publish nuget packages to offical nuget server"
-                                    OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
-                                    |> Async.RunSynchronously
-                                    logger.Importantts "End publish nuget packages to offical nuget server"
-                            else failwith "Branch name should be HEAD when trigger from tag"
+                                    if Collaborator.GitHubData.isInDefaultRepo role.Workspace  githubData
+                                    then
+                                        logger.Importantts "Begin publish nuget packages to offical nuget server"
+                                        OfficalNugetServer.publish newPackages role.Collaborator.OfficalNugetServer
+                                        |> Async.RunSynchronously
+                                        logger.Importantts "End publish nuget packages to offical nuget server"
+                                else failwith "Branch name should be HEAD when trigger from tag"
+                        none
 
                     )}
                 | None -> failwith "Pack nuget packages need last releaseNotes info. But we can't load it"
 
             | _ ->
                 /// run tests only
-                { PreviousMsgs =
-                    [!^ NonGit.Msg.InstallPaketPackages; !^ NonGit.Msg.Test ]
+                { DependsOn =
+                    [!^ NonGit.Target.InstallPaketPackages; !^ NonGit.Target.Test ]
 
-                  Action = MapState ignore }
+                  Action = MapState (fun _ -> none) }
 
-    let runWith = Role.updateComplex roleAction
-
-
-    let run msg role = runWith msg role |> ignore
+    let run = 
+        Role.Run roleAction

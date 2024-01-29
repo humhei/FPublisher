@@ -1,3 +1,3 @@
-    cd tests/FPublisher.Tests
+    cd src/FPublisher.Cli
     dotnet restore
-    dotnet run "--RunCI"
+    dotnet run --run-ci --workingdir "../../"

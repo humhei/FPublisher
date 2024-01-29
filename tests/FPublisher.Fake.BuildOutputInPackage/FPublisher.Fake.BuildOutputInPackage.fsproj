@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FPublisher.Faker.Helper\FPublisher.Faker.Helper.csproj" />
   </ItemGroup>
+
   <PropertyGroup>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);InternalPackage</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>

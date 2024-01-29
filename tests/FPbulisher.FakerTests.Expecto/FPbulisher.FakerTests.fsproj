@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net6</TargetFramework>
     <PackAsTool>True</PackAsTool>
     <ToolCommandName>fpublisher_faker</ToolCommandName>
 
@@ -19,5 +19,4 @@
     <ProjectReference Include="..\..\src\FPublisher.Expecto\FPublisher.Expecto.fsproj" />
     <ProjectReference Include="..\..\src\FPublisher\FPublisher.fsproj" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

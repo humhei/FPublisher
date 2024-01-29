@@ -1,6 +1,8 @@
-namespace FPublisher.Roles
+﻿namespace FPublisher.Roles
 open FPublisher
+open FPublisher.Solution
 open FPublisher.Nuget
+open FPublisher.Nuget.NugetPacker
 open Fake.IO.FileSystemOperators
 open Primitives
 open Fake.Core
@@ -12,6 +14,7 @@ open FPublisher.Git
 open System
 open FPublisher.Utils
 open Fake.DotNet
+open FPublisher.Nuget.Nuget
 
 
 
@@ -71,7 +74,7 @@ module Forker =
         let versionFromLocalNugetServer solution (localNugetServer: NugetServer) (versionController: VersionController) = async {
             logger.Infots "Begin fetch version from local nuget server"
             let! versionFromLocalNugetServer =
-                NugetServer.getLastVersion solution localNugetServer
+                Solution.getLastVersion solution localNugetServer
             logger.Infots "End fetch version from local nuget server"
             return versionFromLocalNugetServer
         }
@@ -122,30 +125,30 @@ module Forker =
                 } |> Task.getResult
 
     [<RequireQualifiedAccess>]
-    type Msg =
-        | NonGit of NonGit.Msg
+    type Target =
+        | NonGit of NonGit.Target
         | Pack of ReleaseNotes.ReleaseNotes
         | PublishToLocalNugetServer
 
-    let (!^) (nonGitMsg: NonGit.Msg) = Msg.NonGit nonGitMsg
+    let (!^) (nonGitMsg: NonGit.Target) = Target.NonGit nonGitMsg
 
-    let upcastMsg (nonGitMsg: NonGit.Msg) = Msg.NonGit nonGitMsg
+    let upcastMsg (nonGitMsg: NonGit.Target) = Target.NonGit nonGitMsg
 
-    type TargetState =
-        { NonGit: NonGit.TargetState
-          Pack: BoxedState
-          PublishToLocalNugetServer: BoxedState }
+    type TargetStates =
+        { NonGit: NonGit.TargetStates
+          Pack: BoxedTargetState
+          PublishToLocalNugetServer: BoxedTargetState }
 
     [<RequireQualifiedAccess>]
-    module TargetState =
+    module TargetStates =
         let init =
-            { NonGit = NonGit.TargetState.init
-              Pack = State.Init
-              PublishToLocalNugetServer = State.Init }
+            { NonGit = NonGit.TargetStates.init
+              Pack = TargetState.Init
+              PublishToLocalNugetServer = TargetState.Init }
 
     type Role =
         { NonGit: NonGit.Role
-          TargetState: TargetState
+          TargetStates: TargetStates
           NugetPacker: NugetPacker
           LocalNugetServer: NugetServer option
           VersionController: Lazy<VersionController> }
@@ -156,7 +159,7 @@ module Forker =
 
         member x.GitHubData = x.VersionController.Value.GitHubData
 
-        interface IRole<TargetState>
+        interface IRole<TargetStates>
 
     [<RequireQualifiedAccess>]
     module Role =
@@ -189,23 +192,30 @@ module Forker =
             return version
         }
 
-    let create loggerLevel localNugetServerOp workspace nugetPacker =
-        let nonGit = NonGit.create loggerLevel workspace
+    let create loggerLevel localNugetServerOp localPackagesFolder workspace nugetPacker =
+        let nonGit = NonGit.create loggerLevel localNugetServerOp localPackagesFolder  workspace
 
         { NonGit = nonGit
           NugetPacker = nugetPacker
-          TargetState = TargetState.init
+          TargetStates = TargetStates.init
           VersionController = VersionController.fetch nonGit.Solution nonGit.Workspace
           LocalNugetServer = localNugetServerOp }
 
 
     let private roleAction (role: Role) = function
-        | Msg.NonGit nonGitMsg ->
-            { PreviousMsgs = []
-              Action = MapChild (fun (role: Role) -> NonGit.run nonGitMsg role.NonGit )}
+        | Target.NonGit nonGitMsg ->
+            { DependsOn = []
+              Action = MapChild (fun (role: Role) -> 
+                let newChildRole = NonGit.run nonGitMsg role.NonGit 
+                { role with 
+                    TargetStates = 
+                        { role.TargetStates with NonGit = newChildRole.TargetStates }
+                    NonGit = newChildRole
+                }
+            )}
 
-        | Msg.Pack releaseNotes ->
-            { PreviousMsgs = [!^ (NonGit.Msg.Build (Some releaseNotes.SemVer)); !^ NonGit.Msg.Test]
+        | Target.Pack releaseNotes ->
+            { DependsOn = [!^ (NonGit.Target.Build (DotNet.BuildOptions.setVersion releaseNotes.SemVer)); !^ NonGit.Target.Test]
               Action = MapState (fun role ->
                 let githubData = role.GitHubData
 
@@ -225,16 +235,16 @@ module Forker =
             }
 
 
-        | Msg.PublishToLocalNugetServer ->
+        | Target.PublishToLocalNugetServer ->
 
             match role.LocalNugetServer with
             | Some localNugetServer ->
                 let versionFromLocalNugetServer = Role.versionFromLocalNugetServer role |> Async.RunSynchronously
                 let nextReleaseNotes = Role.nextLocalNugetReleaseNotes versionFromLocalNugetServer role
 
-                { PreviousMsgs = [ Msg.Pack nextReleaseNotes ]
+                { DependsOn = [ Target.Pack nextReleaseNotes ]
                   Action = MapState (fun role ->
-                    let packResult: PackResult = State.getResult role.TargetState.Pack
+                    let packResult: PackResult = TargetState.getResult role.TargetStates.Pack
 
                     let currentVersion = VersionController.currentVersion versionFromLocalNugetServer role.VersionController.Value
 
@@ -250,4 +260,5 @@ module Forker =
                 }
             | None -> failwithf "local nuget server is not defined"
 
-    let run = Role.updateComplex roleAction
+    let run =
+        IRole.Run roleAction

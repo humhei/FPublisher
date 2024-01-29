@@ -2,7 +2,7 @@
   "profiles": {
     "FPublisher.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "--baget"
+      "commandLineArgs": "--run-ci --workingdir \"../../../../../\""
     }
   }
 }
