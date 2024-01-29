@@ -42,13 +42,13 @@ module Primitives =
             | TargetState.Init -> failwith "result have not been evaluated"
             | TargetState.Done result -> unbox result
 
-    type RoleAction<'role, 'childRole> =
+    type RoleAction<'role> =
         | MapState of ('role -> obj)
-        | MapChild of ('role -> 'childRole)
+        | MapChild of ('role -> 'role)
 
-    type RoleIntegratedAction<'role, 'target, 'childRole> =
+    type RoleIntegratedAction<'role, 'target> =
         { DependsOn: 'target list
-          Action: RoleAction<'role, 'childRole> }
+          Action: RoleAction<'role> }
 
     type IRole<'targetStates> = interface end
 
@@ -75,7 +75,7 @@ module Primitives =
                 |> unbox
 
         type IRole<'targetStates> with  
-            static member Run(makeRoleIntegratedAction: 'role -> 'target -> RoleIntegratedAction<'role, 'target, 'childRole>) =
+            static member Run(makeRoleIntegratedAction: 'role -> 'target -> RoleIntegratedAction<'role, 'target>) =
                 fun
                     (target: 'target) 
                     (role: 'role when 'role :> IRole<'targetStates>) ->
@@ -122,13 +122,14 @@ module Primitives =
                     Record.setProperty "TargetStates" newTargetStates role
 
                 | MapChild mapping ->
-                    let newChildRole = mapping role
-                    let newTargetStates = 
-                        let newChildTargetStates = newChildRole.GetType().GetProperty("TargetStates").GetValue(newChildRole)
-                        Record.setProperty targetName newChildTargetStates targetStates
+                    let newRole = mapping role
+                    newRole
+                    //let newTargetStates = 
+                    //    let newChildTargetStates = newChildRole.GetType().GetProperty("TargetStates").GetValue(newChildRole)
+                    //    Record.setProperty targetName newChildTargetStates targetStates
 
-                    Record.setProperty "TargetStates" newTargetStates role
+                    //Record.setProperty "TargetStates" newTargetStates role
 
-            static member Run(makeRoleIntegratedAction: 'target -> RoleIntegratedAction<'role, 'target, 'childRole>) = 
+            static member Run(makeRoleIntegratedAction: 'target -> RoleIntegratedAction<'role, 'target>) = 
                 IRole<'targetStates>.Run(fun _ -> makeRoleIntegratedAction)
 

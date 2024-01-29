@@ -130,15 +130,21 @@ module BuildServer =
         | Target.Collaborator collaboratorMsg ->
             { DependsOn = []
               Action = MapChild (fun role ->
-                    Collaborator.run collaboratorMsg role.Collaborator
+                    let newChildRole = Collaborator.run collaboratorMsg role.Collaborator
+                    { role with 
+                        TargetStates = 
+                            { role.TargetStates with Collaborator = newChildRole.TargetStates }
+                        Collaborator = newChildRole
+                    }
+
                 )
             }
 
         | Target.RunCI ->
 
             match BuildServer.buildServer with
-            //| BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
-            | buildServer  ->
+            | BuildServer.LocalBuild when String.isNullOrEmpty circleCIBuildNumber -> failwith "Expect buildServer context, but currently run in local context"
+            | buildServer when buildServer = role.MajorCI  ->
                 
                 let isJustAfterDraftedNewRelease (role: Role) =
                     let repoTagName = AppVeyor.Environment.RepoTagName
@@ -177,15 +183,15 @@ module BuildServer =
 
                     { DependsOn = 
                         [ 
-                          //!^ NonGit.Target.InstallPaketPackages
-                          ////!^ (NonGit.Target.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
-                          //!^ (NonGit.Target.Test)
-                          //!^ (NonGit.Target.Publish (fun ops ->
-                          //   ops
-                          //   |> DotNet.PublishOptions.noBuild
-                          //   |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
-                          //))
-                          //!^ (Forker.Target.Pack nextReleaseNotes)
+                          !^ NonGit.Target.InstallPaketPackages
+                          //!^ (NonGit.Target.AddSourceLinkPackages nugetPacker.SourceLinkCreate)
+                          !^ (NonGit.Target.Test)
+                          !^ (NonGit.Target.Publish (fun ops ->
+                             ops
+                             |> DotNet.PublishOptions.noBuild
+                             |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
+                          ))
+                          !^ (Forker.Target.Pack nextReleaseNotes)
                           !^ (NonGit.Target.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
                       Action = MapState (fun role ->
                         let appveyor = platformTool "appveyor"

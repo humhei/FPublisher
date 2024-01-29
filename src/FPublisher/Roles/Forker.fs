@@ -206,8 +206,12 @@ module Forker =
         | Target.NonGit nonGitMsg ->
             { DependsOn = []
               Action = MapChild (fun (role: Role) -> 
-                let newRole = NonGit.run nonGitMsg role.NonGit 
-                newRole
+                let newChildRole = NonGit.run nonGitMsg role.NonGit 
+                { role with 
+                    TargetStates = 
+                        { role.TargetStates with NonGit = newChildRole.TargetStates }
+                    NonGit = newChildRole
+                }
             )}
 
         | Target.Pack releaseNotes ->
