@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.32-alpha - tbd
+## 0.1.33
+* Update to .net 6.0
 
 ## 0.1.32-alpha.1 - 2019-09-02
 * Pack nuget package in release mode
