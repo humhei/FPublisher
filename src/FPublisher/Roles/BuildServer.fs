@@ -199,8 +199,13 @@ module BuildServer =
                         let artifact file =
                             Workspace.exec appveyor ["PushArtifact"; file ] role.Workspace
 
-                        Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
-                        
+                        try
+                            Workspace.exec appveyor ["UpdateBuild"; "-Version"; SemVerInfo.normalize nextReleaseNotes.SemVer ] role.Workspace
+                        with ex ->
+                            match ex.Message.Contains("Build with specified version already exists") with 
+                            | true -> logger.Error "%s" ex.Message
+                            | false -> reraise()
+
                         let zipOutputs = TargetState.getResult role.NonGit.TargetStates.Zip
 
                         zipOutputs |> List.iter artifact

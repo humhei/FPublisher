@@ -4,7 +4,6 @@ module Runner
 open Expecto
 open Expecto.Logging
 open System
-open Tests.MyTests
 open Fake.IO
 open FPublisher
 open Fake.Core
