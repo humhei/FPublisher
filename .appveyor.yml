@@ -5,6 +5,3 @@ install:
 build_script:
   - cmd: .appveyor.cmd
 
-environment:
-  nuget_api_key:
-    secure: uxeBhnDDyowaBY1oDNFPo9Yz9wbJUWwAw8BgagEbHtKLQR3uxOADA7dvO+pcANt0
