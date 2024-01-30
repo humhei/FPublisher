@@ -86,7 +86,7 @@ let main argv =
         match result with 
         | Create_Sln -> Workspace.createDefaultSln false buildServer.Workspace
         | Clean -> Workspace.cleanBinAndObj buildServer.Workspace
-        | Build -> BuildServer.run (!^ (NonGit.Target.Build id)) buildServer |> ignore
+        | Build -> BuildServer.run (!^ (NonGit.Target.Build_Debug id)) buildServer |> ignore
         | Test -> BuildServer.run (!^ NonGit.Target.Test) buildServer |> ignore
         | Next_Release -> BuildServer.run (!^ Collaborator.Target.NextRelease) buildServer |> ignore
         | Run_CI -> BuildServer.run (BuildServer.Target.RunCI) buildServer |> ignore

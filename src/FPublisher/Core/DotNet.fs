@@ -12,7 +12,7 @@ module DotNet =
           Value: string }
     with 
         override x.ToString() =
-            sprintf "/p:%s=\"%s\"" x.Property x.Value
+            sprintf "/p:%s=\"%s\"" x.Property (x.Value.Replace(',', '，'))
 
     module PublishOptions =
         let noBuild (ops: DotNet.PublishOptions) =
@@ -65,11 +65,11 @@ module DotNet =
           Tags: string list }
     with 
         static member DefaultValue =
-            { NoBuild = false
-              NoRestore = false
+            { NoBuild = true
+              NoRestore = true
               Version = None
               OutputPath = None
-              Configuration = DotNet.BuildConfiguration.Debug
+              Configuration = DotNet.BuildConfiguration.Release
               Authors = [] 
               GenerateDocumentationFile = true 
               PackageIconUrl = None 
@@ -77,13 +77,11 @@ module DotNet =
               ReleaseNotes = None 
               PackageLicenseUrl = None 
               PackageProjectUrl = None 
-              Tags = [] }
+              Tags = [] 
+            }
 
     [<RequireQualifiedAccess>]
     module  PackOptions =
-
-
-
         let asFakePackOptions packOptions : DotNet.PackOptions =
             { NoBuild = packOptions.NoBuild 
               NoLogo = true
@@ -101,11 +99,14 @@ module DotNet =
                             if packOptions.Authors.Length > 0 then yield { Property = "Authors"; Value = String.separated ";" packOptions.Authors }
                             if packOptions.GenerateDocumentationFile then yield { Property = "GenerateDocumentationFile"; Value = "true" }
                             match packOptions.Description with Some description -> yield { Property = "Description"; Value = description } | None -> ()
-                            match packOptions.ReleaseNotes with Some releaseNotes -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes.Notes } | None -> ()
+                            match packOptions.ReleaseNotes with Some (ReleaseNotes.HasNotes releaseNotes) -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes } | _ -> ()
                             match packOptions.PackageIconUrl with Some packageIconUrl -> yield { Property = "PackageIconUrl"; Value = packageIconUrl } | None -> ()
                             match packOptions.PackageProjectUrl with Some packageProjectUrl -> yield { Property = "PackageProjectUrl"; Value = packageProjectUrl } | None -> ()
                             match packOptions.PackageLicenseUrl with Some packageLicenseUrl -> yield { Property = "PackageLicenseUrl"; Value = packageLicenseUrl } | None -> ()
                             match packOptions.Version with Some version -> yield { Property = "Version"; Value = version } | None -> ()
+                            match packOptions.NoBuild with 
+                            | true -> yield { Property = "TargetsForTfmSpecificContentInPackage"; Value = "" }
+                            | false -> ()
                         ] 
                         |> List.map (fun prop -> prop.ToString())
                         |> String.concat " "
@@ -118,12 +119,12 @@ module DotNet =
 
         let asFakeBuildOptions (packOptions: PackOptions) : DotNet.BuildOptions =
             let ops = DotNet.BuildOptions.Create()
-            { 
+            let ops = 
+                { 
               ops with 
                   NoLogo = true
                   Configuration = packOptions.Configuration 
                   Framework = ops.Framework
-                  OutputPath = packOptions.OutputPath 
                   Common = 
                     { DotNet.Options.Create() with 
                         CustomParams = 
@@ -132,7 +133,7 @@ module DotNet =
                                 if packOptions.Authors.Length > 0 then yield { Property = "Authors"; Value = String.separated ";" packOptions.Authors }
                                 if packOptions.GenerateDocumentationFile then yield { Property = "GenerateDocumentationFile"; Value = "true" }
                                 match packOptions.Description with Some description -> yield { Property = "Description"; Value = description } | None -> ()
-                                match packOptions.ReleaseNotes with Some releaseNotes -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes.Notes } | None -> ()
+                                match packOptions.ReleaseNotes with Some (ReleaseNotes.HasNotes releaseNotes) -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes } | _ -> ()
                                 match packOptions.PackageIconUrl with Some packageIconUrl -> yield { Property = "PackageIconUrl"; Value = packageIconUrl } | None -> ()
                                 match packOptions.PackageProjectUrl with Some packageProjectUrl -> yield { Property = "PackageProjectUrl"; Value = packageProjectUrl } | None -> ()
                                 match packOptions.PackageLicenseUrl with Some packageLicenseUrl -> yield { Property = "PackageLicenseUrl"; Value = packageLicenseUrl } | None -> ()
@@ -148,9 +149,13 @@ module DotNet =
             }
 
 
+            ops
 
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = setParams PackOptions.DefaultValue
-        DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
+        DotNet.pack (fun _ -> 
+            let ops = PackOptions.asFakePackOptions options
+            ops
+        ) project
 
 

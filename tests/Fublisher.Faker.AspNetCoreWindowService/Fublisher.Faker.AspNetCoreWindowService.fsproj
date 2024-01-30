@@ -6,6 +6,7 @@
     <SelfContained>false</SelfContained>
     <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
     <OutputType>Exe</OutputType>
+      <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>

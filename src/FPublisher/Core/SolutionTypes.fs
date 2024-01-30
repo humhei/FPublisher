@@ -74,7 +74,17 @@ module TargetFrameworks =
             |> TargetFrameworks.Multiple
 
         | frameWorkNodes ->
-            let frameworkNode = [ for node in frameWorkNodes do yield node ] |> List.exactlyOne
+            let frameworkNode = 
+                [ for node in frameWorkNodes do yield node ] 
+                |> function
+                    | [node] -> node
+                    | nodes -> 
+                        nodes
+                        |> List.filter(fun m -> not(m.OuterXml.Contains "Condition"))
+                        |> function
+                            | [node] -> node
+                            | _ -> List.head nodes
+
             frameworkNode.InnerText.Trim()
             |> TargetFramework.create
             |> TargetFrameworks.Single
