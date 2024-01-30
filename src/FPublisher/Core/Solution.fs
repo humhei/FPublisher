@@ -247,7 +247,7 @@ module _Solution =
                     |> List.groupBy(fun project -> project.GetProjectKind())
                     |> List.filter(fun (projectKind, _) ->
                         match projectKind with 
-                        | ProjectKind.CoreCli | ProjectKind.Library | ProjectKind.AspNetCore -> true
+                        | ProjectKind.CoreCli | ProjectKind.Library -> true
                         | _ -> false
                     )
             

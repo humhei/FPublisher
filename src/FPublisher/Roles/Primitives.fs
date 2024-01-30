@@ -18,11 +18,25 @@ module Primitives =
 
     let none = box ()
 
+    type ITargetState =
+        abstract member IsInit: bool
+        abstract member IsDone: bool
+
     [<RequireQualifiedAccess>]
     type TargetState<'result> =
         | Init
         | Done of 'result
+    with 
+        interface ITargetState with 
+            member x.IsDone =
+                match x with 
+                | Done v -> true
+                | Init -> false
 
+            member x.IsInit =
+                match x with 
+                | Done v -> false
+                | Init -> true
 
 
     type BoxedTargetState = TargetState<obj>
@@ -100,26 +114,37 @@ module Primitives =
 
                 match integratedAction.Action with 
                 | MapState mapping ->
-                    let newTargetStates = 
-                        logger.ImportantGreen "FPUBLISH: Start target %s" targetName
-                        let stopWatch = Stopwatch.StartNew()
+                    let targetStateProperty = 
+                        FSharpType.GetRecordFields(typeof<'targetStates>) 
+                        |> Array.find (fun prop -> prop.Name = targetName)
+                        |> fun prop -> prop
 
-                        let newTargetState = 
-                            let targetStatePropertyType = 
-                                FSharpType.GetRecordFields(typeof<'targetStates>) 
-                                |> Array.find (fun prop -> prop.Name = targetName)
-                                |> fun prop -> prop.PropertyType
+                    let targetStatePropertyType = targetStateProperty.PropertyType
 
-                            let uci = 
-                                FSharpType.GetUnionCases(targetStatePropertyType)
-                                |> Array.find (fun uci -> uci.Name = "Done")
-                            FSharpValue.MakeUnion(uci, [| mapping role |])
+                    let targetState = 
+                        targetStateProperty.GetValue(targetStates) :?> ITargetState
 
-                        logger.ImportantGreen "FPUBLISH: Finished target %s in %O" targetName stopWatch.Elapsed
+                    match targetState.IsDone with 
+                    | true -> role
+                    | false -> 
 
-                        Record.setProperty targetName newTargetState targetStates
+                        let newTargetStates = 
+                            logger.ImportantGreen "FPUBLISH: Start target %s" targetName
+                            let stopWatch = Stopwatch.StartNew()
 
-                    Record.setProperty "TargetStates" newTargetStates role
+                            let newTargetState = 
+
+
+                                let uci = 
+                                    FSharpType.GetUnionCases(targetStatePropertyType)
+                                    |> Array.find (fun uci -> uci.Name = "Done")
+                                FSharpValue.MakeUnion(uci, [| mapping role |])
+
+                            logger.ImportantGreen "FPUBLISH: Finished target %s in %O" targetName stopWatch.Elapsed
+
+                            Record.setProperty targetName newTargetState targetStates
+
+                        Record.setProperty "TargetStates" newTargetStates role
 
                 | MapChild mapping ->
                     let newRole = mapping role
