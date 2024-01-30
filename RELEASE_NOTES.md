@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.40-alpha - tbd
+## 0.1.40 - tbd
+* Conditional TargetFrameworks parsing
 
 ## 0.1.39 - 2024-01-30
 * dotnet pack with building project
