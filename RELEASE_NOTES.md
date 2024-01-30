@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.40 - tbd
+## 0.1.41-alpha - tbd
+
+## 0.1.40 - 2024-01-30
 * Conditional TargetFrameworks parsing
 
 ## 0.1.39 - 2024-01-30
