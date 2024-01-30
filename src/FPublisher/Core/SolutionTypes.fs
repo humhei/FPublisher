@@ -391,11 +391,12 @@ module Project =
             | _ -> false
         )
 
-    let exec (args: seq<string>) (project: Project) =
+    let exec (configuration: DotNet.BuildConfiguration) (args: seq<string>) (project: Project) =
+        let configurationText = configuration.ToString()
         project.TargetFrameworks.AsList
         |> List.iter (fun framework ->
             let outputDll =
-                project.Projdir </> "bin/Debug" </> TargetFramework.name framework </> project.Name + ".dll"
+                project.Projdir </> "bin" </> configurationText </> TargetFramework.name framework </> project.Name + ".dll"
                 |> Path.nomarlizeToUnixCompitiable
 
             let outputExe = outputDll |> Path.changeExtension ".exe"

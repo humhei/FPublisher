@@ -172,7 +172,7 @@ module NonGit =
 
             | Target.Test ->
                 { DependsOn = [ Target.Build_Release id ]
-                  Action = MapState (fun role -> Solution.test role.Solution; none) }
+                  Action = MapState (fun role -> Solution.test DotNet.BuildConfiguration.Release role.Solution; none) }
 
             | Target.PushToLocalNugetServerV3 ->
                 match role.LocalNugetServerV3 with 
