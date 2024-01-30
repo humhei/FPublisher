@@ -63,28 +63,29 @@ module TargetFrameworks =
     let ofProjPath (projectFile: string) =
         let projectFile = projectFile.Replace('\\','/')
         let doc = new XmlDocument()
+        let pickNode_WithoutCondition(nodes: XmlNodeList) =
+            [ for node in nodes do yield node ] 
+            |> function
+                | [node] -> node
+                | nodes -> 
+                    nodes
+                    |> List.filter(fun m -> not(m.OuterXml.Contains "Condition"))
+                    |> function
+                        | [node] -> node
+                        | _ -> List.head nodes
+
         doc.Load(projectFile)
         match doc.GetElementsByTagName "TargetFramework" with
         | frameworkNodes when frameworkNodes.Count = 0 ->
             let frameworksNodes = doc.GetElementsByTagName "TargetFrameworks"
-            let frameworksNode = [ for node in frameworksNodes do yield node ] |> List.exactlyOne
+            let frameworksNode = pickNode_WithoutCondition frameworksNodes
             frameworksNode.InnerText.Split(';')
             |> Array.map (fun text -> TargetFramework.create (text.Trim()))
             |> List.ofSeq
             |> TargetFrameworks.Multiple
 
         | frameWorkNodes ->
-            let frameworkNode = 
-                [ for node in frameWorkNodes do yield node ] 
-                |> function
-                    | [node] -> node
-                    | nodes -> 
-                        nodes
-                        |> List.filter(fun m -> not(m.OuterXml.Contains "Condition"))
-                        |> function
-                            | [node] -> node
-                            | _ -> List.head nodes
-
+            let frameworkNode = pickNode_WithoutCondition frameWorkNodes
             frameworkNode.InnerText.Trim()
             |> TargetFramework.create
             |> TargetFrameworks.Single

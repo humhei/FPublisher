@@ -159,7 +159,7 @@ module NonGit =
                     let ops = setParams FPublisher.DotNet.PackOptions.DefaultValue
                     DotNet.PackOptions.asFakeBuildOptions ops
 
-                { DependsOn = [Target.InstallPaketPackages; Target.Build_Release(fun _ -> buildOps)] 
+                { DependsOn = [Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
 
             | Target.AddSourceLinkPackages sourceLinkCreate  ->
