@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.39-alpha - tbd
+## 0.1.39 - tbd
+* dotnet pack with building project
 
 ## 0.1.38 - 2024-01-30
 * Treat .net5+ and exe as Core Cli project
