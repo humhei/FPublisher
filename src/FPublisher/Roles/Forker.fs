@@ -212,7 +212,6 @@ module Forker =
                     let ops = setParams ops
                     { ops with 
                         Configuration = DotNet.BuildConfiguration.Release
-                        NoBuild = true 
                         Version = Some releaseNotes.SemVer.AsString
                         OutputPath = Some outputDirectory }
 
