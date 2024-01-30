@@ -119,7 +119,8 @@ module DotNet =
 
         let asFakeBuildOptions (packOptions: PackOptions) : DotNet.BuildOptions =
             let ops = DotNet.BuildOptions.Create()
-            { 
+            let ops = 
+                { 
               ops with 
                   NoLogo = true
                   Configuration = packOptions.Configuration 
@@ -147,7 +148,9 @@ module DotNet =
                     { MSBuild.CliArguments.Create() with DisableInternalBinLog = true }
             }
 
+            printfn "%A" ops.Common.CustomParams
 
+            ops
 
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = setParams PackOptions.DefaultValue
