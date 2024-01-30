@@ -1,6 +1,8 @@
 ﻿# Release Notes
 
-## 0.1.39 - tbd
+## 0.1.40-alpha - tbd
+
+## 0.1.39 - 2024-01-30
 * dotnet pack with building project
 
 ## 0.1.38 - 2024-01-30
