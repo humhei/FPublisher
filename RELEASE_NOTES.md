@@ -1,9 +1,10 @@
 ﻿# Release Notes
 
-## 0.1.37-alpha - tbd
+## 0.1.38-alpha - tbd
 
-## 0.1.36 - 2024-01-30
+## 0.1.37 - 2024-01-30
 * Run dotnet info first
+* Only run one target at once
 
 ## 0.1.35 - 2024-01-29
 * Update to .net 6.0
