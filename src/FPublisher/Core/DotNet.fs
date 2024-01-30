@@ -104,9 +104,9 @@ module DotNet =
                             match packOptions.PackageProjectUrl with Some packageProjectUrl -> yield { Property = "PackageProjectUrl"; Value = packageProjectUrl } | None -> ()
                             match packOptions.PackageLicenseUrl with Some packageLicenseUrl -> yield { Property = "PackageLicenseUrl"; Value = packageLicenseUrl } | None -> ()
                             match packOptions.Version with Some version -> yield { Property = "Version"; Value = version } | None -> ()
-                            match packOptions.NoBuild with 
-                            | true -> yield { Property = "TargetsForTfmSpecificContentInPackage"; Value = "" }
-                            | false -> ()
+                            //match packOptions.NoBuild with 
+                            //| true -> yield { Property = "TargetsForTfmSpecificContentInPackage"; Value = "" }
+                            //| false -> ()
                         ] 
                         |> List.map (fun prop -> prop.ToString())
                         |> String.concat " "
