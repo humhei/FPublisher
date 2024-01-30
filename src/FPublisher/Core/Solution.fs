@@ -148,14 +148,17 @@ module _Solution =
               Projects = projects }
 
         let build setParams (solution: Solution) =
-            try
-                dotnet "info" [] (solution.WorkingDir)
-                DotNet.build setParams solution.Path 
-            with ex ->
-                match ex.Message.StartsWith "Unsupported log file format" with 
-                | true -> ()
-                | false -> reraise()
+            dotnet "--info" [] (solution.WorkingDir)
+            let setParams (ops: DotNet.BuildOptions) =
+                let ops = 
+                    { ops with 
+                        MSBuildParams = 
+                            { ops.MSBuildParams with DisableInternalBinLog = true }
+                    }
+                setParams ops
 
+            DotNet.build setParams solution.Path 
+          
 
 
         let clean (solution: Solution) =
@@ -288,15 +291,17 @@ module _Solution =
 
 
         let publish publishNetCoreDependency setParams (solution: Solution) =
+            let setParams (ops: DotNet.PublishOptions) =
+                let ops = 
+                    { ops with 
+                        MSBuildParams = 
+                            { ops.MSBuildParams with DisableInternalBinLog = true }
+                    }
+                setParams ops
 
             solution.AspNetCoreProjects
             |> List.iter (fun project ->
-                try
-                    DotNet.publish setParams project.ProjPath
-                with ex ->
-                    match ex.Message.StartsWith "Unsupported log file format" with 
-                    | true -> ()
-                    | false -> reraise()
+                DotNet.publish setParams project.ProjPath
 
                 let ops = DotNet.PublishOptions.Create() |> setParams
                 match publishNetCoreDependency with 
