@@ -99,7 +99,7 @@ module DotNet =
                             if packOptions.Authors.Length > 0 then yield { Property = "Authors"; Value = String.separated ";" packOptions.Authors }
                             if packOptions.GenerateDocumentationFile then yield { Property = "GenerateDocumentationFile"; Value = "true" }
                             match packOptions.Description with Some description -> yield { Property = "Description"; Value = description } | None -> ()
-                            match packOptions.ReleaseNotes with Some releaseNotes -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes.Notes } | None -> ()
+                            match packOptions.ReleaseNotes with Some (ReleaseNotes.HasNotes releaseNotes) -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes } | _ -> ()
                             match packOptions.PackageIconUrl with Some packageIconUrl -> yield { Property = "PackageIconUrl"; Value = packageIconUrl } | None -> ()
                             match packOptions.PackageProjectUrl with Some packageProjectUrl -> yield { Property = "PackageProjectUrl"; Value = packageProjectUrl } | None -> ()
                             match packOptions.PackageLicenseUrl with Some packageLicenseUrl -> yield { Property = "PackageLicenseUrl"; Value = packageLicenseUrl } | None -> ()
@@ -132,7 +132,7 @@ module DotNet =
                                 if packOptions.Authors.Length > 0 then yield { Property = "Authors"; Value = String.separated ";" packOptions.Authors }
                                 if packOptions.GenerateDocumentationFile then yield { Property = "GenerateDocumentationFile"; Value = "true" }
                                 match packOptions.Description with Some description -> yield { Property = "Description"; Value = description } | None -> ()
-                                match packOptions.ReleaseNotes with Some releaseNotes -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes.Notes } | None -> ()
+                                match packOptions.ReleaseNotes with Some (ReleaseNotes.HasNotes releaseNotes) -> yield { Property = "PackageReleaseNotes"; Value = String.toLines releaseNotes } | _ -> ()
                                 match packOptions.PackageIconUrl with Some packageIconUrl -> yield { Property = "PackageIconUrl"; Value = packageIconUrl } | None -> ()
                                 match packOptions.PackageProjectUrl with Some packageProjectUrl -> yield { Property = "PackageProjectUrl"; Value = packageProjectUrl } | None -> ()
                                 match packOptions.PackageLicenseUrl with Some packageLicenseUrl -> yield { Property = "PackageLicenseUrl"; Value = packageLicenseUrl } | None -> ()

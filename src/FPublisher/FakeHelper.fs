@@ -213,6 +213,12 @@ module FakeHelper =
         [<RequireQualifiedAccess>]
         module ReleaseNotes =
 
+            let (|HasNotes|_|) (releaseNotes: ReleaseNotes.ReleaseNotes) =
+                let notes = releaseNotes.Notes
+                match notes.IsEmpty with 
+                | true -> None
+                | false -> Some notes
+
             let createDefault(): ReleaseNotes.ReleaseNotes =
                 let version = "1.0.0"
                 { AssemblyVersion = version
