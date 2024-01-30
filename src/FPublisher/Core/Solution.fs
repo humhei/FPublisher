@@ -189,7 +189,7 @@ module _Solution =
                 solution.TestProjects
                 |> List.map (fun testProject -> async {
                     Project.exec ["--summary"] testProject
-                    testProject.GetOutputDirs(DotNet.BuildConfiguration.Debug) |> List.iter (fun outputPath ->
+                    testProject.GetOutputDirs(DotNet.BuildConfiguration.Release) |> List.iter (fun outputPath ->
                         let testResultXml =
                             let name = testProject.Name + ".TestResults.xml"
                             let outputDir = Path.getDirectory outputPath
@@ -208,7 +208,7 @@ module _Solution =
                 solution.TestProjects 
                 |> List.map (fun testProject -> async {
                     let testResultXml = testProject.Projdir </> "TestResults" </> testProject.Name + ".TestResults.xml"
-                    dotnet "test" ["--no-build"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml] testProject.Projdir
+                    dotnet "test" ["--no-build"; "--configuration"; "Release"; "--logger"; sprintf "trx;LogFileName=%s" testResultXml] testProject.Projdir
                     if File.exists testResultXml then
                         Trace.publish (ImportData.Nunit NunitDataVersion.Nunit3) testResultXml
 

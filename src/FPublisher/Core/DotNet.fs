@@ -65,8 +65,8 @@ module DotNet =
           Tags: string list }
     with 
         static member DefaultValue =
-            { NoBuild = true
-              NoRestore = true
+            { NoBuild = false
+              NoRestore = false
               Version = None
               OutputPath = None
               Configuration = DotNet.BuildConfiguration.Release
