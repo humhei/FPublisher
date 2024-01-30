@@ -12,6 +12,7 @@ open Fake.IO.Globbing.Operators
 open Fake.DotNet.NuGet.NuGet
 open FPublisher.Nuget.Nuget
 open FPublisher.Nuget.NugetPacker
+open FPublisher.FakeHelper.CommandHelper
 
 [<RequireQualifiedAccess>]
 module NonGit =
@@ -20,7 +21,8 @@ module NonGit =
     type Target =
         | InstallPaketPackages
         | Clean
-        | Build of (DotNet.BuildOptions -> DotNet.BuildOptions)
+        | Build_Debug of (DotNet.BuildOptions -> DotNet.BuildOptions)
+        | Build_Release of (DotNet.BuildOptions -> DotNet.BuildOptions)
         | Pack of (FPublisher.DotNet.PackOptions -> FPublisher.DotNet.PackOptions)
         | AddSourceLinkPackages of SourceLinkCreate
         | Test
@@ -33,7 +35,8 @@ module NonGit =
     type TargetStates =
         { InstallPaketPackages: BoxedTargetState
           Clean: BoxedTargetState
-          Build: BoxedTargetState
+          Build_Debug: BoxedTargetState
+          Build_Release: BoxedTargetState
           Pack: TargetState<list<ProjectKind * Project list>>
           AddSourceLinkPackages: BoxedTargetState
           Test: BoxedTargetState
@@ -47,7 +50,8 @@ module NonGit =
         let init =
             { InstallPaketPackages = TargetState.Init
               Clean = TargetState.Init
-              Build = TargetState.Init
+              Build_Debug = TargetState.Init
+              Build_Release = TargetState.Init
               Pack = TargetState.Init
               AddSourceLinkPackages = TargetState.Init
               Test = TargetState.Init
@@ -68,6 +72,7 @@ module NonGit =
 
     let create loggerLevel localNugetServerV3 localPackagesFolder (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
+        dotnet "--info" [] (Directory.GetCurrentDirectory())
 
         let repoName = Workspace.tryGetRepoName workspace
 
@@ -126,12 +131,37 @@ module NonGit =
                   Action = MapState (fun role -> Solution.clean role.Solution; none)}
 
 
-            | Target.Build setParams ->
+            | Target.Build_Debug setParams ->   
+                let setParams (ops: DotNet.BuildOptions) =
+                    let ops = setParams ops
+                    { ops with 
+                        Configuration = DotNet.BuildConfiguration.Debug
+                        MSBuildParams = 
+                            { ops.MSBuildParams with DisableInternalBinLog = true }
+                        }
+                { DependsOn = [Target.InstallPaketPackages] 
+                  Action = MapState (fun role -> Solution.build setParams role.Solution ; none)}
+
+            | Target.Build_Release setParams ->  
+                let setParams (ops: DotNet.BuildOptions) =
+                    let ops = setParams ops
+                    { ops with 
+                        Configuration = DotNet.BuildConfiguration.Release
+                        MSBuildParams = 
+                            { ops.MSBuildParams with DisableInternalBinLog = true }
+                        }
                 { DependsOn = [Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.build setParams role.Solution ; none)}
 
             | Target.Pack setParams ->
-                { DependsOn = [Target.InstallPaketPackages] 
+                let setParams (ops: FPublisher.DotNet.PackOptions) =
+                    let ops = setParams ops
+                    { ops with 
+                        NoBuild = true
+                        Configuration = DotNet.BuildConfiguration.Debug
+                    }
+
+                { DependsOn = [Target.InstallPaketPackages; Target.Build_Release id] 
                   Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
 
             | Target.AddSourceLinkPackages sourceLinkCreate  ->
@@ -143,7 +173,7 @@ module NonGit =
                 )}
 
             | Target.Test ->
-                { DependsOn = [ Target.Build(fun m -> {m with Configuration = DotNet.BuildConfiguration.Debug} ) ]
+                { DependsOn = [ Target.Build_Debug id ]
                   Action = MapState (fun role -> Solution.test role.Solution; none) }
 
             | Target.PushToLocalNugetServerV3 ->
@@ -234,8 +264,8 @@ module NonGit =
             | Target.PushToLocalPackagesFolder -> failwith "Not implemented"
 
             | Target.Publish setParams -> 
-                let ops = setParams (DotNet.PublishOptions.Create())
-                { DependsOn = []
+                let setParams ops = setParams ({ ops with Configuration = DotNet.BuildConfiguration.Release })
+                { DependsOn = [ Target.Build_Release id ]
                   Action = MapState (fun role -> 
                     Solution.publish PublishNetCoreDependency.Keep setParams role.Solution
                     none
@@ -243,7 +273,7 @@ module NonGit =
 
             | Target.Zip projects ->
 
-                { DependsOn = [ Target.Build id ]
+                { DependsOn = [ Target.Build_Release id ]
                   Action = MapState (fun role -> 
                     projects 
                     |> List.collect (fun project ->

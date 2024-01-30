@@ -215,7 +215,7 @@ module Forker =
             )}
 
         | Target.Pack releaseNotes ->
-            { DependsOn = [!^ (NonGit.Target.Build (DotNet.BuildOptions.setVersion releaseNotes.SemVer)); !^ NonGit.Target.Test]
+            { DependsOn = [!^ (NonGit.Target.Build_Release (DotNet.BuildOptions.setVersion releaseNotes.SemVer)); !^ NonGit.Target.Test]
               Action = MapState (fun role ->
                 let githubData = role.GitHubData
 

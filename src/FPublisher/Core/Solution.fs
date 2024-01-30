@@ -148,15 +148,6 @@ module _Solution =
               Projects = projects }
 
         let build setParams (solution: Solution) =
-            dotnet "--info" [] (solution.WorkingDir)
-            let setParams (ops: DotNet.BuildOptions) =
-                let ops = 
-                    { ops with 
-                        MSBuildParams = 
-                            { ops.MSBuildParams with DisableInternalBinLog = true }
-                    }
-                setParams ops
-
             DotNet.build setParams solution.Path 
           
 

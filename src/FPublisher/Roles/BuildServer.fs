@@ -188,7 +188,6 @@ module BuildServer =
                           !^ (NonGit.Target.Test)
                           !^ (NonGit.Target.Publish (fun ops ->
                              ops
-                             |> DotNet.PublishOptions.noBuild
                              |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
                           ))
                           !^ (Forker.Target.Pack nextReleaseNotes)

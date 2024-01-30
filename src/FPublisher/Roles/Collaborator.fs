@@ -358,7 +358,7 @@ module Collaborator =
             let nextReleaseNotes = Role.nextReleaseNotes role
 
             { DependsOn =
-                [ !^ (NonGit.Target.Build (DotNet.BuildOptions.setVersion nextReleaseNotes.SemVer))
+                [ !^ (NonGit.Target.Build_Release (DotNet.BuildOptions.setVersion nextReleaseNotes.SemVer))
                   Target.EnsureGitChangesAllPushedAndInDefaultBranch
                   !^ (NonGit.Target.Zip (List.filter Project.existFullFramework role.Solution.CliProjects )) ]
 

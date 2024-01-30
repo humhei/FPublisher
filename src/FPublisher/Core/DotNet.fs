@@ -65,11 +65,11 @@ module DotNet =
           Tags: string list }
     with 
         static member DefaultValue =
-            { NoBuild = false
+            { NoBuild = true
               NoRestore = false
               Version = None
               OutputPath = None
-              Configuration = DotNet.BuildConfiguration.Debug
+              Configuration = DotNet.BuildConfiguration.Release
               Authors = [] 
               GenerateDocumentationFile = true 
               PackageIconUrl = None 
@@ -77,7 +77,8 @@ module DotNet =
               ReleaseNotes = None 
               PackageLicenseUrl = None 
               PackageProjectUrl = None 
-              Tags = [] }
+              Tags = [] 
+            }
 
     [<RequireQualifiedAccess>]
     module  PackOptions =
