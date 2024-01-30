@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.36-alpha - tbd
+## 0.1.36 - tbd
+* Run dotnet info first
 
 ## 0.1.35 - 2024-01-29
 * Update to .net 6.0

@@ -149,6 +149,7 @@ module _Solution =
 
         let build setParams (solution: Solution) =
             try
+                dotnet "info" [] (solution.WorkingDir)
                 DotNet.build setParams solution.Path 
             with ex ->
                 match ex.Message.StartsWith "Unsupported log file format" with 
