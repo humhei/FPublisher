@@ -49,10 +49,10 @@ let localTests() =
       let paths =
           [
               //@"D:\VsCode\Workspace\Akkling" 
-              //@"D:\VsCode\Workspace\FPublisher"
+              @"D:\VsCode\Workspace\FPublisher"
               //@"C:\Users\Jia\Desktop\hello"
               //@"D:\VsCode\Workspace\Shrimp.FileWatcher" 
-              @"D:\VsCode\Github\FCSWatch"
+              //@"D:\VsCode\Github\FCSWatch"
               //@"D:\VsCode\Workspace\LiteDB"
               //@"D:\VsCode\Workspace\LiteDB.FSharp"
               //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"

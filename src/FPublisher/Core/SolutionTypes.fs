@@ -361,6 +361,10 @@ with
             if x.GetName().Contains("test", true) then ProjectKind.Test
             else ProjectKind.CoreCli
 
+        | OutputType.Exe, SDK.Microsoft_NET_Sdk, TargetFrameworks.Single (TargetFramework.Net _) ->
+            if x.GetName().Contains("test", true) then ProjectKind.Test
+            else ProjectKind.CoreCli
+
         | OutputType.Exe, SDK.Microsoft_NET_Sdk_Web, _ -> ProjectKind.AspNetCore
 
         | OutputType.Library, SDK.Microsoft_NET_Sdk, _ -> ProjectKind.Library
