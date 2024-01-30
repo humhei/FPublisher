@@ -12,7 +12,7 @@ module DotNet =
           Value: string }
     with 
         override x.ToString() =
-            sprintf "/p:%s=\"%s\"" x.Property x.Value
+            sprintf "/p:%s=\"%s\"" x.Property (x.Value.Replace(',', '，'))
 
     module PublishOptions =
         let noBuild (ops: DotNet.PublishOptions) =
@@ -148,7 +148,6 @@ module DotNet =
                     { MSBuild.CliArguments.Create() with DisableInternalBinLog = true }
             }
 
-            printfn "%A" ops.Common.CustomParams
 
             ops
 
