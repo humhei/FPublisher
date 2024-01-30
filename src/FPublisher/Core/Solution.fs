@@ -102,12 +102,14 @@ module _Solution =
         | None
         | Keep
 
+    
+
+
+
     [<RequireQualifiedAccess>]
     module Solution =
 
 
-
-        let private projectPackingCache = new System.Collections.Concurrent.ConcurrentDictionary<_, _>()
         let read slnPath =
             let pattern = "Project[\(\"\{ \}\)\w\-]+\=[ ]+\"(?<name>[\w\-.]+)\",[ ]+\"(?<relativePath>[\w\\\.\-]+)\""
             let slnPath = Path.normalizeToUnixCompatible slnPath
@@ -156,128 +158,6 @@ module _Solution =
             for project in solution.Projects do
                 Project.clean project
 
-        let pack setParams (solution: Solution) =
-            let groupedProjects = 
-                solution.Projects
-                |> List.groupBy(fun project -> project.GetProjectKind())
-                |> List.filter(fun (projectKind, _) ->
-                    match projectKind with 
-                    | ProjectKind.CoreCli | ProjectKind.Library | ProjectKind.AspNetCore -> true
-                    | _ -> false
-                )
-        
-
-            let ops: FPublisher.DotNet.PackOptions = setParams (FPublisher.DotNet.PackOptions.DefaultValue)
-
-            //let build () =
-            //    match ops.NoBuild with 
-            //    | true -> ()
-            //    | false ->
-            //        let projects = 
-            //            groupedProjects
-            //            |> List.collect(snd)
-            
-            //        let bottomProjects =
-            //            let allTheReferenced =
-            //                projects
-            //                |> List.collect(fun m -> 
-            //                    let fileNames = 
-            //                        m.ProjectReferences.Value
-            //                        |> List.map(fun m -> m.FileNameIC)
-
-            //                    fileNames
-            //                )
-            //                |> List.distinct
-
-            //            projects
-            //            |> List.filter(fun m ->
-            //                let projName = m.ProjPath |> Path.GetFileName |> StringIC
-            //                List.contains projName allTheReferenced
-            //                |> not
-            //            )
-
-
-            //        for bottomProject in bottomProjects do
-            //            printfn "Building Bottom project %s" bottomProject.ProjPath
-            //            let ops = FPublisher.DotNet.PackOptions.asFakeBuildOptions ops 
-            //            DotNet.build (fun (m: DotNet.BuildOptions) ->
-            //                { ops with OutputPath = None }
-            //            ) bottomProject.ProjPath
-
-
-
-            for (projectKind, projects) in groupedProjects do 
-                //build ()
-                for project in projects do
-                    projectPackingCache.GetOrAdd(FsFullPath project.ProjPath, valueFactory = fun _ ->
-                        FPublisher.DotNet.pack setParams project.ProjPath
-                    )
-
-            groupedProjects
-
-        let updatablePackages nugetServer (solution: Solution) =
-            solution.Projects
-            |> List.collect(Project.updatablePackages nugetServer)
-
-        let updatePackages nugetServer (solution: Solution) =
-            { solution with 
-                Projects =
-                    solution.Projects
-                    |> List.map (Project.updatePackages nugetServer)
-                }
-
-
-
-        let getPackageNames (solution: Solution) =
-            solution.Projects
-            |> List.map (fun project -> project.GetName())
-
-
-        let private versionFromServer getLastVersion server solution = async {
-            let versions =
-                getPackageNames solution
-                |> Seq.map (fun packageName ->
-                    async {return getLastVersion server packageName}
-                )
-                |> Async.Parallel
-                |> Async.RunSynchronously
-                |> Array.choose id
-
-            if versions.Length > 0 then return Some (Array.max versions)
-            else return None
-        }
-
-        let workaroundPaketNuSpecBug (solution: Solution) =
-            solution.Projects
-            |> Seq.collect (fun proj ->
-                let dir = Path.getDirectory proj.ProjPath
-                !! (dir </> "./obj/**/*.nuspec")
-            )
-            |> File.deleteAll
-
-
-        let lastStableVersionFromNugetServerV2 (solution: Solution) = versionFromServer Version.getLastNuGetVersion  "https://www.nuget.org/api/v2" solution
-
-        type NugetSearchItemResultV3 =
-            { version: string }
-
-        type NugetSearchResultV3 =
-            { data: NugetSearchItemResultV3 list }
-
-        let private getLastNugetVersionV3 server packageName =
-            let json = Http.RequestString (server,["q",packageName;"prerelease","true"])
-            let result = JsonConvert.DeserializeObject<NugetSearchResultV3> json
-            result.data
-            |> List.tryHead
-            |> Option.map (fun nugetItem ->
-                SemVerInfo.parse nugetItem.version
-            )
-
-
-        let lastVersionFromCustomNugetServer server (solution: Solution) = versionFromServer getLastNugetVersionV3 server solution
-        let lastVersionFromOfficalNugetServer (solution: Solution) = versionFromServer getLastNugetVersionV3 Nuget.officalNugetV3SearchQueryServiceUrl solution
-        let getLastVersion (solution: Solution) (nugetServer: Nuget.NugetServer) =
-            lastVersionFromCustomNugetServer nugetServer.SearchQueryService solution
 
 
 
@@ -339,3 +219,147 @@ module _Solution =
 
             runExpectoTest()
             runOtherTest()
+
+
+    [<AutoOpen>]
+    module _Pack =
+        type PackPackageResult =
+            { Path: string 
+              OriginProject: Project }
+
+        type PackResult =
+            { LibraryPackages: PackPackageResult list
+              CliPackages: PackPackageResult list
+              AspNotCorePackages: PackPackageResult list }
+        with 
+            member x.LibraryPackagePaths = x.LibraryPackages |> List.map (fun package -> package.Path)
+
+            member x.CliPackagePaths = x.CliPackages |> List.map (fun package -> package.Path)
+
+
+        [<RequireQualifiedAccess>]
+        module Solution =
+            let private projectPackingCache = new System.Collections.Concurrent.ConcurrentDictionary<_, _>()
+            // ********************Pack**********************
+            let pack setParams (solution: Solution): PackResult =
+                let groupedProjects = 
+                    solution.Projects
+                    |> List.groupBy(fun project -> project.GetProjectKind())
+                    |> List.filter(fun (projectKind, _) ->
+                        match projectKind with 
+                        | ProjectKind.CoreCli | ProjectKind.Library | ProjectKind.AspNetCore -> true
+                        | _ -> false
+                    )
+            
+
+                let ops: FPublisher.DotNet.PackOptions = setParams (FPublisher.DotNet.PackOptions.DefaultValue)
+
+                let packages = 
+                    groupedProjects
+                    |> List.map(fun (projectKind, projects) ->
+                        let packages = 
+                            projects
+                            |> List.map(fun project ->
+                                projectPackingCache.GetOrAdd(FsFullPath project.ProjPath, valueFactory = fun _ ->   
+                                    let outputPath = 
+                                        match ops.OutputPath with 
+                                        | Some outputPath -> 
+                                            outputPath </> (project.Name)
+
+                                        | None -> Path.GetTempPath() </> Path.GetRandomFileName() </> project.Name
+
+                                    Directory.ensure outputPath
+
+                                    let setParams (ops: FPublisher.DotNet.PackOptions) = 
+                                        let ops = setParams ops
+                                        { ops with OutputPath = Some outputPath }
+
+                                    FPublisher.DotNet.pack setParams project.ProjPath
+                                    let package =
+                                        !! (outputPath </> "./*.nupkg") |> Seq.exactlyOne
+
+                                    { PackPackageResult.Path = package
+                                      OriginProject = project }
+                                )
+                            )
+
+                        projectKind, packages
+                    )
+                    
+                let filterByProjectKind projectKind (packges: list<ProjectKind * _>) =
+                    packages
+                    |> List.filter(fun (projectKind2, _) -> projectKind = projectKind2)
+                    |> List.collect snd
+
+                { LibraryPackages    = filterByProjectKind ProjectKind.Library packages
+                  CliPackages        = filterByProjectKind ProjectKind.CoreCli packages
+                  AspNotCorePackages = filterByProjectKind ProjectKind.AspNetCore packages }
+
+
+            // ********************Update**********************
+            let updatablePackages nugetServer (solution: Solution) =
+                solution.Projects
+                |> List.collect(Project.updatablePackages nugetServer)
+
+            let updatePackages nugetServer (solution: Solution) =
+                { solution with 
+                    Projects =
+                        solution.Projects
+                        |> List.map (Project.updatePackages nugetServer)
+                    }
+
+
+
+            // ********************Search**********************
+
+            let getPackageNames (solution: Solution) =
+                solution.Projects
+                |> List.map (fun project -> project.GetName())
+
+
+            let private versionFromServer getLastVersion server solution = async {
+                let versions =
+                    getPackageNames solution
+                    |> Seq.map (fun packageName ->
+                        async {return getLastVersion server packageName}
+                    )
+                    |> Async.Parallel
+                    |> Async.RunSynchronously
+                    |> Array.choose id
+
+                if versions.Length > 0 then return Some (Array.max versions)
+                else return None
+            }
+
+            let workaroundPaketNuSpecBug (solution: Solution) =
+                solution.Projects
+                |> Seq.collect (fun proj ->
+                    let dir = Path.getDirectory proj.ProjPath
+                    !! (dir </> "./obj/**/*.nuspec")
+                )
+                |> File.deleteAll
+
+
+            let lastStableVersionFromNugetServerV2 (solution: Solution) = versionFromServer Version.getLastNuGetVersion  "https://www.nuget.org/api/v2" solution
+
+            type NugetSearchItemResultV3 =
+                { version: string }
+
+            type NugetSearchResultV3 =
+                { data: NugetSearchItemResultV3 list }
+
+            let private getLastNugetVersionV3 server packageName =
+                let json = Http.RequestString (server,["q",packageName;"prerelease","true"])
+                let result = JsonConvert.DeserializeObject<NugetSearchResultV3> json
+                result.data
+                |> List.tryHead
+                |> Option.map (fun nugetItem ->
+                    SemVerInfo.parse nugetItem.version
+                )
+
+
+            let lastVersionFromCustomNugetServer server (solution: Solution) = versionFromServer getLastNugetVersionV3 server solution
+            let lastVersionFromOfficalNugetServer (solution: Solution) = versionFromServer getLastNugetVersionV3 Nuget.officalNugetV3SearchQueryServiceUrl solution
+            let getLastVersion (solution: Solution) (nugetServer: Nuget.NugetServer) =
+                lastVersionFromCustomNugetServer nugetServer.SearchQueryService solution
+

@@ -37,7 +37,7 @@ module NonGit =
           Clean: BoxedTargetState
           Build_Debug: BoxedTargetState
           Build_Release: BoxedTargetState
-          Pack: TargetState<list<ProjectKind * Project list>>
+          Pack: BoxedTargetState
           AddSourceLinkPackages: BoxedTargetState
           Test: BoxedTargetState
           PushToLocalNugetServerV3: BoxedTargetState
@@ -69,10 +69,10 @@ module NonGit =
     with 
         interface IRole<TargetStates>
 
+    dotnet "--info" [] (Directory.GetCurrentDirectory())
 
     let create loggerLevel localNugetServerV3 localPackagesFolder (workspace: Workspace) =
         logger <- Logger.create(loggerLevel)
-        dotnet "--info" [] (Directory.GetCurrentDirectory())
 
         let repoName = Workspace.tryGetRepoName workspace
 
@@ -137,7 +137,8 @@ module NonGit =
                     { ops with 
                         Configuration = DotNet.BuildConfiguration.Debug
                         MSBuildParams = 
-                            { ops.MSBuildParams with DisableInternalBinLog = true }
+                            { ops.MSBuildParams with 
+                                DisableInternalBinLog = true }
                         }
                 { DependsOn = [Target.InstallPaketPackages] 
                   Action = MapState (fun role -> Solution.build setParams role.Solution ; none)}
@@ -154,14 +155,11 @@ module NonGit =
                   Action = MapState (fun role -> Solution.build setParams role.Solution ; none)}
 
             | Target.Pack setParams ->
-                let setParams (ops: FPublisher.DotNet.PackOptions) =
-                    let ops = setParams ops
-                    { ops with 
-                        NoBuild = true
-                        Configuration = DotNet.BuildConfiguration.Debug
-                    }
+                let buildOps =
+                    let ops = setParams FPublisher.DotNet.PackOptions.DefaultValue
+                    DotNet.PackOptions.asFakeBuildOptions ops
 
-                { DependsOn = [Target.InstallPaketPackages; Target.Build_Release id] 
+                { DependsOn = [Target.InstallPaketPackages; Target.Build_Release (fun _ -> buildOps)] 
                   Action = MapState (fun role -> Solution.pack setParams role.Solution |> box)}
 
             | Target.AddSourceLinkPackages sourceLinkCreate  ->
@@ -214,45 +212,13 @@ module NonGit =
 
                     { DependsOn = [Target.InstallPaketPackages; packTarget] 
                       Action = MapState (fun role -> 
-                        let nupkgs = !! (outputDirectory </> "./*.nupkg")
+                        let packResult: PackResult = TargetState.getResult role.TargetStates.Pack
 
-                        match role.LocalPackagesFolder with 
-                        | Some localPackagesFolder -> 
-                            let nugetTool =
-                                let platformTool tool =
-                                    ProcessUtils.tryFindFileOnPath tool
-                                    |> function Some t -> t | _ -> failwithf "%s not found" tool
-                                platformTool "nuget"
+                        logger.ImportantGreen "publishing nupkgs to localNugetServer %s" localNugetServer.SearchQueryService
 
-                            let run cmd dir args =
-                                let result =
-                                    CreateProcess.fromRawCommandLine cmd args
-                                    |> CreateProcess.withWorkingDirectory dir
-                                    |> Proc.run
-                                if result.ExitCode <> 0 then
-                                    failwithf "Error while running '%s' with args: %s " cmd args
-
-                            nupkgs
-                            |> Seq.iter(fun nupkg ->
-                                let destFile = localPackagesFolder </> (Path.GetFileName nupkg)
-                                run nugetTool role.Workspace.WorkingDir (sprintf "add %s -source %s" nupkg localPackagesFolder) 
-
-                                //File.Copy(nupkg, destFile, true)
-                            )
-
-                        | None -> ()
-
-                        for nupkg in nupkgs do
-                            DotNet.nugetPush (fun ops -> 
-                                {ops with 
-                                    PushParams = 
-                                        { NuGetPushParams.Create() with     
-                                            ApiKey = localNugetServer.ApiEnvironmentName 
-                                            Source = Some localNugetServer.Serviceable
-                                        }
-                                }
-                            ) nupkg
+                        NugetServer.publish (packResult.LibraryPackagePaths @ packResult.CliPackagePaths) localNugetServer |> Async.RunSynchronously
                         none
+
                       )}
 
                 | None -> 

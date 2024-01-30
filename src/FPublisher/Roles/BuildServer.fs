@@ -190,7 +190,7 @@ module BuildServer =
                              ops
                              |> DotNet.PublishOptions.setVersion nextReleaseNotes.SemVer
                           ))
-                          !^ (Forker.Target.Pack nextReleaseNotes)
+                          !^ (Forker.Target.Pack(id, nextReleaseNotes))
                           !^ (NonGit.Target.Zip (List.filter Project.existFullFramework role.Solution.CliProjects @ role.Solution.AspNetCoreProjects)) ]
                       Action = MapState (fun role ->
                         let appveyor = platformTool "appveyor"

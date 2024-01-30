@@ -6,6 +6,7 @@ open FPublisher.Nuget.NugetPacker
 open Fake.IO.FileSystemOperators
 open Primitives
 open Fake.Core
+open Fake.IO
 open FPublisher.GitHub
 open FPublisher.FakeHelper.Build
 open Octokit
@@ -15,39 +16,14 @@ open System
 open FPublisher.Utils
 open Fake.DotNet
 open FPublisher.Nuget.Nuget
+open System.IO
 
 
 
 [<RequireQualifiedAccess>]
 module Forker =
 
-    type GitHubData =
-        { Topics: Topics
-          Repository: Repository
-          License: RepositoryContentLicense }
-
-
-    [<RequireQualifiedAccess>]
-    module GitHubData =
-        let fetch workspace = task {
-
-            let! client = GitHubClient.createWithoutToken()
-
-            let! repository =
-                let repoFullName = Workspace.repoFullName workspace
-                GitHubClient.repository repoFullName client
-
-            let! license =
-                let logger = repository.Owner.Login
-                client.Repository.GetLicenseContents(logger, repository.Name)
-
-            let! topics = Repository.topicsAsync repository
-
-            return
-                { Topics = topics
-                  Repository = repository
-                  License = license }
-        }
+    type GitHubData = CommonGitHubData
 
     type VersionController =
         { Workspace: Workspace
@@ -99,7 +75,7 @@ module Forker =
                 task {
                     logger.Infots "Begin fetch forker versionController"
                     logger.Infots "Begin fetch github data"
-                    let! githubData = GitHubData.fetch workspace
+                    let! githubData = CommonGitHubData.fetch workspace
                     logger.Infots "End fetch github data"
 
                     let tbdReleaseNotes,lastReleaseNotes =
@@ -127,7 +103,7 @@ module Forker =
     [<RequireQualifiedAccess>]
     type Target =
         | NonGit of NonGit.Target
-        | Pack of ReleaseNotes.ReleaseNotes
+        | Pack of (FPublisher.DotNet.PackOptions -> FPublisher.DotNet.PackOptions) * ReleaseNotes.ReleaseNotes 
         | PublishToLocalNugetServer
 
     let (!^) (nonGitMsg: NonGit.Target) = Target.NonGit nonGitMsg
@@ -214,20 +190,38 @@ module Forker =
                 }
             )}
 
-        | Target.Pack releaseNotes ->
-            { DependsOn = [!^ (NonGit.Target.Build_Release (DotNet.BuildOptions.setVersion releaseNotes.SemVer)); !^ NonGit.Target.Test]
+        | Target.Pack (setParams, releaseNotes) ->
+            let buildOps =
+                let githubData = role.GitHubData
+                let packOps = setParams FPublisher.DotNet.PackOptions.DefaultValue
+                NugetPacker.updatePackOptions 
+                    githubData
+                    releaseNotes
+                    packOps
+                    role.NugetPacker
+                |> DotNet.PackOptions.asFakeBuildOptions
+
+            { DependsOn = [!^ (NonGit.Target.Build_Release (fun _ -> buildOps)); !^ NonGit.Target.Test]
               Action = MapState (fun role ->
                 let githubData = role.GitHubData
+                let outputDirectory = Path.GetTempPath() </> Path.GetRandomFileName()
+
+                Directory.ensure outputDirectory
+
+                let setParams (ops: FPublisher.DotNet.PackOptions) =
+                    let ops = setParams ops
+                    { ops with 
+                        Configuration = DotNet.BuildConfiguration.Release
+                        NoBuild = true 
+                        Version = Some releaseNotes.SemVer.AsString
+                        OutputPath = Some outputDirectory }
 
                 let newPackages =
                     NugetPacker.pack
                         role.Solution
-                        true
-                        true
-                        githubData.Topics
-                        githubData.License
-                        githubData.Repository
+                        githubData
                         releaseNotes
+                        setParams
                         role.NugetPacker
                 newPackages
                 |> box
@@ -242,7 +236,7 @@ module Forker =
                 let versionFromLocalNugetServer = Role.versionFromLocalNugetServer role |> Async.RunSynchronously
                 let nextReleaseNotes = Role.nextLocalNugetReleaseNotes versionFromLocalNugetServer role
 
-                { DependsOn = [ Target.Pack nextReleaseNotes ]
+                { DependsOn = [ Target.Pack (id, nextReleaseNotes) ]
                   Action = MapState (fun role ->
                     let packResult: PackResult = TargetState.getResult role.TargetStates.Pack
 

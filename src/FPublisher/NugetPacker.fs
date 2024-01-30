@@ -38,27 +38,24 @@ module NugetPacker =
 
     [<RequireQualifiedAccess>]
     module NugetAuthors =
+        let authorsTextList (repository: Repository) (nugetAuthors: NugetAuthors) =
+            match nugetAuthors with
+            | NugetAuthors.GithubLoginName -> [repository.Owner.Login]
+            | NugetAuthors.ManualInput authors -> authors
+
         let authorsText (repository: Repository) (nugetAuthors: NugetAuthors) =
             match nugetAuthors with
             | NugetAuthors.GithubLoginName -> repository.Owner.Login
             | NugetAuthors.ManualInput authors -> String.separated ";" authors
 
-    type PackPackageResult =
-        { Path: string 
-          OriginProject: Project }
+
+
 
 
     [<RequireQualifiedAccess>]
     module PackPackageResult =
         let testSourceLink = ()
 
-    type PackResult =
-        { LibraryPackages: PackPackageResult list
-          CliPackages: PackPackageResult list }
-    with 
-        member x.LibraryPackagePaths = x.LibraryPackages |> List.map (fun package -> package.Path)
-
-        member x.CliPackagePaths = x.CliPackages |> List.map (fun package -> package.Path)
 
     [<RequireQualifiedAccess>]
     type SourceLinkCreate =
@@ -118,62 +115,31 @@ module NugetPacker =
             | SourceLinkCreate.None ->
                 logger.Info "source link is disable, skip test source link"
 
+        let updatePackOptions (githubData: CommonGitHubData) releaseNotes (ops: FPublisher.DotNet.PackOptions) (nugetPacker: NugetPacker) =
+            let repository = githubData.Repository
+            let topics = githubData.Topics
+            let license = githubData.License
 
-        let pack (solution: Solution) (nobuild: bool) (noRestore: bool) (topics: Topics) (license: RepositoryContentLicense) (repository: Repository) (packageReleaseNotes: ReleaseNotes.ReleaseNotes) (nugetPacker: NugetPacker) =
-
-            Solution.workaroundPaketNuSpecBug solution
-
-            Environment.setEnvironVar "GenerateDocumentationFile" (string nugetPacker.GenerateDocumentationFile)
-            Environment.setEnvironVar "Authors" (NugetAuthors.authorsText repository nugetPacker.Authors)
-            Environment.setEnvironVar "Description"(repository.Description)
-            Environment.setEnvironVar "PackageReleaseNotes" (packageReleaseNotes.Notes |> String.toLines)
-            Environment.setEnvironVar "PackageTags" topics.AsString
-            match nugetPacker.PackageIconUrl with
-            | Some icon -> Environment.setEnvironVar "PackageIconUrl" icon
-            | None -> ()
-            Environment.setEnvironVar "PackageProjectUrl" repository.HtmlUrl
-            Environment.setEnvironVar "PackageLicenseUrl" license.HtmlUrl
-
-            let buildingPackOptions targetDirectory customParams =
-                [ yield "/p:Version=" + packageReleaseNotes.NugetVersion
-                  if noRestore then yield "--no-restore"
-                  yield! customParams
-                  //if nobuild then yield "--no-build"
-                  yield "--output" 
-                  yield targetDirectory
-                  yield "--configuration"
-                  yield "Release"
-                ]
-
-
-
-
-            let packProjects addtionalCustomParams projects =
-                
-                projects |> List.map (fun proj ->
-                    let targetDirectory = Directory.randomDir()
-                    dotnet "pack" (proj.ProjPath :: buildingPackOptions targetDirectory addtionalCustomParams) proj.Projdir 
-                    { OriginProject = proj 
-                      Path = !! (targetDirectory </> "./*.nupkg") |> Seq.exactlyOne }
-                )
-                
-
-            let sourceLinkParams =
-                []
-                //[ "/p:SourceLinkCreate=true"
-                //  "/p:AllowedOutputExtensionsInPackageBuildOutputFolder=\".dll;.exe;.winmd;.json;.pri;.xml;.pdb\"" ]
-
-            { LibraryPackages = 
-                match nugetPacker.SourceLinkCreate with 
-                | SourceLinkCreate.LibraryAndCli | SourceLinkCreate.Library ->
-                    packProjects sourceLinkParams solution.LibraryProjects
-                | SourceLinkCreate.None -> packProjects [] solution.LibraryProjects
-              CliPackages = 
-                match nugetPacker.SourceLinkCreate with 
-                | SourceLinkCreate.LibraryAndCli ->
-                    packProjects sourceLinkParams (List.filter (Project.existFullFramework >> not) solution.CliProjects)
-                | _ -> packProjects [] (List.filter (Project.existFullFramework >> not) solution.CliProjects)
+            { ops with 
+                Authors =  NugetAuthors.authorsTextList repository nugetPacker.Authors
+                GenerateDocumentationFile = nugetPacker.GenerateDocumentationFile
+                Description = Some repository.Description
+                ReleaseNotes = Some releaseNotes
+                Tags = topics.names
+                PackageIconUrl = nugetPacker.PackageIconUrl
+                PackageProjectUrl = Some repository.HtmlUrl
+                PackageLicenseUrl = Some license.HtmlUrl
+                Version = Some releaseNotes.NugetVersion
             }
+
+        let pack (solution: Solution) (githubData: CommonGitHubData) releaseNotes setParams (nugetPacker: NugetPacker) =
+            Solution.workaroundPaketNuSpecBug solution
+            
+            let setParams (ops: FPublisher.DotNet.PackOptions) =
+                let ops: FPublisher.DotNet.PackOptions = setParams ops
+                updatePackOptions githubData releaseNotes ops nugetPacker
+
+            Solution.pack setParams solution
 
 
 
@@ -212,7 +178,7 @@ module NugetPacker =
                         match nugetServer.ApiEnvironmentName with
                         | Some envName ->
                             let nuget_api_key = Environment.environVarOrFail envName
-                            TraceSecrets.register "nuget_api_key" nuget_api_key
+                            TraceSecrets.register envName nuget_api_key
                             yield! [ "-k"; nuget_api_key ]
                         | None -> ()
                     ] targetDirName

@@ -66,7 +66,7 @@ module DotNet =
     with 
         static member DefaultValue =
             { NoBuild = true
-              NoRestore = false
+              NoRestore = true
               Version = None
               OutputPath = None
               Configuration = DotNet.BuildConfiguration.Release
@@ -82,9 +82,6 @@ module DotNet =
 
     [<RequireQualifiedAccess>]
     module  PackOptions =
-
-
-
         let asFakePackOptions packOptions : DotNet.PackOptions =
             { NoBuild = packOptions.NoBuild 
               NoLogo = true
@@ -107,6 +104,9 @@ module DotNet =
                             match packOptions.PackageProjectUrl with Some packageProjectUrl -> yield { Property = "PackageProjectUrl"; Value = packageProjectUrl } | None -> ()
                             match packOptions.PackageLicenseUrl with Some packageLicenseUrl -> yield { Property = "PackageLicenseUrl"; Value = packageLicenseUrl } | None -> ()
                             match packOptions.Version with Some version -> yield { Property = "Version"; Value = version } | None -> ()
+                            match packOptions.NoBuild with 
+                            | true -> yield { Property = "TargetsForTfmSpecificContentInPackage"; Value = "" }
+                            | false -> ()
                         ] 
                         |> List.map (fun prop -> prop.ToString())
                         |> String.concat " "
@@ -124,7 +124,6 @@ module DotNet =
                   NoLogo = true
                   Configuration = packOptions.Configuration 
                   Framework = ops.Framework
-                  OutputPath = packOptions.OutputPath 
                   Common = 
                     { DotNet.Options.Create() with 
                         CustomParams = 
@@ -152,6 +151,9 @@ module DotNet =
 
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = setParams PackOptions.DefaultValue
-        DotNet.pack (fun _ -> PackOptions.asFakePackOptions options) project
+        DotNet.pack (fun _ -> 
+            let ops = PackOptions.asFakePackOptions options
+            ops
+        ) project
 
 

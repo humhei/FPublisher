@@ -14,6 +14,8 @@ open Octokit.Internal
 open System.Reflection
 open System.Threading
 open Octokit
+open Git
+
 module GitHub =
     type Topics =
         { names: string list }
@@ -87,3 +89,30 @@ module GitHub =
             |> GitHub.draftNewRelease user repoName (SemVerInfo.normalize release.SemVer) (release.SemVer.PreRelease <> None) release.Notes
             |> GitHub.uploadFiles files
             |> GitHub.publishDraft
+
+    type CommonGitHubData =
+        { Topics: Topics
+          Repository: Repository
+          License: RepositoryContentLicense }
+
+    [<RequireQualifiedAccess>]
+    module CommonGitHubData =
+        let fetch workspace = task {
+
+            let! client = GitHubClient.createWithoutToken()
+
+            let! repository =
+                let repoFullName = Workspace.repoFullName workspace
+                GitHubClient.repository repoFullName client
+
+            let! license =
+                let logger = repository.Owner.Login
+                client.Repository.GetLicenseContents(logger, repository.Name)
+
+            let! topics = Repository.topicsAsync repository
+
+            return
+                { Topics = topics
+                  Repository = repository
+                  License = license }
+        }

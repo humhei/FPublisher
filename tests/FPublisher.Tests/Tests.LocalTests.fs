@@ -40,9 +40,9 @@ let localPackagesFolder = Some @"D:\Users\Jia\Documents\MyData\Tools\LocalPackag
 
 let localTests() =
   
-  let role = NonGit.create Logger.Level.Normal (Some {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}) localPackagesFolder workspace
   let localNugetServer: NugetServer =
     {ApiEnvironmentName = None; Serviceable = "http://127.0.0.1:4000/v3/index.json"; SearchQueryService = "http://127.0.0.1:4000/v3/search"}
+  
   testList "NonGit tests" [
     testCase "push to local nuget" <| fun _ ->
     
@@ -127,8 +127,8 @@ let localTests() =
       try
           for root in paths do                                                                      
               let workspace = (Workspace root)
-              let role = NonGit.create Logger.Level.Normal (Some localNugetServer) localPackagesFolder workspace
               //NonGit.run (NonGit.Target.Clean) role
+              let role = NonGit.create Logger.Level.Normal (Some localNugetServer) localPackagesFolder workspace
               NonGit.run (NonGit.Target.PushToLocalNugetServerV3) role
               |> ignore                                                                  
 
