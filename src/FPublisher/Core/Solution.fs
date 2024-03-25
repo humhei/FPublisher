@@ -9,6 +9,7 @@ open FakeHelper.Build
 open FPublisher.Nuget.Nuget
 open FPublisher.Nuget
 open FPublisher.FakeHelper.CommandHelper
+open FPublisher.FSharpPlus
 
 #nowarn "0104"
 open System.Xml
@@ -27,16 +28,6 @@ module _Solution =
     [<RequireQualifiedAccess>]
     module Project =
         open FPublisher.Nuget
-
-        let create (projPath: string) =
-            { OutputType = OutputType.ofProjPath projPath
-              ProjPath = projPath
-              TargetFrameworks = TargetFrameworks.ofProjPath projPath
-              PackageReferences = PackageReferences.OfProjPath projPath
-              SDK = SDK.ofProjPath projPath
-              ProjectReferences = ProjectReferences.OfProjPath projPath
-              }
-
 
         let updatablePackages (nugetServer: NugetServer) (project: Project) =    
             let updatablePackages = 
@@ -89,13 +80,7 @@ module _Solution =
                 PackageReferences = PackageReferences.OfProjPath project.ProjPath
             }
 
-        let clean (project: Project) =
-            let projDir = project.GetProjDir() 
-            let binDir = projDir </> "bin"
-            let objDir = projDir </> "obj"
 
-            Shell.cleanDir binDir
-            Shell.cleanDir objDir
 
     [<RequireQualifiedAccess>]
     type PublishNetCoreDependency =

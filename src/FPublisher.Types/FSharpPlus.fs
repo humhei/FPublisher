@@ -1,14 +1,8 @@
-﻿namespace FPublisher
+﻿namespace FPublisher.FSharpPlus
 open Fake.IO
-open Fake.DotNet
-open Fake.Core
-open Microsoft.FSharp.Quotations
-open System.Collections.Concurrent
-open Microsoft.FSharp.Reflection
-open System.Threading.Tasks
 open Newtonsoft.Json
+open Fake.IO.FileSystemOperators
 open System.Diagnostics
-open System
 open System.IO
 
 
@@ -125,3 +119,33 @@ with
     static member path (fullPath: FsFullPath) = fullPath.Path
     
     static member fileName (fullPath: FsFullPath) = fullPath.FileName
+
+
+
+[<AutoOpen>]
+module _Extensions =
+    type System.String with 
+        member x.Contains(text: string, ignoreCase) = 
+            if ignoreCase then x.ToLower().Contains(text.ToLower())
+            else x.Contains(text)
+    
+    
+    [<RequireQualifiedAccess>]
+    module Path =
+        let normalizeToUnixCompatible path =
+            let path = (Path.getFullName path).Replace('\\','/')
+    
+            let dir = Path.getDirectory path
+    
+            let segaments =
+                let fileName = Path.GetFileName path
+                fileName.Split([|'\\'; '/'|])
+    
+            let folder dir segament =
+                dir </> segament
+                |> Path.getFullName
+    
+            segaments
+            |> Array.fold folder dir
+    
+    

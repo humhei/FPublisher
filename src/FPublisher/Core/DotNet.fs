@@ -56,6 +56,7 @@ module DotNet =
           OutputPath: string option 
           Authors: string list
           Version: string option
+          WorkingDir: string option
           GenerateDocumentationFile: bool
           PackageIconUrl: string option
           Description: string option
@@ -71,6 +72,7 @@ module DotNet =
               OutputPath = None
               Configuration = DotNet.BuildConfiguration.Release
               Authors = [] 
+              WorkingDir = None
               GenerateDocumentationFile = true 
               PackageIconUrl = None 
               Description = None 
@@ -92,7 +94,13 @@ module DotNet =
               BuildBasePath = None 
               OutputPath = packOptions.OutputPath 
               Common = 
-                { DotNet.Options.Create() with 
+                let ops = DotNet.Options.Create()
+                { ops with 
+                    WorkingDirectory = 
+                        match packOptions.WorkingDir with 
+                        | Some workingDir -> workingDir
+                        | None -> ops.WorkingDirectory
+
                     CustomParams = 
                         [
                             if packOptions.Tags.Length > 0 then yield { Property = "PackageTags"; Value = String.separated ";" packOptions.Authors }
@@ -152,7 +160,8 @@ module DotNet =
             ops
 
     let pack (setParams: PackOptions -> PackOptions) project =
-        let options = setParams PackOptions.DefaultValue
+        let options = 
+            { setParams PackOptions.DefaultValue with WorkingDir = Some (Path.getDirectory project)}
         DotNet.pack (fun _ -> 
             let ops = PackOptions.asFakePackOptions options
             ops

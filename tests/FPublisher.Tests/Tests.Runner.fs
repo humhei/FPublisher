@@ -31,6 +31,7 @@ let private platformTool tool =
 let main argv = 
     let tests = Tests.LocalTests.localTests()
 
+
     runTests testConfig tests                              
 
-    Console.Read()
+    0

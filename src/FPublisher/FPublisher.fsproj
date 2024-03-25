@@ -4,7 +4,6 @@
       <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FSharpPlus.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="FakeHelper.fs" />
     <Compile Include="Core\Extensions.fs" />
@@ -39,6 +38,9 @@
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
       <PackageReference Include="Fake.BuildServer.AppVeyor" Version="5.20.4" />
       <PackageReference Include="TaskBuilder.fs" Version="2.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FPublisher.Types\FPublisher.Types.fsproj" />
   </ItemGroup>
     <ItemGroup>
         <PackageReference Update="FSharp.Core" Version="5.0.1" />

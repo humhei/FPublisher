@@ -6,6 +6,7 @@ open Expecto
 open System.IO
 open Fake.IO
 open FPublisher
+open FPublisher.Solution
 open FPublisher.Roles
 open FPublisher.Nuget.Nuget
 
@@ -45,19 +46,18 @@ let localTests() =
   
   testList "NonGit tests" [
     testCase "push to local nuget" <| fun _ ->
-    
+      let project = Project.create @"D:\Users\Jia\Documents\MyData\Docs\2017\健耐\OLIVIA MILLER\OLIVIA MILLER\OLIVIA MILLER\OLIVIA MILLER.fsproj"
       let paths =
           [
               //@"D:\VsCode\Workspace\Akkling" 
               //@"D:\VsCode\Workspace\FPublisher"
               //@"C:\Users\Jia\Desktop\hello"
               //@"D:\VsCode\Workspace\Shrimp.FileWatcher" 
-              @"D:\VsCode\Github\FCSWatch"
+              //@"D:\VsCode\Github\FCSWatch"
               //@"D:\VsCode\Workspace\LiteDB"
               //@"D:\VsCode\Workspace\LiteDB.FSharp"
               //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"
               //@"D:\VsCode\Workspace\Shrimp.FSharp.Plus"
-
               //@"D:\VsCode\Workspace\Shrimp.Akkling.Cluster.Intergraction" 
               //@"D:\VsCode\Workspace\CellScript" 
 
@@ -65,6 +65,7 @@ let localTests() =
               //@"D:\VsCode\Workspace\Shrimp.LiteDB" 
               //@"D:\VsCode\Workspace\Shrimp.XllProxy" 
               //@"D:\VsCode\Workspace\Shrimp.Pdf" 
+              //@"D:\VsCode\Workspace\Shrimp.Pdf.DSL"  
               //@"D:\VsCode\Workspace\Shrimp.Pdf.Enhancement" 
               //@"D:\VsCode\Workspace\Shrimp.Pdf.DataTable"
               //@"D:\VsCode\Workspace\ExcelProcesser"
@@ -101,7 +102,8 @@ let localTests() =
                                                                       
                       
               //@"D:\VsCode\workspace\Shrimp.Workflow\src\CustomerSupply"  
-              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Model"                   
+              //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Model"                    
+              //@"D:\VsCode\Workspace\Shrimp.Workflow.RemoteChecker"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Orders"                 
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.Products.Integrated"   
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Shrimp.Workflow.Products.AllProducts"   
@@ -113,6 +115,7 @@ let localTests() =
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.PressPrinting.TwoFaces"
               //@"D:\VsCode\Workspace\Shrimp.Workflow\src\Tasks\Shrimp.Workflow.DigitalPrinting"
+              //@"D:\Users\Jia\Documents\MyData\Docs\2017\GlobalProducts"             
               //@"d:\vscode\workspace\shrimp.workflow\tools\ws"             
               //@"D:\Users\Jia\Documents\MyData\Docs\2017\Packages"                 
               //@"D:\VsCode\Workspace\ExcelDnaWidget\QuickImpose"                 

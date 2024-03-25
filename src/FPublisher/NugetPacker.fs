@@ -181,6 +181,7 @@ module NugetPacker =
                             TraceSecrets.register envName nuget_api_key
                             yield! [ "-k"; nuget_api_key ]
                         | None -> ()
+                        "--skip-duplicate"
                     ] targetDirName
                 }
             )

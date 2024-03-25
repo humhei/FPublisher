@@ -27,6 +27,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Fublisher.Faker.AspNetCoreW
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Utils.Cli", "src\FPublisher.Utils.Cli\FPublisher.Utils.Cli.fsproj", "{175618AF-E947-484F-AB26-DA726BF81B1F}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FPublisher.Types", "src\FPublisher.Types\FPublisher.Types.fsproj", "{A0944B8B-0D0D-49E4-B782-3CB768338DE0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -157,6 +159,18 @@ Global
 		{175618AF-E947-484F-AB26-DA726BF81B1F}.Release|x64.Build.0 = Release|Any CPU
 		{175618AF-E947-484F-AB26-DA726BF81B1F}.Release|x86.ActiveCfg = Release|Any CPU
 		{175618AF-E947-484F-AB26-DA726BF81B1F}.Release|x86.Build.0 = Release|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Debug|x64.Build.0 = Debug|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Debug|x86.Build.0 = Debug|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Release|x64.ActiveCfg = Release|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Release|x64.Build.0 = Release|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Release|x86.ActiveCfg = Release|Any CPU
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -172,6 +186,7 @@ Global
 		{4CD06B33-9F0C-4D0F-B960-73EA34DFA1A3} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{CD5FECF0-AFA4-4828-8D9E-134C31545A43} = {0A68DDFF-4616-409E-AA83-089DDA45E86C}
 		{175618AF-E947-484F-AB26-DA726BF81B1F} = {2DEE046F-2A30-4ABB-AA88-58100B59EEF4}
+		{A0944B8B-0D0D-49E4-B782-3CB768338DE0} = {2DEE046F-2A30-4ABB-AA88-58100B59EEF4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {58D701E1-F92A-4BA0-9CB0-D8447FDC447D}

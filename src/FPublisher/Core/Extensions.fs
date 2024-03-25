@@ -25,7 +25,3 @@ module internal InternalExtensions =
             segaments
             |> Array.fold folder dir
 
-    type System.String with 
-        member x.Contains(text: string, ignoreCase) = 
-            if ignoreCase then x.ToLower().Contains(text.ToLower())
-            else x.Contains(text)

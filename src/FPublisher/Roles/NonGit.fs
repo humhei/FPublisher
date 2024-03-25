@@ -69,9 +69,15 @@ module NonGit =
     with 
         interface IRole<TargetStates>
 
-    dotnet "--info" [] (Directory.GetCurrentDirectory())
+    let mutable private isDotnetInfoExecuted = false
 
     let create loggerLevel localNugetServerV3 localPackagesFolder (workspace: Workspace) =
+        match isDotnetInfoExecuted with 
+        | false -> 
+            dotnet "--info" [] (workspace.WorkingDir)
+            isDotnetInfoExecuted <- true
+        | true -> ()
+
         logger <- Logger.create(loggerLevel)
 
         let repoName = Workspace.tryGetRepoName workspace
@@ -213,10 +219,37 @@ module NonGit =
                     { DependsOn = [Target.InstallPaketPackages; packTarget] 
                       Action = MapState (fun role -> 
                         let packResult: PackResult = TargetState.getResult role.TargetStates.Pack
+                        let nupkgs = packResult.LibraryPackagePaths @ packResult.CliPackagePaths
+
+                        match role.LocalPackagesFolder with 
+                        | Some localPackagesFolder -> 
+                            let nugetTool =
+                                let platformTool tool =
+                                    ProcessUtils.tryFindFileOnPath tool
+                                    |> function Some t -> t | _ -> failwithf "%s not found" tool
+                                platformTool "nuget"
+
+                            let run cmd dir args =
+                                let result =
+                                    CreateProcess.fromRawCommandLine cmd args
+                                    |> CreateProcess.withWorkingDirectory dir
+                                    |> Proc.run
+                                if result.ExitCode <> 0 then
+                                    failwithf "Error while running '%s' with args: %s " cmd args
+
+                            nupkgs
+                            |> Seq.iter(fun nupkg ->
+                                let destFile = localPackagesFolder </> (Path.GetFileName nupkg)
+                                run nugetTool role.Workspace.WorkingDir (sprintf "add %s -source %s" nupkg localPackagesFolder) 
+
+                                //File.Copy(nupkg, destFile, true)
+                            )
+
+                        | None -> ()
 
                         logger.ImportantGreen "publishing nupkgs to localNugetServer %s" localNugetServer.SearchQueryService
 
-                        NugetServer.publish (packResult.LibraryPackagePaths @ packResult.CliPackagePaths) localNugetServer |> Async.RunSynchronously
+                        NugetServer.publish (nupkgs) localNugetServer |> Async.RunSynchronously
                         none
 
                       )}
