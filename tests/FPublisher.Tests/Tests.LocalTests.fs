@@ -57,14 +57,14 @@ let localTests() =
       let paths =
           [
               //@"D:\VsCode\Workspace\Akkling" 
-              @"D:\VsCode\Workspace\FPublisher"
+              //@"D:\VsCode\Workspace\FPublisher"
               //@"C:\Users\Jia\Desktop\hello"
               //@"D:\VsCode\Workspace\Shrimp.FileWatcher" 
               //@"D:\VsCode\Github\FCSWatch"
               //@"D:\VsCode\Workspace\LiteDB"
               //@"D:\VsCode\Workspace\LiteDB.FSharp"
               //@"D:\VsCode\Workspace\Shrimp.Compiler.Service"
-              //@"D:\VsCode\Workspace\Leisure.FSharp.Xml.Schema"
+              @"D:\VsCode\Workspace\Leisure.FSharp.Xml.Schema"
               //@"D:\VsCode\Workspace\Shrimp.FSharp.Plus"
               //@"D:\VsCode\Workspace\Shrimp.Akkling.Cluster.Intergraction" 
               //@"D:\VsCode\Workspace\CellScript" 
@@ -138,12 +138,20 @@ let localTests() =
 
 
       try
-          for root in paths do                                                                      
-              let workspace = (Workspace root)
-              //NonGit.run (NonGit.Target.Clean) role
-              let role = NonGit.create Logger.Level.Normal (Some localNugetServer) localPackagesFolder workspace
-              NonGit.run (NonGit.Target.Test) role
-              |> ignore                                                                  
+          for root in paths do              
+              let role = 
+                let config = Collaborator.Config.DefaultValue
+                let config =
+                    { config with WorkingDir = root }
+
+                Collaborator.create (config)
+              Collaborator.run (Collaborator.Target.Forker (Forker.Target.NonGit NonGit.Target.Test)) role
+              |> ignore                             
+              //let workspace = (Workspace root)
+              ////NonGit.run (NonGit.Target.Clean) role
+              //let role = NonGit.create Logger.Level.Normal (Some localNugetServer) localPackagesFolder workspace
+              //NonGit.run (NonGit.Target.Test) role
+              //|> ignore                                                                  
 
       finally
         printfn "PressAnyKey to exists"

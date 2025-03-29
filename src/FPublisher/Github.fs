@@ -74,6 +74,7 @@ module GitHub =
                     .ToLowerInvariant()
                     .Replace("git@github.com:", "")
                     .Replace("https://github.com/", "")
+                    .Replace("http://github.com/", "")
             let! searchedRepositoryResult =
                 let request = SearchRepositoriesRequest(Path.GetFileName repoFullName)
                 client.Search.SearchRepo(request)

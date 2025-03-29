@@ -251,7 +251,9 @@ module FakeHelper =
             /// and add next next version with tbd
             let writeToNext file (releaseNotes: ReleaseNotes.ReleaseNotes) =
                 File.replaceFindedFirstLine
-                    (fun line -> line.TrimEnd() |> String.endsWith "tbd")
+                    (fun line -> 
+                        line.TrimEnd().EndsWith("tbd", StringComparison.InvariantCultureIgnoreCase)
+                    )
                     (fun _ ->
                         [ yield tbdHeaderLine releaseNotes
                           yield ""

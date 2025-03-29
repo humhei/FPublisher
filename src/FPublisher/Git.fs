@@ -21,12 +21,14 @@ module Git =
 
 
         let tryGitUrl workspace =
-            let _, lines, _ = Workspace.git (sprintf "config --get remote.origin.url") workspace
-            if lines.Length = 1
-            then Some lines.[0]
-            elif lines.Length = 0
-            then None
-            else failwithf "repo name should only contain one line, current lines is %A" lines
+            Workspace.tryGetGitUrl workspace
+            //let _, lines, _ = Workspace.git (sprintf "config --get remote.origin.url") workspace
+            //let _, lines, _ = Workspace.git (sprintf "remove -v") workspace
+            //if lines.Length = 1
+            //then Some lines.[0]
+            //elif lines.Length = 0
+            //then None
+            //else failwithf "repo name should only contain one line, current lines is %A" lines
 
         let tryRepoFullName workspace =
             tryGitUrl workspace |> Option.map (fun url ->
