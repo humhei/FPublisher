@@ -352,8 +352,8 @@ module Collaborator =
         | Target.NextRelease ->
 
             /// check environments first
-            let _ = GitHubData.githubToken role.GitHubData
-            let _ = GitHubData.releaseUserName role.GitHubData
+            let _token = GitHubData.githubToken role.GitHubData
+            let _release_user_name = GitHubData.releaseUserName role.GitHubData
 
             let nextReleaseNotes = Role.nextReleaseNotes role
 

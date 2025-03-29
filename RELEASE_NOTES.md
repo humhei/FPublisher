@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.43-alpha - tbd
+## 0.1.43 - tbd
+* update dotnet framework
 
 ## 0.1.42 - 2025-03-29
 * update dotnet framework
