@@ -162,6 +162,7 @@ module DotNet =
     let pack (setParams: PackOptions -> PackOptions) project =
         let options = 
             { setParams PackOptions.DefaultValue with WorkingDir = Some (Path.getDirectory project)}
+
         DotNet.pack (fun _ -> 
             let ops = PackOptions.asFakePackOptions options
             ops

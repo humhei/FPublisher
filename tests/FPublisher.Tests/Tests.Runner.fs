@@ -3,12 +3,8 @@
 module Runner
 open Expecto
 open Expecto.Logging
-open System
-open Fake.IO
 open FPublisher
 open Fake.Core
-open System.IO
-open System.Collections.Generic
 
 let testConfig =
     { Expecto.Tests.defaultConfig with
@@ -30,7 +26,6 @@ let private platformTool tool =
 [<EntryPoint>]
 let main argv = 
     let tests = Tests.LocalTests.localTests()
-
 
     runTests testConfig tests                              
 

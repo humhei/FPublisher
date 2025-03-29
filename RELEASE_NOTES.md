@@ -1,6 +1,7 @@
 ﻿# Release Notes
 
-## 0.1.41-alpha - tbd
+## 0.1.41 - tbd
+* update dotnet framework
 
 ## 0.1.40 - 2024-01-30
 * Conditional TargetFrameworks parsing
